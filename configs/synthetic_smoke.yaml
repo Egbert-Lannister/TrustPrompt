@@ -1,0 +1,11 @@
+dataset: synthetic_fixture
+method: raw_prompt
+seed: 20261009
+manifest: data/processed/synthetic_smoke_v1/manifest.json
+split: train
+tau: 0.05
+band: 5
+alignment: none
+visualizations: 5
+gt_scope: synthetic_exact
+experiment_role: synthetic_engineering_only

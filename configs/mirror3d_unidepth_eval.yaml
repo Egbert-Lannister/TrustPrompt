@@ -1,0 +1,12 @@
+dataset: mirror3d_nyu
+method: unidepth_v2_s
+seed: 20261009
+manifest: data/processed/mirror3d_smoke_v1/manifest.json
+prior_cache: cache/unidepth_smoke_v1
+split: train
+tau: 0.05
+band: 5
+alignment: none
+visualizations: 5
+gt_scope: mirror_refined_background_inpainted
+experiment_role: engineering_smoke_not_final_test

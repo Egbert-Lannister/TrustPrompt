@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trustprompt"
+version = "0.1.0"
+description = "Auditable metric Z-depth prompt trust experiments"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26,<3", "scipy>=1.11", "h5py>=3.10", "Pillow>=10", "matplotlib>=3.8", "PyYAML>=6"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.4"]
+models = ["torch>=2.2", "safetensors>=0.4", "huggingface-hub>=0.23"]
+
+[tool.setuptools.packages.find]
+include = ["tp*", "baselines*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

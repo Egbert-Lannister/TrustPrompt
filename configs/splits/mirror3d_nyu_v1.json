@@ -1,0 +1,860 @@
+{
+  "schema": "trustprompt.mirror_scene_split.v1",
+  "source_file": "D:\\Python_Script\\GLARE\\results\\rgb_first_surface_data0\\rgb_first_surface_data0_20261004\\manifest.json",
+  "source_sha256": "594052d363b1b656d98bcd20635b1ac62ad8f5ffa38514fa83ac9ccda71f068d",
+  "source_field": "data_qualification.mirror3d_nyuv2.source_index_audit",
+  "status": "online_all_125_scenes_revalidated_2026-10-09",
+  "mapping": [
+    {
+      "annotation_id": "43",
+      "csv_scene": "office_0015",
+      "scene": "bathroom_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "45",
+      "csv_scene": "bathroom_0002",
+      "scene": "bathroom_0003",
+      "split": "train"
+    },
+    {
+      "annotation_id": "46",
+      "csv_scene": "bathroom_0003",
+      "scene": "bathroom_0004",
+      "split": "train"
+    },
+    {
+      "annotation_id": "47",
+      "csv_scene": "bathroom_0004",
+      "scene": "bathroom_0005",
+      "split": "val"
+    },
+    {
+      "annotation_id": "48",
+      "csv_scene": "bathroom_0005",
+      "scene": "bathroom_0006",
+      "split": "val"
+    },
+    {
+      "annotation_id": "150",
+      "csv_scene": "living_room_0004",
+      "scene": "living_room_0005",
+      "split": "train"
+    },
+    {
+      "annotation_id": "169",
+      "csv_scene": "living_room_0014",
+      "scene": "bathroom_0001",
+      "split": "test"
+    },
+    {
+      "annotation_id": "184",
+      "csv_scene": "bedroom_0006",
+      "scene": "bedroom_0006",
+      "split": "train"
+    },
+    {
+      "annotation_id": "185",
+      "csv_scene": "bedroom_0006",
+      "scene": "bedroom_0006",
+      "split": "train"
+    },
+    {
+      "annotation_id": "194",
+      "csv_scene": "kitchen_0002",
+      "scene": "kitchen_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "221",
+      "csv_scene": "bedroom_0024",
+      "scene": "bedroom_0024",
+      "split": "train"
+    },
+    {
+      "annotation_id": "231",
+      "csv_scene": "furniture_store_0001",
+      "scene": "furniture_store_0001",
+      "split": "val"
+    },
+    {
+      "annotation_id": "239",
+      "csv_scene": "furniture_store_0002",
+      "scene": "furniture_store_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "242",
+      "csv_scene": "furniture_store_0002",
+      "scene": "furniture_store_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "245",
+      "csv_scene": "furniture_store_0002",
+      "scene": "furniture_store_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "246",
+      "csv_scene": "furniture_store_0002",
+      "scene": "furniture_store_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "247",
+      "csv_scene": "furniture_store_0002",
+      "scene": "furniture_store_0002",
+      "split": "train"
+    },
+    {
+      "annotation_id": "327",
+      "csv_scene": "classroom_0023",
+      "scene": "classroom_0023",
+      "split": "test"
+    },
+    {
+      "annotation_id": "347",
+      "csv_scene": "dinette_0001",
+      "scene": "excercise_room_0001",
+      "split": "val"
+    },
+    {
+      "annotation_id": "410",
+      "csv_scene": "office_kitchen_0001",
+      "scene": "office_kitchen_0002",
+      "split": "test"
+    },
+    {
+      "annotation_id": "435",
+      "csv_scene": "playroom_0005",
+      "scene": "playroom_0006",
+      "split": "train"
+    },
+    {
+      "annotation_id": "440",
+      "csv_scene": "playroom_0006",
+      "scene": "playroom_0007",
+      "split": "train"
+    },
+    {
+      "annotation_id": "441",
+      "csv_scene": "playroom_0007",
+      "scene": "playroom_0007",
+      "split": "train"
+    },
+    {
+      "annotation_id": "448",
+      "csv_scene": "playroom_0008",
+      "scene": "printer_room_0001",
+      "split": "val"
+    },
+    {
+      "annotation_id": "498",
+      "csv_scene": "bathroom_0053",
+      "scene": "bathroom_0054",
+      "split": "test"
+    },
+    {
+      "annotation_id": "499",
+      "csv_scene": "bathroom_0054",
+      "scene": "bathroom_0055",
+      "split": "test"
+    },
+    {
+      "annotation_id": "500",
+      "csv_scene": "bathroom_0055",
+      "scene": "bathroom_0055",
+      "split": "test"
+    },
+    {
+      "annotation_id": "501",
+      "csv_scene": "bathroom_0055",
+      "scene": "bathroom_0055",
+      "split": "test"
+    },
+    {
+      "annotation_id": "502",
+      "csv_scene": "bathroom_0055",
+      "scene": "bathroom_0056",
+      "split": "test"
+    },
+    {
+      "annotation_id": "504",
+      "csv_scene": "bathroom_0056",
+      "scene": "bathroom_0056",
+      "split": "test"
+    },
+    {
+      "annotation_id": "506",
+      "csv_scene": "bathroom_0057",
+      "scene": "bathroom_0057",
+      "split": "test"
+    },
+    {
+      "annotation_id": "508",
+      "csv_scene": "bathroom_0058",
+      "scene": "bathroom_0058",
+      "split": "val"
+    },
+    {
+      "annotation_id": "509",
+      "csv_scene": "bathroom_0058",
+      "scene": "bathroom_0058",
+      "split": "val"
+    },
+    {
+      "annotation_id": "510",
+      "csv_scene": "bathroom_0058",
+      "scene": "bathroom_0060",
+      "split": "val"
+    },
+    {
+      "annotation_id": "514",
+      "csv_scene": "bedroom_0132",
+      "scene": "bedroom_0133",
+      "split": "test"
+    },
+    {
+      "annotation_id": "528",
+      "csv_scene": "bedroom_0136",
+      "scene": "bedroom_0136",
+      "split": "train"
+    },
+    {
+      "annotation_id": "647",
+      "csv_scene": "study_0008",
+      "scene": "bathroom_0007",
+      "split": "train"
+    },
+    {
+      "annotation_id": "648",
+      "csv_scene": "bathroom_0007",
+      "scene": "bathroom_0007",
+      "split": "train"
+    },
+    {
+      "annotation_id": "649",
+      "csv_scene": "bathroom_0007",
+      "scene": "bathroom_0008",
+      "split": "test"
+    },
+    {
+      "annotation_id": "650",
+      "csv_scene": "bathroom_0008",
+      "scene": "bathroom_0009",
+      "split": "test"
+    },
+    {
+      "annotation_id": "652",
+      "csv_scene": "bathroom_0010",
+      "scene": "bathroom_0010",
+      "split": "val"
+    },
+    {
+      "annotation_id": "654",
+      "csv_scene": "bathroom_0011",
+      "scene": "bathroom_0011",
+      "split": "train"
+    },
+    {
+      "annotation_id": "655",
+      "csv_scene": "bathroom_0011",
+      "scene": "bathroom_0012",
+      "split": "train"
+    },
+    {
+      "annotation_id": "656",
+      "csv_scene": "bathroom_0012",
+      "scene": "bathroom_0012",
+      "split": "train"
+    },
+    {
+      "annotation_id": "658",
+      "csv_scene": "bathroom_0012",
+      "scene": "bathroom_0013",
+      "split": "train"
+    },
+    {
+      "annotation_id": "659",
+      "csv_scene": "bathroom_0013",
+      "scene": "bathroom_0013",
+      "split": "train"
+    },
+    {
+      "annotation_id": "660",
+      "csv_scene": "bathroom_0013",
+      "scene": "bathroom_0014",
+      "split": "train"
+    },
+    {
+      "annotation_id": "662",
+      "csv_scene": "bathroom_0014",
+      "scene": "bathroom_0015",
+      "split": "train"
+    },
+    {
+      "annotation_id": "663",
+      "csv_scene": "bathroom_0015",
+      "scene": "bathroom_0015",
+      "split": "train"
+    },
+    {
+      "annotation_id": "664",
+      "csv_scene": "bathroom_0015",
+      "scene": "bathroom_0016",
+      "split": "test"
+    },
+    {
+      "annotation_id": "665",
+      "csv_scene": "bathroom_0016",
+      "scene": "bathroom_0016",
+      "split": "test"
+    },
+    {
+      "annotation_id": "667",
+      "csv_scene": "bathroom_0016",
+      "scene": "bathroom_0017",
+      "split": "train"
+    },
+    {
+      "annotation_id": "670",
+      "csv_scene": "bathroom_0017",
+      "scene": "bathroom_0018",
+      "split": "train"
+    },
+    {
+      "annotation_id": "671",
+      "csv_scene": "bathroom_0018",
+      "scene": "bathroom_0018",
+      "split": "train"
+    },
+    {
+      "annotation_id": "678",
+      "csv_scene": "bathroom_0021",
+      "scene": "bathroom_0021",
+      "split": "test"
+    },
+    {
+      "annotation_id": "679",
+      "csv_scene": "bathroom_0021",
+      "scene": "bathroom_0022",
+      "split": "train"
+    },
+    {
+      "annotation_id": "681",
+      "csv_scene": "bathroom_0022",
+      "scene": "bathroom_0023",
+      "split": "train"
+    },
+    {
+      "annotation_id": "683",
+      "csv_scene": "bathroom_0023",
+      "scene": "bathroom_0024",
+      "split": "val"
+    },
+    {
+      "annotation_id": "686",
+      "csv_scene": "bathroom_0025",
+      "scene": "bathroom_0025",
+      "split": "train"
+    },
+    {
+      "annotation_id": "687",
+      "csv_scene": "bathroom_0025",
+      "scene": "bathroom_0026",
+      "split": "train"
+    },
+    {
+      "annotation_id": "690",
+      "csv_scene": "bathroom_0026",
+      "scene": "bathroom_0028",
+      "split": "train"
+    },
+    {
+      "annotation_id": "692",
+      "csv_scene": "bathroom_0028",
+      "scene": "bathroom_0029",
+      "split": "train"
+    },
+    {
+      "annotation_id": "694",
+      "csv_scene": "bathroom_0029",
+      "scene": "bathroom_0030",
+      "split": "train"
+    },
+    {
+      "annotation_id": "696",
+      "csv_scene": "bathroom_0030",
+      "scene": "bathroom_0031",
+      "split": "train"
+    },
+    {
+      "annotation_id": "699",
+      "csv_scene": "bathroom_0031",
+      "scene": "bathroom_0033",
+      "split": "train"
+    },
+    {
+      "annotation_id": "701",
+      "csv_scene": "bathroom_0033",
+      "scene": "bathroom_0034",
+      "split": "val"
+    },
+    {
+      "annotation_id": "704",
+      "csv_scene": "bathroom_0034",
+      "scene": "bathroom_0035",
+      "split": "train"
+    },
+    {
+      "annotation_id": "709",
+      "csv_scene": "bathroom_0037",
+      "scene": "bathroom_0037",
+      "split": "train"
+    },
+    {
+      "annotation_id": "715",
+      "csv_scene": "bathroom_0039",
+      "scene": "bathroom_0039",
+      "split": "test"
+    },
+    {
+      "annotation_id": "716",
+      "csv_scene": "bathroom_0039",
+      "scene": "bathroom_0040",
+      "split": "test"
+    },
+    {
+      "annotation_id": "718",
+      "csv_scene": "bathroom_0040",
+      "scene": "bathroom_0041",
+      "split": "test"
+    },
+    {
+      "annotation_id": "719",
+      "csv_scene": "bathroom_0041",
+      "scene": "bathroom_0041",
+      "split": "test"
+    },
+    {
+      "annotation_id": "720",
+      "csv_scene": "bathroom_0041",
+      "scene": "bathroom_0041",
+      "split": "test"
+    },
+    {
+      "annotation_id": "721",
+      "csv_scene": "bathroom_0041",
+      "scene": "bathroom_0042",
+      "split": "test"
+    },
+    {
+      "annotation_id": "723",
+      "csv_scene": "bathroom_0042",
+      "scene": "bathroom_0043",
+      "split": "train"
+    },
+    {
+      "annotation_id": "724",
+      "csv_scene": "bathroom_0043",
+      "scene": "bathroom_0043",
+      "split": "train"
+    },
+    {
+      "annotation_id": "726",
+      "csv_scene": "bathroom_0043",
+      "scene": "bathroom_0044",
+      "split": "train"
+    },
+    {
+      "annotation_id": "728",
+      "csv_scene": "bathroom_0044",
+      "scene": "bathroom_0045",
+      "split": "train"
+    },
+    {
+      "annotation_id": "730",
+      "csv_scene": "bathroom_0045",
+      "scene": "bathroom_0046",
+      "split": "test"
+    },
+    {
+      "annotation_id": "733",
+      "csv_scene": "bathroom_0047",
+      "scene": "bathroom_0047",
+      "split": "train"
+    },
+    {
+      "annotation_id": "734",
+      "csv_scene": "bathroom_0047",
+      "scene": "bathroom_0048",
+      "split": "train"
+    },
+    {
+      "annotation_id": "737",
+      "csv_scene": "bathroom_0049",
+      "scene": "bathroom_0049",
+      "split": "val"
+    },
+    {
+      "annotation_id": "739",
+      "csv_scene": "bathroom_0050",
+      "scene": "bathroom_0051",
+      "split": "train"
+    },
+    {
+      "annotation_id": "740",
+      "csv_scene": "bathroom_0051",
+      "scene": "bathroom_0051",
+      "split": "train"
+    },
+    {
+      "annotation_id": "742",
+      "csv_scene": "bathroom_0051",
+      "scene": "bathroom_0052",
+      "split": "val"
+    },
+    {
+      "annotation_id": "755",
+      "csv_scene": "kitchen_0019",
+      "scene": "kitchen_0019",
+      "split": "val"
+    },
+    {
+      "annotation_id": "922",
+      "csv_scene": "bedroom_0028",
+      "scene": "bedroom_0029",
+      "split": "val"
+    },
+    {
+      "annotation_id": "926",
+      "csv_scene": "bedroom_0030",
+      "scene": "bedroom_0030",
+      "split": "test"
+    },
+    {
+      "annotation_id": "959",
+      "csv_scene": "bedroom_0043",
+      "scene": "bedroom_0043",
+      "split": "test"
+    },
+    {
+      "annotation_id": "963",
+      "csv_scene": "bedroom_0045",
+      "scene": "bedroom_0045",
+      "split": "val"
+    },
+    {
+      "annotation_id": "989",
+      "csv_scene": "bedroom_0053",
+      "scene": "bedroom_0053",
+      "split": "test"
+    },
+    {
+      "annotation_id": "1003",
+      "csv_scene": "bedroom_0058",
+      "scene": "bedroom_0058",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1014",
+      "csv_scene": "bedroom_0062",
+      "scene": "bedroom_0062",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1015",
+      "csv_scene": "bedroom_0062",
+      "scene": "bedroom_0062",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1020",
+      "csv_scene": "bedroom_0063",
+      "scene": "bedroom_0064",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1030",
+      "csv_scene": "bedroom_0067",
+      "scene": "bedroom_0067",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1043",
+      "csv_scene": "bedroom_0071",
+      "scene": "bedroom_0072",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1047",
+      "csv_scene": "bedroom_0072",
+      "scene": "bedroom_0073",
+      "split": "test"
+    },
+    {
+      "annotation_id": "1050",
+      "csv_scene": "bedroom_0074",
+      "scene": "bedroom_0074",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1054",
+      "csv_scene": "bedroom_0076",
+      "scene": "bedroom_0076",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1057",
+      "csv_scene": "bedroom_0077",
+      "scene": "bedroom_0077",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1078",
+      "csv_scene": "bedroom_0084",
+      "scene": "bedroom_0084",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1093",
+      "csv_scene": "bedroom_0088",
+      "scene": "bedroom_0089",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1094",
+      "csv_scene": "bedroom_0089",
+      "scene": "bedroom_0089",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1110",
+      "csv_scene": "bedroom_0096",
+      "scene": "bedroom_0096",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1111",
+      "csv_scene": "bedroom_0096",
+      "scene": "bedroom_0096",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1145",
+      "csv_scene": "bedroom_0108",
+      "scene": "bedroom_0108",
+      "split": "val"
+    },
+    {
+      "annotation_id": "1154",
+      "csv_scene": "bedroom_0111",
+      "scene": "bedroom_0111",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1176",
+      "csv_scene": "bedroom_0119",
+      "scene": "bedroom_0120",
+      "split": "val"
+    },
+    {
+      "annotation_id": "1268",
+      "csv_scene": "living_room_0046",
+      "scene": "living_room_0046",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1269",
+      "csv_scene": "living_room_0046",
+      "scene": "living_room_0046",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1294",
+      "csv_scene": "living_room_0054",
+      "scene": "living_room_0054",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1301",
+      "csv_scene": "living_room_0058",
+      "scene": "living_room_0059",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1303",
+      "csv_scene": "living_room_0059",
+      "scene": "living_room_0059",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1304",
+      "csv_scene": "living_room_0059",
+      "scene": "living_room_0059",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1353",
+      "csv_scene": "dining_room_0005",
+      "scene": "dining_room_0005",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1368",
+      "csv_scene": "dining_room_0011",
+      "scene": "dining_room_0011",
+      "split": "val"
+    },
+    {
+      "annotation_id": "1381",
+      "csv_scene": "dining_room_0015",
+      "scene": "dining_room_0016",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1382",
+      "csv_scene": "dining_room_0016",
+      "scene": "dining_room_0016",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1383",
+      "csv_scene": "dining_room_0016",
+      "scene": "dining_room_0017",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1403",
+      "csv_scene": "dining_room_0023",
+      "scene": "dining_room_0024",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1404",
+      "csv_scene": "dining_room_0024",
+      "scene": "dining_room_0024",
+      "split": "train"
+    },
+    {
+      "annotation_id": "1418",
+      "csv_scene": "dining_room_0029",
+      "scene": "dining_room_0029",
+      "split": "test"
+    },
+    {
+      "annotation_id": "1419",
+      "csv_scene": "dining_room_0029",
+      "scene": "dining_room_0029",
+      "split": "test"
+    },
+    {
+      "annotation_id": "1425",
+      "csv_scene": "dining_room_0031",
+      "scene": "dining_room_0031",
+      "split": "test"
+    }
+  ],
+  "scene_splits": {
+    "bathroom_0002": "train",
+    "bathroom_0003": "train",
+    "bathroom_0004": "train",
+    "bathroom_0007": "train",
+    "bathroom_0011": "train",
+    "bathroom_0012": "train",
+    "bathroom_0013": "train",
+    "bathroom_0014": "train",
+    "bathroom_0015": "train",
+    "bathroom_0017": "train",
+    "bathroom_0018": "train",
+    "bathroom_0022": "train",
+    "bathroom_0023": "train",
+    "bathroom_0025": "train",
+    "bathroom_0026": "train",
+    "bathroom_0028": "train",
+    "bathroom_0029": "train",
+    "bathroom_0030": "train",
+    "bathroom_0031": "train",
+    "bathroom_0033": "train",
+    "bathroom_0035": "train",
+    "bathroom_0037": "train",
+    "bathroom_0043": "train",
+    "bathroom_0044": "train",
+    "bathroom_0045": "train",
+    "bathroom_0047": "train",
+    "bathroom_0048": "train",
+    "bathroom_0051": "train",
+    "bedroom_0006": "train",
+    "bedroom_0024": "train",
+    "bedroom_0058": "train",
+    "bedroom_0062": "train",
+    "bedroom_0064": "train",
+    "bedroom_0067": "train",
+    "bedroom_0072": "train",
+    "bedroom_0074": "train",
+    "bedroom_0076": "train",
+    "bedroom_0077": "train",
+    "bedroom_0084": "train",
+    "bedroom_0089": "train",
+    "bedroom_0096": "train",
+    "bedroom_0111": "train",
+    "bedroom_0136": "train",
+    "dining_room_0005": "train",
+    "dining_room_0016": "train",
+    "dining_room_0017": "train",
+    "dining_room_0024": "train",
+    "furniture_store_0002": "train",
+    "kitchen_0002": "train",
+    "living_room_0005": "train",
+    "living_room_0046": "train",
+    "living_room_0054": "train",
+    "living_room_0059": "train",
+    "playroom_0006": "train",
+    "playroom_0007": "train",
+    "bathroom_0005": "val",
+    "bathroom_0006": "val",
+    "bathroom_0010": "val",
+    "bathroom_0024": "val",
+    "bathroom_0034": "val",
+    "bathroom_0049": "val",
+    "bathroom_0052": "val",
+    "bathroom_0058": "val",
+    "bathroom_0060": "val",
+    "bedroom_0029": "val",
+    "bedroom_0045": "val",
+    "bedroom_0108": "val",
+    "bedroom_0120": "val",
+    "dining_room_0011": "val",
+    "excercise_room_0001": "val",
+    "furniture_store_0001": "val",
+    "kitchen_0019": "val",
+    "printer_room_0001": "val",
+    "bathroom_0001": "test",
+    "bathroom_0008": "test",
+    "bathroom_0009": "test",
+    "bathroom_0016": "test",
+    "bathroom_0021": "test",
+    "bathroom_0039": "test",
+    "bathroom_0040": "test",
+    "bathroom_0041": "test",
+    "bathroom_0042": "test",
+    "bathroom_0046": "test",
+    "bathroom_0054": "test",
+    "bathroom_0055": "test",
+    "bathroom_0056": "test",
+    "bathroom_0057": "test",
+    "bedroom_0030": "test",
+    "bedroom_0043": "test",
+    "bedroom_0053": "test",
+    "bedroom_0073": "test",
+    "bedroom_0133": "test",
+    "classroom_0023": "test",
+    "dining_room_0029": "test",
+    "dining_room_0031": "test",
+    "office_kitchen_0002": "test"
+  },
+  "historical_audit_status": "SOURCE_INDEX_ERROR_CONFIRMED_METADATA_AUDITED_SPLIT_UNCHANGED",
+  "index_rule": "source_index=int(annotation_id)",
+  "split_reason": "Conservative H revision preserves all historically exposed scenes outside test; current user authorizes new independent implementation."
+}

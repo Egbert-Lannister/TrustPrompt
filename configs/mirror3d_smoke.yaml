@@ -1,0 +1,11 @@
+dataset: mirror3d_nyu
+method: raw_prompt
+seed: 20261009
+manifest: data/processed/mirror3d_smoke_v1/manifest.json
+split: train
+tau: 0.05
+band: 5
+alignment: none
+visualizations: 5
+gt_scope: mirror_refined_background_inpainted
+experiment_role: engineering_smoke_not_final_test

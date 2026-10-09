@@ -1,0 +1,14 @@
+seed: 20261007
+source: D:/Python_Script/GLARE/.external/stage24/repos/unidepth_v2_vits14
+weights: D:/Python_Script/GLARE/models/stage24/unidepth_v2_vits14
+processed: data/processed/mirror3d_smoke_v1
+output: cache/unidepth_smoke_v1
+frames: ['45', '184', '245', '440', '654']
+device: cuda
+resolution_level: 0
+torch_threads: 4
+split: train
+camera_input: none
+input: rgb_only
+scale_alignment: none
+stage: real_train_smoke_not_formal_experiment

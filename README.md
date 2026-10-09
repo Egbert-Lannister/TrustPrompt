@@ -1,0 +1,66 @@
+# TrustPrompt
+
+独立的提示可信度深度补全实验项目。当前已完成 Mirror3D-NYU 的5帧真实训练集最小闭环：统一NPZ、编号/场景修正、rawDepths提示、raw_prompt、固定区域指标、逐图/逐场景汇总与对齐可视化。所有数字均来自运行产物；正式实验尚未完成。
+
+## 环境
+
+在 PowerShell 中进入本目录：
+
+```powershell
+Set-Location D:\Python_Script\TrustPrompt
+.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider
+```
+
+本机 `.venv` 通过 `python -m venv --without-pip --system-site-packages .venv` 建立，复用Anaconda已安装包，不依赖GLARE Python包。Python 3.12.7、NumPy1.26.4、SciPy1.13.1、h5py3.11.0、torch2.11.0+cu126；完整实测见 `docs/environment.json`。CPU闭环无需torch。
+
+新的机器可建立独立环境并安装：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-local.txt
+.\.venv\Scripts\python.exe -m pip install -e . --no-deps
+```
+
+GPU基线另外需要与机器匹配的torch、torchvision、timm、safetensors及原模型依赖，参考 `docs/unidepth_smoke.md`；不在最小闭环自动安装。
+
+## 数据路径与复现
+
+修改或复制 `configs/paths.example.yaml`；已有原始标注和权重只通过路径读取。新cache、NPZ、预测和结果均保存在本目录。不存在完整NYU MAT时，小规模获取命令仅访问官方MAT指定字节范围，下载上限100MiB，不读取测试深度：
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.fetch_nyu_subset --output data/source_cache/nyu_smoke_v1.h5
+.\.venv\Scripts\python.exe -m scripts.prepare_mirror3d --output data/processed/mirror3d_smoke_v1
+.\.venv\Scripts\python.exe -m tp.eval.run_eval --config configs/mirror3d_smoke.yaml --method raw_prompt --output results/mirror3d_raw_prompt_smoke_v2
+.\.venv\Scripts\python.exe -m tp.eval.make_tables --per-image results/mirror3d_raw_prompt_smoke_v2/per_image.json --output results/mirror3d_raw_prompt_smoke_v2/metrics.csv
+```
+
+输入cache/NPZ已存在时跳过获取/转换。所有输出目录和样本拒绝覆盖；复跑请用新的输出名。提供完整MAT时在paths配置设置 `mirror3d.mat`。读取E盘可能需要应用的只读权限，但任何新文件仍写TrustPrompt。
+
+纯合成工程测试（不可引用为真实结果）：
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.make_synthetic
+.\.venv\Scripts\python.exe -m tp.eval.run_eval --config configs/synthetic_smoke.yaml --output results/synthetic_raw_prompt_smoke_v2
+```
+
+## 评测口径
+
+- 深度以米表达轴向Z，主评测无尺度/仿射对齐；区域由未补洞提示和GT决定。
+- Mirror3D采用标注N→h5索引N，场景依据修正后NYU `scenes[N]`；固定55/18/23个train/val/test场景。本次仅5个train场景。
+- **NYU注册Z尚未认证为严格RGB相机Z**，结果携带 `strict_rgb_z_qualified=false`，只作工程/数据诊断。正式主表模式拒绝这类未认证数据。详见 `docs/intrinsics_audit.md`。
+- 全图参考的背景来自补洞，不能视为独立第一表面GT。单独输出 `per_image_mirror_only.json`、`summary_mirror_only.json`。
+- 空域NA；无效预测显式计数并传播，不静默过滤。图像→场景→数据集等权聚合。
+- 原始提示全空时无法补洞，保留无效预测。raw_prompt不输出w，因此可信度指标NA。
+
+每个run内包含 `receipt.json`、`config.json`、`split_manifest.json`、`command.txt`、`run.log`、`source_snapshot.zip`、源码hash/Git状态/diff、预测、逐图/逐场景指标及5张图。既可追溯未提交代码，也不会将新结果写回GLARE。
+
+## 文档和状态
+
+- `docs/implementation_plan.md`：原计划副本与来源说明。
+- `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
+- `docs/decisions.md`：定义冲突、采用解释、计划修订。
+- `docs/audit_data.json` / `.md`：实际数据核查和21帧编号回归。
+- `docs/reuse_provenance.json`：选择性迁入的旧代码文件hash。
+- `configs/splits/mirror3d_nyu_v1.json`：可版本控制的完整场景划分。
+
+尚无可信度网络训练、PromptDA改造正式实验、HAMMER三传感器留一测试或论文主结果。按数据→指标→少量基线→模拟器/训练的依赖顺序扩展。

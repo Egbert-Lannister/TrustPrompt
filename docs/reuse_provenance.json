@@ -1,0 +1,15 @@
+{
+  "source_root": "D:\\Python_Script\\GLARE",
+  "git_head": "7af29fd64a0f8c05a49691caaa432ba3295c7f62",
+  "source_tree_dirty": true,
+  "files": {
+    "方向A_提示可信度深度补全_实现计划.md": "1ca68455832e0675caa2069fe28933d590df6dbc8642c3f57a38edfac0522448",
+    "experiments/prepare_rgb_first_surface_clear_mirror.py": "6f55dc030b34327ff92b86ebc2784e0ae15fc24e202d3eac4946c78f1d8b783b",
+    "tests/test_first_surface_clear_mirror.py": "14f27faec01911d26416cb067fa9657607701a167ecf2b3205ee74da36c44d5f",
+    "glare/geometry.py": "1f535ee03f50a25df8e8bcc6c345d98dfcee5081ff88e3bee0e8f7850042b416",
+    "tests/test_geometry.py": "da3c08ea8244fa92e84037fcf6324012157b98a74851b78adf5db35024ef3d79",
+    "glare/first_surface_archives.py": "6178950737331845d60d8104b04a367471bd61fed06c4be5ba79f65ea5038f81",
+    "experiments/generate_i3_transphy3d_unidepth_cache.py": "683ed8585ac3e520da5a54ef3e642867e92b77becd8ed61acb74beb16acf7af1"
+  },
+  "note": "Hashes identify actual files; GLARE source tree is dirty. No GLARE file modified by TrustPrompt work."
+}

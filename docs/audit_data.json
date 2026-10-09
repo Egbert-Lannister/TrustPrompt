@@ -1,0 +1,665 @@
+{
+  "schema": "trustprompt.data_audit.v1",
+  "audited_at_utc": "2026-10-09T08:53:06.745232+00:00",
+  "scope": "Read-only local data/code check plus fresh 21-frame numbering regression, no rawDepths present locally.",
+  "data_root": "E:\\GLARE_Data\\first_surface\\mirror3d",
+  "files": {
+    "nyu.csv": {
+      "bytes": 5926,
+      "sha256": "d932946c160524e335b9f4be1e028f1a8bbff46d68f0950c47f975b6297bc4f6"
+    },
+    "nyu.zip": {
+      "bytes": 8470463,
+      "sha256": "c7fa506afe2490bbb50380e7abdbd1bcc61147c48d662a21a706935bb8613bc3"
+    },
+    "nyu_depth_v2_labeled.selected.h5": {
+      "bytes": 151758502,
+      "sha256": "0a890e54459e173711e09c2199d39518e913467140df2cae31c88fb7815d8f45"
+    }
+  },
+  "partial_mat_bytes": 40894464,
+  "datasets": {
+    "depths": {
+      "shape": [
+        1449,
+        640,
+        480
+      ],
+      "dtype": "float32"
+    },
+    "depths_present": {
+      "shape": [
+        1449
+      ],
+      "dtype": "bool"
+    },
+    "images": {
+      "shape": [
+        1449,
+        3,
+        640,
+        480
+      ],
+      "dtype": "uint8"
+    },
+    "images_present": {
+      "shape": [
+        1449
+      ],
+      "dtype": "bool"
+    }
+  },
+  "has_rawDepths": false,
+  "old_loader_index_rule": "N-1; unsafe to copy unchanged",
+  "corrected_index_rule": "N",
+  "crop_yx": [
+    12,
+    468,
+    16,
+    624
+  ],
+  "plane_calibration_K": [
+    [
+      519,
+      0,
+      304
+    ],
+    [
+      0,
+      519,
+      228
+    ],
+    [
+      0,
+      0,
+      1
+    ]
+  ],
+  "plane_depth_unit": "mm",
+  "source_depth_unit": "m",
+  "delta_reconstruction": "(uint16(float32_depths[N]*1000)+delta_uint16) modulo 65536",
+  "regression": {
+    "samples": 21,
+    "instances": 22,
+    "pixels": 613095,
+    "rows": [
+      {
+        "id": "45",
+        "instance": 1,
+        "pixels": 23208,
+        "N": {
+          "within_1mm": 23207,
+          "fraction": 0.9999569114098587,
+          "median_abs_mm": 0.49999804817196036,
+          "max_abs_mm": 786.0469047869685
+        },
+        "N-1": {
+          "within_1mm": 6,
+          "fraction": 0.0002585315408479835,
+          "median_abs_mm": 385.75866268478836,
+          "max_abs_mm": 597.676695615547
+        }
+      },
+      {
+        "id": "46",
+        "instance": 1,
+        "pixels": 77123,
+        "N": {
+          "within_1mm": 77114,
+          "fraction": 0.999883303294737,
+          "median_abs_mm": 0.49977411188865517,
+          "max_abs_mm": 1034.761382266358
+        },
+        "N-1": {
+          "within_1mm": 6,
+          "fraction": 7.779780350868094e-05,
+          "median_abs_mm": 1177.7579480018226,
+          "max_abs_mm": 64120.82289416445
+        }
+      },
+      {
+        "id": "47",
+        "instance": 1,
+        "pixels": 24147,
+        "N": {
+          "within_1mm": 24114,
+          "fraction": 0.9986333706050441,
+          "median_abs_mm": 0.49976591082827326,
+          "max_abs_mm": 10.987133042939377
+        },
+        "N-1": {
+          "within_1mm": 2,
+          "fraction": 8.282602393672091e-05,
+          "median_abs_mm": 949.2155719955113,
+          "max_abs_mm": 64400.52513320743
+        }
+      },
+      {
+        "id": "184",
+        "instance": 1,
+        "pixels": 2620,
+        "N": {
+          "within_1mm": 2619,
+          "fraction": 0.999618320610687,
+          "median_abs_mm": 0.49857662389115376,
+          "max_abs_mm": 1.0000000000002274
+        },
+        "N-1": {
+          "within_1mm": 1,
+          "fraction": 0.0003816793893129771,
+          "median_abs_mm": 390.6850567003464,
+          "max_abs_mm": 835.3856562779356
+        }
+      },
+      {
+        "id": "245",
+        "instance": 1,
+        "pixels": 399,
+        "N": {
+          "within_1mm": 399,
+          "fraction": 1.0,
+          "median_abs_mm": 0.5143417260296701,
+          "max_abs_mm": 0.9999999999990905
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 1299.8780985705562,
+          "max_abs_mm": 1423.3719642457936
+        }
+      },
+      {
+        "id": "246",
+        "instance": 1,
+        "pixels": 6328,
+        "N": {
+          "within_1mm": 6323,
+          "fraction": 0.9992098609355247,
+          "median_abs_mm": 0.4990241445693755,
+          "max_abs_mm": 55.063391891962056
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 2654.9241693208955,
+          "max_abs_mm": 3443.845182063844
+        }
+      },
+      {
+        "id": "440",
+        "instance": 1,
+        "pixels": 15488,
+        "N": {
+          "within_1mm": 15306,
+          "fraction": 0.9882489669421488,
+          "median_abs_mm": 0.5068569926438613,
+          "max_abs_mm": 2702.872659272277
+        },
+        "N-1": {
+          "within_1mm": 13,
+          "fraction": 0.0008393595041322314,
+          "median_abs_mm": 1554.1795709400392,
+          "max_abs_mm": 62707.566503445574
+        }
+      },
+      {
+        "id": "508",
+        "instance": 1,
+        "pixels": 20060,
+        "N": {
+          "within_1mm": 20060,
+          "fraction": 1.0,
+          "median_abs_mm": 0.4992470682715293,
+          "max_abs_mm": 0.9999604432105116
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 597.761616378451,
+          "max_abs_mm": 1671.3428059086557
+        }
+      },
+      {
+        "id": "509",
+        "instance": 1,
+        "pixels": 33055,
+        "N": {
+          "within_1mm": 33055,
+          "fraction": 1.0,
+          "median_abs_mm": 0.5000551880605144,
+          "max_abs_mm": 1.0
+        },
+        "N-1": {
+          "within_1mm": 13,
+          "fraction": 0.0003932839207381637,
+          "median_abs_mm": 762.0025222696412,
+          "max_abs_mm": 64770.66164455991
+        }
+      },
+      {
+        "id": "654",
+        "instance": 1,
+        "pixels": 12939,
+        "N": {
+          "within_1mm": 12936,
+          "fraction": 0.9997681428240204,
+          "median_abs_mm": 0.49887256906822586,
+          "max_abs_mm": 53.123439940484445
+        },
+        "N-1": {
+          "within_1mm": 5,
+          "fraction": 0.00038642862663266093,
+          "median_abs_mm": 315.5285355251124,
+          "max_abs_mm": 937.9361525729907
+        }
+      },
+      {
+        "id": "659",
+        "instance": 1,
+        "pixels": 66429,
+        "N": {
+          "within_1mm": 66390,
+          "fraction": 0.9994129070135032,
+          "median_abs_mm": 0.49986297227155774,
+          "max_abs_mm": 1408.1890561032285
+        },
+        "N-1": {
+          "within_1mm": 4,
+          "fraction": 6.021466528172937e-05,
+          "median_abs_mm": 63648.2571379937,
+          "max_abs_mm": 64401.264718727456
+        }
+      },
+      {
+        "id": "686",
+        "instance": 1,
+        "pixels": 46194,
+        "N": {
+          "within_1mm": 45972,
+          "fraction": 0.9951941810624756,
+          "median_abs_mm": 0.5031585473134328,
+          "max_abs_mm": 1656.1837152486041
+        },
+        "N-1": {
+          "within_1mm": 119,
+          "fraction": 0.002576092133177469,
+          "median_abs_mm": 1222.5920479010229,
+          "max_abs_mm": 2602.6244769432906
+        }
+      },
+      {
+        "id": "686",
+        "instance": 2,
+        "pixels": 19163,
+        "N": {
+          "within_1mm": 19151,
+          "fraction": 0.9993737932474038,
+          "median_abs_mm": 0.5009194676813422,
+          "max_abs_mm": 120.74098972893671
+        },
+        "N-1": {
+          "within_1mm": 15,
+          "fraction": 0.000782758440745186,
+          "median_abs_mm": 328.4338811423527,
+          "max_abs_mm": 62135.06512170973
+        }
+      },
+      {
+        "id": "733",
+        "instance": 1,
+        "pixels": 64145,
+        "N": {
+          "within_1mm": 64041,
+          "fraction": 0.9983786733182634,
+          "median_abs_mm": 0.5014091188218117,
+          "max_abs_mm": 398.1480666709117
+        },
+        "N-1": {
+          "within_1mm": 100,
+          "fraction": 0.001558967963208356,
+          "median_abs_mm": 516.1687105108895,
+          "max_abs_mm": 1298.32573251419
+        }
+      },
+      {
+        "id": "739",
+        "instance": 1,
+        "pixels": 127995,
+        "N": {
+          "within_1mm": 127933,
+          "fraction": 0.9995156060783624,
+          "median_abs_mm": 0.5006995355442996,
+          "max_abs_mm": 1382.822091960537
+        },
+        "N-1": {
+          "within_1mm": 204,
+          "fraction": 0.0015938122582913395,
+          "median_abs_mm": 242.58398642324732,
+          "max_abs_mm": 1784.731417912924
+        }
+      },
+      {
+        "id": "1014",
+        "instance": 1,
+        "pixels": 25192,
+        "N": {
+          "within_1mm": 25188,
+          "fraction": 0.9998412194347411,
+          "median_abs_mm": 0.49944976486722226,
+          "max_abs_mm": 1039.584633565939
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 2829.797407622919,
+          "max_abs_mm": 60862.03713764718
+        }
+      },
+      {
+        "id": "1093",
+        "instance": 1,
+        "pixels": 7755,
+        "N": {
+          "within_1mm": 7684,
+          "fraction": 0.9908446163765313,
+          "median_abs_mm": 0.5050374363172523,
+          "max_abs_mm": 528.3727019003404
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 842.7225617462414,
+          "max_abs_mm": 1500.9943643274987
+        }
+      },
+      {
+        "id": "1110",
+        "instance": 1,
+        "pixels": 2980,
+        "N": {
+          "within_1mm": 2957,
+          "fraction": 0.9922818791946308,
+          "median_abs_mm": 0.5110183075814803,
+          "max_abs_mm": 34.41262786266725
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 3434.1035132646457,
+          "max_abs_mm": 61462.80084219815
+        }
+      },
+      {
+        "id": "1268",
+        "instance": 1,
+        "pixels": 29780,
+        "N": {
+          "within_1mm": 29763,
+          "fraction": 0.9994291470785762,
+          "median_abs_mm": 0.5002763706355609,
+          "max_abs_mm": 336.2981179645303
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 683.554296387282,
+          "max_abs_mm": 1732.8368391238982
+        }
+      },
+      {
+        "id": "1303",
+        "instance": 1,
+        "pixels": 5750,
+        "N": {
+          "within_1mm": 5750,
+          "fraction": 1.0,
+          "median_abs_mm": 0.499454366864029,
+          "max_abs_mm": 1.0
+        },
+        "N-1": {
+          "within_1mm": 1,
+          "fraction": 0.00017391304347826088,
+          "median_abs_mm": 404.7451270723054,
+          "max_abs_mm": 768.974252072182
+        }
+      },
+      {
+        "id": "1381",
+        "instance": 1,
+        "pixels": 589,
+        "N": {
+          "within_1mm": 589,
+          "fraction": 1.0,
+          "median_abs_mm": 0.5046894009483367,
+          "max_abs_mm": 1.0
+        },
+        "N-1": {
+          "within_1mm": 1,
+          "fraction": 0.001697792869269949,
+          "median_abs_mm": 247.65653886029304,
+          "max_abs_mm": 674.0284829430011
+        }
+      },
+      {
+        "id": "1382",
+        "instance": 1,
+        "pixels": 1756,
+        "N": {
+          "within_1mm": 1756,
+          "fraction": 1.0,
+          "median_abs_mm": 0.49829151494827784,
+          "max_abs_mm": 0.9991567654719802
+        },
+        "N-1": {
+          "within_1mm": 0,
+          "fraction": 0.0,
+          "median_abs_mm": 168.56152399075518,
+          "max_abs_mm": 563.399632837401
+        }
+      }
+    ],
+    "N": {
+      "within_1mm_pixels": 612307,
+      "within_1mm_fraction": 0.9987147179474632
+    },
+    "N-1": {
+      "within_1mm_pixels": 490,
+      "within_1mm_fraction": 0.0007992236113489753
+    }
+  },
+  "sources": {
+    "nyu_fields": "https://cs.nyu.edu/~fergus/datasets/nyu_depth_v2.html",
+    "export": "https://raw.githubusercontent.com/3dlg-hcvc/mirror3d/main/mirror3d/utils/export_mat_image.py",
+    "delta": "https://raw.githubusercontent.com/3dlg-hcvc/mirror3d/main/mirror3d/dataset/gen_refinedD_from_delta.py"
+  },
+  "source_hashes": {
+    "experiments\\prepare_rgb_first_surface_clear_mirror.py": "6f55dc030b34327ff92b86ebc2784e0ae15fc24e202d3eac4946c78f1d8b783b",
+    "tests\\test_first_surface_clear_mirror.py": "14f27faec01911d26416cb067fa9657607701a167ecf2b3205ee74da36c44d5f",
+    "glare\\first_surface_archives.py": "6178950737331845d60d8104b04a367471bd61fed06c4be5ba79f65ea5038f81",
+    "results\\rgb_first_surface_data0\\rgb_first_surface_data0_20261004\\mirror_index_plane_alignment_audit_train_dev.json": "e18ee0ad23a53667b095af6df11459831cf41357ab805be0b7587251f618f9fe"
+  },
+  "decisions": [
+    "Do not reuse old derived predictions or wrong-index SampleRecords.",
+    "Read rawDepths only for prompt; do not replace it with inpainted depths.",
+    "Validate scene strings at corrected source index; CSV has historical wrong-index scene IDs.",
+    "Keep nonmirror inpainted GT as an explicitly weak/reference domain, not independent physical truth.",
+    "Preserve exact uint16 modular addition; do not add signed or floating delta directly.",
+    "Use corrected scene split independent of model predictions; retain historically exposed scenes outside test."
+  ],
+  "fresh_subset": {
+    "status": "COMPLETE_REAL_DATA_SUBSET",
+    "selected_ids": [
+      45,
+      184,
+      245,
+      440,
+      654
+    ],
+    "source_identity": {
+      "url": "https://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/nyu_depth_v2_labeled.mat",
+      "size": 2972037809,
+      "etag": "\"b125b2b1-5aa5b95787a80\"",
+      "last_modified": "Tue, 14 Jul 2020 00:06:50 GMT"
+    },
+    "network": {
+      "url": "https://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/nyu_depth_v2_labeled.mat",
+      "size": 2972037809,
+      "etag": "\"b125b2b1-5aa5b95787a80\"",
+      "last_modified": "Tue, 14 Jul 2020 00:06:50 GMT",
+      "downloaded_bytes": 30408705,
+      "request_count": 33,
+      "cache_bytes": 16777216,
+      "block_size": 1048576,
+      "max_cached_blocks": 16
+    },
+    "cache_sha256": "76f9cc1498d8fe596ed45640cf6652a0ade5500daf8e12315c27707cffd36a86",
+    "test_depth_accessed": false,
+    "cache_path": "data/source_cache/nyu_smoke_v1.h5",
+    "raw_prompt_checks": [
+      {
+        "annotation_id": "184",
+        "scene": "bedroom_0006",
+        "split": "train",
+        "valid_fraction": 0.7213361322714681,
+        "zero_count": 77259,
+        "nonfinite_count": 0,
+        "positive_min_m": 0.7622585892677307,
+        "positive_max_m": 3.9694783687591553
+      },
+      {
+        "annotation_id": "245",
+        "scene": "furniture_store_0002",
+        "split": "train",
+        "valid_fraction": 0.5686244806094183,
+        "zero_count": 119598,
+        "nonfinite_count": 0,
+        "positive_min_m": 1.2304728031158447,
+        "positive_max_m": 8.26588249206543
+      },
+      {
+        "annotation_id": "440",
+        "scene": "playroom_0007",
+        "split": "train",
+        "valid_fraction": 0.5607326292705448,
+        "zero_count": 121786,
+        "nonfinite_count": 0,
+        "positive_min_m": 1.3177077770233154,
+        "positive_max_m": 6.005128383636475
+      },
+      {
+        "annotation_id": "45",
+        "scene": "bathroom_0003",
+        "split": "train",
+        "valid_fraction": 0.6660138215604802,
+        "zero_count": 92597,
+        "nonfinite_count": 0,
+        "positive_min_m": 0.7132995128631592,
+        "positive_max_m": 2.13105845451355
+      },
+      {
+        "annotation_id": "654",
+        "scene": "bathroom_0011",
+        "split": "train",
+        "valid_fraction": 0.8071005020775623,
+        "zero_count": 53481,
+        "nonfinite_count": 0,
+        "positive_min_m": 0.7132995128631592,
+        "positive_max_m": 2.3036065101623535
+      }
+    ],
+    "semantic_risk_candidates": [
+      {
+        "id": 59,
+        "name": "window"
+      },
+      {
+        "id": 122,
+        "name": "mirror"
+      },
+      {
+        "id": 216,
+        "name": "glass rack"
+      },
+      {
+        "id": 287,
+        "name": "sheet of metal"
+      },
+      {
+        "id": 293,
+        "name": "wine glass"
+      },
+      {
+        "id": 304,
+        "name": "glass pot"
+      },
+      {
+        "id": 316,
+        "name": "glass baking dish"
+      },
+      {
+        "id": 335,
+        "name": "eye glasses"
+      },
+      {
+        "id": 412,
+        "name": "glass pane"
+      },
+      {
+        "id": 477,
+        "name": "window frame"
+      },
+      {
+        "id": 543,
+        "name": "fiberglass case"
+      },
+      {
+        "id": 573,
+        "name": "window cover"
+      },
+      {
+        "id": 612,
+        "name": "glass"
+      },
+      {
+        "id": 622,
+        "name": "glass box"
+      },
+      {
+        "id": 636,
+        "name": "glass container"
+      },
+      {
+        "id": 642,
+        "name": "door  window  reflection"
+      },
+      {
+        "id": 668,
+        "name": "window shelf"
+      },
+      {
+        "id": 705,
+        "name": "glass set"
+      },
+      {
+        "id": 721,
+        "name": "glass dish"
+      },
+      {
+        "id": 777,
+        "name": "window seat"
+      },
+      {
+        "id": 778,
+        "name": "window box"
+      },
+      {
+        "id": 861,
+        "name": "reflection of window shutters"
+      },
+      {
+        "id": 889,
+        "name": "glass ware"
+      }
+    ]
+  }
+}

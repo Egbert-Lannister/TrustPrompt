@@ -1,0 +1,8 @@
+# Observed local minimum-loop CPU environment, 2026-10-09.
+numpy==1.26.4
+scipy==1.13.1
+h5py==3.11.0
+Pillow==10.4.0
+matplotlib==3.9.2
+PyYAML==6.0.2
+pytest==7.4.2
