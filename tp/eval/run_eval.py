@@ -13,12 +13,24 @@ from tp.data.schema import load_sample,validate_scene_splits
 from tp.geom import resize_nearest
 from tp.provenance import ROOT,sha256,write_json,start_run
 from .regions import regions
-from .metrics import evaluate_depth
+from .metrics import evaluate_depth,trust_quality
 from .aggregate import aggregate
 from .visualize import alignment_panel
 
 
+# Plan revision R4/R5: v1 local kept; v2 local and gate variants added.
+ALIGNED_SOURCE={"robust_global":"global_depth","robust_local":"local_depth","robust_local_v2":"local_depth_v2",
+                "gate_global":"global_depth","gate_local_v2":"local_depth_v2"}
+PRIOR_METHODS={"unidepth_v2_s",*ALIGNED_SOURCE}
+# Plan revision R2: NYU background reference is inpainted from the same raw prompt.
+NYU_SEMANTICS=dict(clean="deviation_from_inpainted_sensor_reference_not_gt_accuracy",
+                   hole="not_reported_for_nyu_inpainted_reference",
+                   main_regions="precise_mirror_only C/Cfar/band (summary_mirror_only.json)")
+
+
 def evaluate_manifest(config, output, command):
+    if config.get("split")=="test" and config.get("experiment_role")!="formal_main_result":
+        raise ValueError("test split is locked until method freeze (formal_main_result only)")
     seed=int(config.get("seed",0));np.random.seed(seed)
     receipt=start_run(output,config,command,seed)
     started=time.perf_counter()
@@ -33,9 +45,9 @@ def evaluate_manifest(config, output, command):
         if method=="raw_prompt":
             from baselines.raw_prompt import predict
             receipt["model_version"]="raw_prompt.native_grid_edt_then_center_nearest.v1; no checkpoint"
-        elif method in {"unidepth_v2_s","robust_global","robust_local"}:
+        elif method in PRIOR_METHODS:
             from baselines.cached_prior import CachedPrior
-            from tp.align.robust import align_depth
+            from tp.align.robust import align_depth,gate_prompt
             cache_root=Path(config["prior_cache"])
             if not cache_root.is_absolute():cache_root=ROOT/cache_root
             prior=CachedPrior(cache_root)
@@ -70,6 +82,7 @@ def evaluate_manifest(config, output, command):
             pv=resize_nearest(s.prompt_valid,s.gt.shape)
             masks=regions(p,pv,s.gt,s.gt_valid,tau=config["tau"],band=config["band"])
             t=time.perf_counter()
+            trust=dict(status="not_provided",reason="no prompt-trust output from this baseline")
             if method=="raw_prompt":
                 pred=predict(s)
             else:
@@ -77,7 +90,11 @@ def evaluate_manifest(config, output, command):
                 if method=="unidepth_v2_s":pred=prior_depth
                 else:
                     aligned=align_depth(prior_depth,p,pv,seed=seed,**config.get("robust",{}))
-                    pred=aligned["global_depth" if method=="robust_global" else "local_depth"]
+                    pred=aligned[ALIGNED_SOURCE[method]]
+                    if method.startswith("gate_"):
+                        pred,w=gate_prompt(p,pv,pred,tau_gate=float(config.get("tau_gate",0.05)))
+                        aligned["gate_w"]=w
+                        trust=trust_quality(w,p,s.gt,pv,s.gt_valid,tau=config["tau"])
                     write_json(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.json",aligned["diagnostics"])
                     np.savez_compressed(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.npz",
                                         **{k:v for k,v in aligned.items() if isinstance(v,np.ndarray)})
@@ -89,13 +106,14 @@ def evaluate_manifest(config, output, command):
             row.update(method=method,sample_sha256=r["sha256"],prediction_sha256=sha256(output/"predictions"/f"{key}.npy"),
                        evaluation_prediction_seconds=elapsed,
                        timing_component="raw_prompt_cpu" if method=="raw_prompt" else "cache_load" if method=="unidepth_v2_s" else "cache_load_and_cpu_alignment",
+                       execution_platform=sys.platform,
                        original_prior_inference_seconds=None if method=="raw_prompt" else prior.record(s)["seconds"],
                        end_to_end_inference_timing_measured=method=="raw_prompt",
                        synthetic=s.metadata["synthetic"],gt_scope=s.metadata["gt_scope"],
                        camera_reference=s.metadata.get("camera_reference","synthetic exact camera Z"),
                        strict_rgb_z_qualified=qualified,
                        metrics=evaluate_depth(pred,s.gt,p,masks),
-                       trust_quality=dict(status="not_provided",reason="no calibrated prompt-trust output from this baseline"),
+                       trust_quality=trust,
                        population={name:int(mask.sum()) for name,mask in masks.items()})
             rows.append(row)
             mirror_masks={name:mask&(s.material==2) for name,mask in masks.items()}
@@ -110,13 +128,14 @@ def evaluate_manifest(config, output, command):
         qualification=dict(strict_rgb_z_qualified=all(r["strict_rgb_z_qualified"] for r in rows),
                            camera_references=sorted({r["camera_reference"] for r in rows}),
                            experiment_role=config.get("experiment_role"),synthetic=data["synthetic"],
-                           main_metric_alignment="none",scientific_claim="none; engineering smoke")
+                           main_metric_alignment="none",scientific_claim="none; engineering smoke",
+                           metric_semantics=NYU_SEMANTICS if all(r["dataset"]=="mirror3d_nyu" for r in rows) else None)
         summary["qualification"]=qualification;mirror_summary["qualification"]=qualification
         receipt["qualification"]=qualification
         write_json(output/"summary.json",summary)
         write_json(output/"summary_mirror_only.json",mirror_summary)
         write_json(output/"statistics.json",dict(paired_scene_bootstrap="NA: only one method; do not fabricate paired CI",
-                    affine_aligned_results="not requested; main metric is unaligned",confidence="NA: no confidence output"))
+                    affine_aligned_results="not requested; main metric is unaligned",confidence="binary gate agreement w (per_image trust_quality)" if method.startswith("gate_") else "NA: no confidence output"))
         invalid_count=sum(r["metrics"]["regions"]["all"]["invalid_count"] for r in rows)
         receipt.update(stage="completed_with_invalid_predictions" if invalid_count else "small_scale_validation_passed",
                        invalid_prediction_count=invalid_count,finished_at_utc=datetime.now(timezone.utc).isoformat(),
@@ -134,10 +153,12 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument("--config",required=True,type=Path)
     p.add_argument("--output",required=True,type=Path)
-    p.add_argument("--method",choices=["raw_prompt","unidepth_v2_s","robust_global","robust_local"],default=None)
+    p.add_argument("--method",choices=["raw_prompt",*sorted(PRIOR_METHODS)],default=None)
+    p.add_argument("--split",choices=["train","val","test"],default=None)
     args=p.parse_args()
     config=yaml.safe_load(args.config.read_text(encoding="utf-8"))
     if args.method:config["method"]=args.method
+    if args.split:config["split"]=args.split
     evaluate_manifest(config,args.output,[sys.executable,"-m","tp.eval.run_eval",*sys.argv[1:]])
 
 

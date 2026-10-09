@@ -42,3 +42,12 @@ def test_manifest_tamper_fails_before_prediction(tmp_path):
     with path.open("ab") as f:f.write(b"different_source")
     with pytest.raises(ValueError,match="checksum"):
         evaluate_manifest(config,tmp_path/"run",["test"])
+
+
+def test_test_split_locked_before_method_freeze(tmp_path):
+    import pytest
+    from tp.eval.run_eval import evaluate_manifest
+    config = dict(method="raw_prompt", split="test", manifest="unused.json", tau=0.05, band=5,
+                  experiment_role="development_diagnostic_not_final_test")
+    with pytest.raises(ValueError, match="locked"):
+        evaluate_manifest(config, tmp_path / "run", ["test"])

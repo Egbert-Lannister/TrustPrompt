@@ -48,3 +48,41 @@
 4. PromptDA-S尚未接入/下载；先核对源码与许可证，再按1帧→5帧测试测量实际显存，随后才扩展模型/模拟器/训练。当前不需要付费云或长训练；原计划GPU小时均未被本次smoke验证。
 
 代码初始提交：`64700f1`。后续审查修复和文档更新有独立提交。各run的真实代码HEAD、未提交差异与源码快照以该run receipt为准，不能用最终HEAD替代历史运行版本。
+
+## 2026-10-09 计划修订 v2 与第 1 步
+
+计划修订写入 `docs/plan_revision_v2.md`（R1–R12、检查点、日程、云预算申请）。原计划副本未改。
+
+### 执行环境（新核实）
+
+Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 核、3 GB 内存、无 GPU、无 torch，无法访问 NYU 与 HuggingFace，看不到 E 盘。CPU 评测在此用独立 venv（Python 3.10.12，numpy 1.26.4、scipy 1.13.1，版本同 `requirements-local.txt`）运行；GPU 推理和 NYU 下载需在 Windows 上执行（`scripts/windows/step1_dev.ps1`）。
+
+### 1b 对齐 v2 与 Gate 基线 —— 已实现，小规模验证通过
+
+- `tp/align/robust.py`：新增 `local_depth_v2`（插值后逆深度 ≤ ε 的像素回退全局解，ε = 1e-6 × 支持集逆提示中位数）与 `gate_prompt`。v1 输出不变。
+- `tp/eval/run_eval.py`：新增方法 `robust_local_v2`、`gate_global`、`gate_local_v2`；Gate 输出二值一致图 w，按 clean_all 标签算 AUROC/AP；新增 `--split`，test 在方法冻结前拒绝运行；NYU 汇总带 `metric_semantics`（R2）。
+- 修复：`baselines/cached_prior.py` 在 POSIX 主机上无法解析 Windows 写入的预测路径（改用 PureWindowsPath 取文件名）。首次运行因此失败的三个目录 `results/mirror3d_{robust_local_v2,gate_global,gate_local_v2}_smoke_v1` 保留，receipt 为 failed；有效运行为 `_smoke_v2`。
+- `tests/conftest.py`：支持 `TP_TEST_TMP`（挂载目录不允许删除时把测试临时目录放到外部）；Windows 默认行为不变。
+- 测试：`TP_TEST_TMP=... python -m pytest -q`，97 passed，1 skipped（torch 不在 Linux 工作区）。
+- 同 5 帧训练集结果（`docs/step1_results.md`，由逐图 JSON 生成）：
+  - v2 消除了 playroom_0007/440 的 1,454 个无效像素（回退比例 0.52%），其余 4 帧回退 0 像素，逐值与 v1 相同。
+  - 镜面区域（R2 主口径）：全局对齐 C AbsRel 0.0645、IR 0、DOR 0；逐块对齐 C AbsRel 0.2132、DOR 0.379。逐块拟合在大镜面附近会把虚像深度当作“局部真值”吸收进去，这正是计划中 T 需要大感受野和“局部/全局分歧”特征的理由。仅 5 帧训练诊断。
+  - Gate（全局）：镜面区域与全局对齐几乎相同（C 0.0645），整图 clean（相对补洞参考的偏离）从 0.0392 降到 0.0246；二值 w 的场景平均 AUROC 0.839（Gate 局部 v2 为 0.886）。
+  - 配对 bootstrap（参考 = 全局对齐）：`results/mirror3d_paired_comparison_step1_v1`，5 场景，只作描述。
+
+### 1a NYU RGB-Z 上界 —— 代码已实现，等待数据
+
+- `tp/data/nyu_rgbz.py` + `scripts/nyu_rgbz_bound.py`：从官方工具箱 ZIP 解析外参（文件 SHA256 必须与 `intrinsics_audit.md` 记录一致，无法识别的 MATLAB 语句直接报错），逐像素精确反解 `Z_rgb`，取像素四角射线的最坏值；同时报告两种主点约定。判定规则见修订 R3。
+- 合成测试 4 项通过。真实运行需要工具箱 ZIP：Linux 工作区无法访问 cs.nyu.edu，需在 Windows 下载（脚本第一步）。
+
+### 1c NYU 开发集扩展 —— 代码已实现，等待 Windows 运行
+
+- `fetch_nyu_subset.py --dev`：选出全部 train+val（76+19=95 帧），上限 900 MiB；N−1 前帧属于 test 场景时只跳过该前帧并记录，不读 test 深度。
+- `prepare_mirror3d.py --dev`、`configs/paths.dev.yaml`、`configs/unidepth_dev.yaml`（`split: dev`，阶段名 `real_dev_verified`）、`configs/mirror3d_dev_eval.yaml`。
+- `cache_unidepth.py` 的 dev 模式允许 val、拒绝 test，新增测试覆盖。
+
+### 下一步
+
+1. Windows 运行 `scripts/windows/step1_dev.ps1`（下载约 0.03 MB 工具箱 + 最多 900 MiB NYU 切片；UniDepth 95 帧约几分钟）。
+2. 之后在 Linux 工作区运行 RGB-Z 上界与 6 个方法 × {train, val} 的评测，更新 `step1_results.md`。
+3. 同时开始第 2 步：PromptDA 源码与许可核对、推理包装（GPU 部分在 Windows）。

@@ -22,12 +22,12 @@ from tp.provenance import start_run, sha256, write_json
 from baselines.unidepth import UniDepthPredictor
 
 
-def load_rgb_training_npz(path: Path):
+def load_rgb_training_npz(path: Path, allowed_splits=frozenset({"train"})):
     """Decode only metadata and RGB members; GT is never decoded or passed onward."""
     with np.load(path, allow_pickle=False) as archive:
         metadata = json.loads(str(archive["metadata_json"].item()))
-        if metadata.get("split") != "train":
-            raise ValueError("This smoke cache admits only training scenes")
+        if metadata.get("split") not in allowed_splits:
+            raise ValueError(f"This cache admits only training/development splits {sorted(allowed_splits)}; test refused")
         if metadata.get("metadata", {}).get("synthetic") is not False:
             raise ValueError("This smoke cache requires real RGB")
         rgb = archive["rgb"].copy()
@@ -50,11 +50,18 @@ def git_source(source, *args):
 
 def run(config_path, limit=None, output=None):
     config = yaml.safe_load(config_path.read_text(encoding="utf8"))
-    if config.get("split") != "train" or config.get("input") != "rgb_only" or config.get("camera_input") != "none":
-        raise ValueError("Expected training-only RGB-only no-camera smoke configuration")
-    frames = config["frames"][:limit] if limit is not None else config["frames"]
-    if not frames or len(frames) > 5:
-        raise ValueError("Smoke is bounded to 1–5 frames")
+    # Plan revision v2: split "dev" = train+val development set; test is never admitted.
+    if config.get("split") not in {"train", "dev"} or config.get("input") != "rgb_only" or config.get("camera_input") != "none":
+        raise ValueError("Expected train/dev RGB-only no-camera configuration")
+    dev = config["split"] == "dev"
+    allowed_splits = frozenset({"train", "val"} if dev else {"train"})
+    frames = config["frames"]
+    if frames == "manifest":
+        records = json.loads((ROOT / config["processed"] / "manifest.json").read_text(encoding="utf8"))["records"]
+        frames = [r["frame"] for r in records if r["split"] in allowed_splits]
+    frames = frames[:limit] if limit is not None else frames
+    if not frames or len(frames) > (95 if dev else 5):
+        raise ValueError("Frame count outside bounds (smoke 1-5, dev <= 95)")
     output = Path(output or config["output"])
     if not output.is_absolute(): output = ROOT / output
     output = output.resolve()
@@ -105,7 +112,7 @@ def run(config_path, limit=None, output=None):
             (output / "predictions").mkdir()
             for frame in frames:
                 path = (ROOT / config["processed"] / f"{frame}.npz").resolve()
-                rgb, identities = load_rgb_training_npz(path)
+                rgb, identities = load_rgb_training_npz(path, allowed_splits)
                 if identities["frame"] != str(frame): raise ValueError("Frame identity mismatch")
                 torch.cuda.reset_peak_memory_stats()
                 torch.cuda.synchronize(); begin = time.perf_counter()
@@ -121,7 +128,7 @@ def run(config_path, limit=None, output=None):
                 rows.append(row)
                 print(json.dumps(row, ensure_ascii=False), flush=True)
                 write_json(output / "images.json", rows)
-            receipt.update(stage="real_train_smoke_verified", completed_at_utc=datetime.now(timezone.utc).isoformat(),
+            receipt.update(stage="real_dev_verified" if dev else "real_train_smoke_verified", completed_at_utc=datetime.now(timezone.utc).isoformat(),
                            images_sha256=sha256(output / "images.json"),
                            frame_count=len(rows), all_points_z_equal_depth=all(r["validation"]["points_z_exactly_equal_depth"] for r in rows),
                            inputs=[{k:r[k] for k in ("dataset","sensor","scene","frame","split","rgb_sha256","sample_npz_sha256")} for r in rows])

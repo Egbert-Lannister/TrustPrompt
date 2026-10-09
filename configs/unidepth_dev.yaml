@@ -1,0 +1,15 @@
+# Plan revision v2 step 1c: UniDepthV2-S on the NYU development set (train+val, test excluded).
+seed: 20261007
+source: D:/Python_Script/GLARE/.external/stage24/repos/unidepth_v2_vits14
+weights: D:/Python_Script/GLARE/models/stage24/unidepth_v2_vits14
+processed: data/processed/mirror3d_dev_v1
+output: cache/unidepth_dev_v1
+frames: manifest
+device: cuda
+resolution_level: 0
+torch_threads: 4
+split: dev
+camera_input: none
+input: rgb_only
+scale_alignment: none
+stage: real_dev_not_formal_experiment

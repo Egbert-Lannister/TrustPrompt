@@ -1,0 +1,19 @@
+# Plan revision v2 step 1c: NYU development evaluation. Run once per split (train / val).
+# Hyperparameters are fixed (no tuning on these numbers); val is the selection split later.
+dataset: mirror3d_nyu
+method: raw_prompt
+seed: 20261009
+manifest: data/processed/mirror3d_dev_v1/manifest.json
+prior_cache: cache/unidepth_dev_v1
+split: val
+tau: 0.05
+tau_gate: 0.05
+band: 5
+alignment: none
+visualizations: 5
+gt_scope: mirror_refined_background_inpainted
+experiment_role: development_diagnostic_not_final_test
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096

@@ -120,6 +120,69 @@ def _depth(m, model_scale, model_shift, prior_valid):
     return output, int(np.count_nonzero(prior_valid & ~valid))
 
 
+V2_EPSILON_FACTOR = 1e-6
+
+
+def _local_v2(m, scale_map, shift_map, global_model, prior_valid, support_inverse_prompt, local_v1):
+    """Plan revision R4: per-pixel global fallback where the interpolated local
+    inverse depth is <= eps or nonfinite. eps is fixed relative to the median
+    support inverse prompt (sensor-only, method-independent of GT).
+
+    v1 is unchanged and returned separately by the caller; pixels whose global
+    inverse depth is also nonpositive stay NaN and count as invalid.
+    """
+    epsilon = V2_EPSILON_FACTOR * float(np.median(support_inverse_prompt))
+    with np.errstate(over="ignore", invalid="ignore"):
+        local_inverse = scale_map * m + shift_map
+    bad_local = prior_valid & ~(np.isfinite(local_inverse) & (local_inverse > epsilon))
+    scale = np.where(bad_local, global_model[0], scale_map)
+    shift = np.where(bad_local, global_model[1], shift_map)
+    depth, invalid = _depth(m, scale, shift, prior_valid)
+    # Local pixels that were valid but became unrepresentable as float32 also
+    # remain NaN through _depth; they are counted below, never filtered.
+    fallback = bad_local & np.isfinite(depth)
+    still_invalid = prior_valid & ~np.isfinite(depth)
+    diagnostics = {
+        "rule": "global_fallback_where_local_inverse_depth_le_eps_or_nonfinite",
+        "epsilon": epsilon, "epsilon_factor": V2_EPSILON_FACTOR,
+        "epsilon_reference": "median_support_inverse_prompt",
+        "fallback_pixel_count": int(fallback.sum()),
+        "fallback_pixel_ratio": float(fallback.sum() / max(int(prior_valid.sum()), 1)),
+        "v1_invalid_pixel_count": int((prior_valid & ~np.isfinite(local_v1)).sum()),
+        "invalid_prediction_count": int((~np.isfinite(depth)).sum()),
+        "invalid_on_valid_prior_count": int(still_invalid.sum()),
+    }
+    return depth, diagnostics
+
+
+def gate_prompt(prompt_up, prompt_valid_up, aligned_depth, tau_gate=0.05):
+    """RobustAlign-Gate (plan revision R5).
+
+    Keep the sensor prompt where it is valid and agrees with the aligned prior
+    within tau_gate relative depth; elsewhere output the aligned prior.
+    Returns (depth, w) where w is the binary agreement map (NaN where the
+    prompt is invalid, i.e. no trust statement). Invalid aligned pixels where
+    the prompt is not kept stay NaN and are counted downstream.
+    """
+    p = np.asarray(prompt_up, dtype=np.float64)
+    pv = np.asarray(prompt_valid_up)
+    a = np.asarray(aligned_depth, dtype=np.float64)
+    if p.shape != a.shape or pv.shape != a.shape or pv.dtype != np.bool_:
+        raise ValueError("prompt, validity and aligned depth must share an HxW grid; validity boolean")
+    if not (np.isfinite(tau_gate) and tau_gate > 0):
+        raise ValueError("tau_gate must be positive and finite")
+    sensor = pv & np.isfinite(p) & (p > 0)
+    comparable = sensor & np.isfinite(a) & (a > 0)
+    agree = np.zeros(a.shape, dtype=bool)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        agree[comparable] = np.abs(p[comparable] - a[comparable]) / a[comparable] <= tau_gate
+    depth = np.where(agree, p, a).astype(np.float32)
+    depth[~(np.isfinite(depth) & (depth > 0))] = np.nan
+    w = np.full(a.shape, np.nan, dtype=np.float32)
+    w[sensor] = agree[sensor].astype(np.float32)
+    return depth, w
+
+
 def _tile_map(tile_values, y_edges, x_edges, shape):
     y_centres = (y_edges[:-1] + y_edges[1:] - 1) / 2
     x_centres = (x_edges[:-1] + x_edges[1:] - 1) / 2
@@ -199,7 +262,7 @@ def align_disparity(
         "invalid_local_prediction_count": int(m.size),
         "tiles": [], "local_fallback_count": 0,
     }
-    names = ("global_depth", "local_depth", "scale_map", "shift_map", "inlier_ratio",
+    names = ("global_depth", "local_depth", "local_depth_v2", "scale_map", "shift_map", "inlier_ratio",
              "mad", "disagreement", "residual", "global_residual")
     result = {name: np.full(m.shape, np.nan, dtype=np.float32) for name in names}
     result["diagnostics"] = diagnostics
@@ -271,7 +334,10 @@ def align_disparity(
     local_depth, invalid_local = _depth(m, scale_map, shift_map, prior_valid)
     diagnostics["nonpositive_or_nonfinite_local_on_valid_prior_count"] = invalid_local
     diagnostics["invalid_local_prediction_count"] = int((~np.isfinite(local_depth)).sum())
-    result.update(global_depth=global_depth, local_depth=local_depth,
+    local_v2, v2_diagnostics = _local_v2(m, scale_map, shift_map, model, prior_valid,
+                                         inverse_prompt[support], local_depth)
+    diagnostics["local_v2"] = v2_diagnostics
+    result.update(global_depth=global_depth, local_depth=local_depth, local_depth_v2=local_v2,
                   scale_map=scale_map.astype(np.float32), shift_map=shift_map.astype(np.float32),
                   inlier_ratio=_tile_map(ratios, y_edges, x_edges, m.shape).astype(np.float32),
                   mad=_tile_map(mads, y_edges, x_edges, m.shape).astype(np.float32))
