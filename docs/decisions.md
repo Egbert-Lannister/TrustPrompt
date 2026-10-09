@@ -53,3 +53,13 @@
 - 原计划副本不修改内部陈述；本文件记录采用解释。`reuse_provenance.json`给实际旧文件hash和Git HEAD，旧树有未提交修改，不能只用HEAD代表旧文件。
 - 每次评测保存配置、seed、命令、split manifest、源码hash、源码zip、Git HEAD/status/diff、输入/输出hash、日志、逐图和场景指标。当前早期实验在未提交代码上运行，source snapshot可还原其代码。
 - `代码已实现`、`小规模验证通过`、`正式实验完成`分开；当前无正式训练/最终测试结果。未执行邮件、协议接受、数据上传、付费资源或长训练。
+
+## 7. 计划修订 v2（2026-10-09）
+
+完整列表见 `plan_revision_v2.md`。本节只记录实现时作出的具体选择。
+
+- R4 逐块对齐 v2 的 ε 取 1e-6 × 支持集逆提示中位数：只依赖传感器，固定后不再调；回退以像素为单位，而不是整块，以免把有效的局部拟合一起丢掉。全局也非正时保持 NaN 并计入无效预测。
+- R5 Gate 的 τ_gate = 0.05，比较量为深度相对误差 |P−D_a|/D_a（与评测 τ 同口径，与对齐内点阈值的逆深度口径不同，两者分开记录）。w 只在有效提示处定义；可信度指标沿用 clean_all 正类。
+- R3 RGB-Z 上界：反解公式 `Z_rgb = (Z_d + c·T)/(c·r)`，c 为 R⁻¹ 的第三行；外参只从哈希校验过的官方文件解析，平移分量对应哪个轴由 `depth_world2rgb_world.m` 的赋值语句决定，不凭记忆假设。阈值 0.5%。
+- test 锁：`run_eval` 在 `experiment_role != formal_main_result` 时拒绝 `split=test`，在创建输出目录前就报错。
+- 跨平台：Linux 工作区与 Windows 的运行写入不同输出目录，receipt 中带 `execution_platform` 与解释器路径。

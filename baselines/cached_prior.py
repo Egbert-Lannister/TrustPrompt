@@ -1,7 +1,7 @@
 """Read verified RGB-only prior predictions, never use a stale frame cache."""
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import numpy as np
 from tp.provenance import sha256
 
@@ -10,7 +10,7 @@ class CachedPrior:
     def __init__(self, root):
         self.root=Path(root)
         self.receipt=json.loads((self.root/"receipt.json").read_text(encoding="utf-8"))
-        if self.receipt["stage"]!="real_train_smoke_verified":
+        if self.receipt["stage"] not in {"real_train_smoke_verified","real_dev_verified"}:
             raise ValueError("prior cache not verified/complete")
         if self.receipt.get("model_version",{}).get("name")!="UniDepthV2-ViT-S14":
             raise ValueError("prior cache model mismatch: expected UniDepthV2-ViT-S14")
@@ -42,7 +42,9 @@ class CachedPrior:
         if row["rgb_sha256"]!=hashlib.sha256(sample.rgb.tobytes()).hexdigest():
             raise ValueError("prior cache RGB preprocessing mismatch")
         # Cache folder can move; only use the prediction basename within it.
-        path=self.root/"predictions"/Path(row["prediction_path"]).name
+        # PureWindowsPath splits on both separators, so receipts written on
+        # Windows resolve on POSIX hosts too.
+        path=self.root/"predictions"/PureWindowsPath(row["prediction_path"]).name
         if sha256(path)!=row["prediction_sha256"]:raise ValueError("corrupted prior prediction")
         with np.load(path,allow_pickle=False) as z:depth=z["depth"].copy()
         if depth.shape!=sample.rgb.shape[:2]:raise ValueError("prior grid mismatch")

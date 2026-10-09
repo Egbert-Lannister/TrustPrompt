@@ -53,3 +53,18 @@ def test_range_depth_cannot_masquerade_as_axial_z_and_invalids_remain():
     arrays, report = normalize_prediction(outputs, (2, 2))
     assert np.isnan(arrays["depth"][0, 0])
     assert report["invalid_depth_count"] == 1
+
+
+def test_dev_mode_admits_val_but_never_test(tmp_path):
+    path = tmp_path / "val.npz"
+    meta = {"dataset": "mirror3d_nyu", "sensor": "kinect1", "scene": "s", "frame": "2",
+            "split": "val", "metadata": {"synthetic": False}}
+    np.savez(path, rgb=np.zeros((2, 2, 3), np.uint8), metadata_json=np.asarray(json.dumps(meta)))
+    with pytest.raises(ValueError):
+        load_rgb_training_npz(path)
+    _, ids = load_rgb_training_npz(path, frozenset({"train", "val"}))
+    assert ids["split"] == "val"
+    meta["split"] = "test"
+    np.savez(path, rgb=np.zeros((2, 2, 3), np.uint8), metadata_json=np.asarray(json.dumps(meta)))
+    with pytest.raises(ValueError, match="test refused"):
+        load_rgb_training_npz(path, frozenset({"train", "val"}))

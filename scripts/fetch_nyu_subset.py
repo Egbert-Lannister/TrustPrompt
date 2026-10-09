@@ -291,18 +291,27 @@ def main() -> None:
     parser.add_argument('--split-reference', type=Path, default=project / 'configs/splits/mirror3d_nyu_v1.json')
     parser.add_argument('--ids', nargs='+', type=int, default=[45, 184, 245, 440, 654])
     parser.add_argument('--max-download-mib', type=int, default=100)
+    # Plan revision v2 step 1c: development mode = every train+val annotation.
+    parser.add_argument('--dev', action='store_true',
+                        help='select all train+val annotations (test is never read); cap 900 MiB')
     parser.add_argument('--legacy-cache', type=Path, default=Path('E:/GLARE_Data/first_surface/mirror3d/nyu_depth_v2_labeled.selected.h5'))
     args = parser.parse_args()
-    if not 1 <= args.max_download_mib <= 100:
-        raise ValueError('This smoke acquisition is capped at 100 MiB.')
-    if len(args.ids) > 5 or len(set(args.ids)) != len(args.ids):
-        raise ValueError('At most 5 distinct train frames are allowed.')
     ref = json.loads(args.split_reference.read_text(encoding='utf8'))
     mapping = {int(r['annotation_id']): r for r in ref['mapping']}
-    if any(i not in mapping or mapping[i]['split'] != 'train' for i in args.ids):
-        raise ValueError('Only approved training annotations may be read by this smoke fetcher.')
-    if len({mapping[i]['scene'] for i in args.ids}) != len(args.ids):
-        raise ValueError('Select different scenes for this smoke acquisition.')
+    allowed_splits = {'train', 'val'} if args.dev else {'train'}
+    if args.dev:
+        args.ids = sorted(i for i, r in mapping.items() if r['split'] in allowed_splits)
+        if not 1 <= args.max_download_mib <= 900:
+            raise ValueError('Development acquisition is capped at 900 MiB.')
+    else:
+        if not 1 <= args.max_download_mib <= 100:
+            raise ValueError('This smoke acquisition is capped at 100 MiB.')
+        if len(args.ids) > 5 or len(set(args.ids)) != len(args.ids):
+            raise ValueError('At most 5 distinct train frames are allowed.')
+        if len({mapping[i]['scene'] for i in args.ids if i in mapping}) != len(args.ids):
+            raise ValueError('Select different scenes for this smoke acquisition.')
+    if any(i not in mapping or mapping[i]['split'] not in allowed_splits for i in args.ids):
+        raise ValueError('Only approved non-test annotations may be read by this fetcher.')
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.output.exists():
         raise FileExistsError('Will not overwrite existing cache: ' + str(args.output))
@@ -338,9 +347,14 @@ def main() -> None:
             if mismatches:
                 raise ValueError('Online scenes disagree with historical correction: ' + str(mismatches))
             # N-1 is fetched only for the numbering regression, never if it belongs to a test scene.
+            # Smoke mode refuses such frames; dev mode skips only the predecessor slice and records it.
+            skipped_previous = []
             for i in args.ids:
                 if ref['scene_splits'].get(scenes[i - 1]) == 'test':
-                    raise ValueError('Regression predecessor belongs to a held-out scene.')
+                    if not args.dev:
+                        raise ValueError('Regression predecessor belongs to a held-out scene.')
+                    skipped_previous.append(i)
+            manifest['regression_predecessor_skipped_test_scene'] = skipped_previous
             manifest['metadata_validation'] = {'scene_count': len(scenes), 'class_count': len(names),
                 'annotation_scene_mismatch_count': len(mismatches),
                 'csv_scene_mismatch_count': sum(scenes[i] != r['csv_scene'] for i, r in mapping.items()),
@@ -364,10 +378,12 @@ def main() -> None:
                 frames = dest.create_group('frames')
                 for i in args.ids:
                     group = frames.create_group(str(i))
-                    group.attrs.update(source_index=i, scene=scenes[i], split='train')
-                    for target, key, idx in [('images','images',i), ('depths','depths',i),
-                                             ('rawDepths','rawDepths',i), ('labels','labels',i),
-                                             ('depths_previous','depths',i-1)]:
+                    group.attrs.update(source_index=i, scene=scenes[i], split=mapping[i]['split'])
+                    fields = [('images','images',i), ('depths','depths',i),
+                              ('rawDepths','rawDepths',i), ('labels','labels',i)]
+                    if i not in skipped_previous:
+                        fields.append(('depths_previous','depths',i-1))
+                    for target, key, idx in fields:
                         use_legacy = legacy is not None and key in legacy and f'{key}_present' in legacy and bool(legacy[f'{key}_present'][idx])
                         array = (legacy if use_legacy else source)[key][idx]
                         group.create_dataset(target, data=array, compression='gzip')

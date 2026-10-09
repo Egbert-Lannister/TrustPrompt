@@ -70,11 +70,34 @@ GPU基线另外需要与机器匹配的torch、torchvision、timm、safetensors�
 
 每个run内包含 `receipt.json`、`config.json`、`split_manifest.json`、`command.txt`、`run.log`、`source_snapshot.zip`、源码hash/Git状态/diff、预测、逐图/逐场景指标及5张图。既可追溯未提交代码，也不会将新结果写回GLARE。
 
+## 计划修订 v2 与第 1 步
+
+计划修订见 `docs/plan_revision_v2.md`。第 1 步中需要 Windows（NYU 网络、E 盘、CUDA）的部分：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows\step1_dev.ps1
+```
+
+CPU 部分（Linux 或 Windows 均可；Linux 工作区需 `TP_TEST_TMP` 指向可删除的临时目录）：
+
+```bash
+python -m pytest -q -p no:cacheprovider
+python -m scripts.nyu_rgbz_bound --toolbox data/source_cache/nyu_toolbox/toolbox_nyu_depth_v2.zip --manifest data/processed/mirror3d_dev_v1/manifest.json --output results/nyu_rgbz_bound_v1
+for m in raw_prompt unidepth_v2_s robust_global robust_local_v2 gate_global gate_local_v2; do
+  for s in train val; do python -m tp.eval.run_eval --config configs/mirror3d_dev_eval.yaml --method $m --split $s --output results/mirror3d_dev_${m}_${s}_v1; done
+done
+python -m scripts.summarize_step1
+```
+
+`--split test` 在方法冻结前会被拒绝。
+
 ## 文档和状态
 
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
 - `docs/decisions.md`：定义冲突、采用解释、计划修订。
+- `docs/plan_revision_v2.md`：计划修订 v2（范围、日程、口径、云预算申请）。
+- `docs/step1_results.md`：第 1 步结果表（由逐图 JSON 生成）。
 - `docs/audit_data.json` / `.md`：实际数据核查和21帧编号回归。
 - `docs/reuse_provenance.json`：选择性迁入的旧代码文件hash。
 - `configs/splits/mirror3d_nyu_v1.json`：可版本控制的完整场景划分。

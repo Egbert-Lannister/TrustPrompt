@@ -184,3 +184,9 @@ def test_legacy_receipt_without_index_digest_still_verifies_bound_source(tmp_pat
     write_json(root / "receipt.json", receipt)
     np.testing.assert_array_equal(CachedPrior(root).predict(sample, source_hash),
                                   np.full(sample.rgb.shape[:2], 2, np.float32))
+
+
+def test_windows_prediction_path_basename_resolves_on_any_host():
+    from pathlib import PureWindowsPath
+    assert PureWindowsPath(r"D:\x\cache\predictions\45.npz").name == "45.npz"
+    assert PureWindowsPath("/sessions/x/predictions/45.npz").name == "45.npz"
