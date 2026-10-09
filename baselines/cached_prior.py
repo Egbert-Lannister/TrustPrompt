@@ -28,6 +28,8 @@ class CachedPrior:
             r=bound.get((row["dataset"],row["scene"],row["frame"]))
             if r is None or any(row[k]!=r[k] for k in ("split","rgb_sha256","sample_npz_sha256")):
                 raise ValueError("prior index identity/hash differs from receipt input")
+            if "sensor" in r and row["sensor"]!=r["sensor"]:
+                raise ValueError("prior index sensor differs from receipt input")
 
     def record(self,sample):
         return self.rows[tuple(getattr(sample,k) for k in ("dataset","sensor","scene","frame"))]

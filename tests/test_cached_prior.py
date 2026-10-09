@@ -139,3 +139,48 @@ def test_invalid_cached_depths_survive_to_fixed_denominator_metrics(tmp_path):
     assert metrics["absrel"] is metrics["rmse"] is metrics["log_rmse"] is None
     assert metrics["delta_1_25"] == pytest.approx((gt.size - 4) / gt.size)
     json.dumps(result, allow_nan=False)
+
+
+def test_wrong_model_receipt_cannot_be_reported_as_unidepth_v2_small(tmp_path):
+    root, _, _, _, receipt = _cache(tmp_path)
+    receipt["model_version"]["name"] = "UniDepthV2-ViT-L14"
+    write_json(root / "receipt.json", receipt)
+    with pytest.raises(ValueError):
+        CachedPrior(root)
+
+
+def test_index_bytes_are_bound_to_new_receipts(tmp_path):
+    root, _, _, _, _ = _cache(tmp_path)
+    with (root / "images.json").open("a", encoding="utf-8") as stream:
+        stream.write("\n")
+    with pytest.raises(ValueError):
+        CachedPrior(root)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("sample_npz_sha256", "e" * 64), ("rgb_sha256", "d" * 64),
+    ("split", "test"), ("frame", "other"), ("scene", "other"),
+    ("dataset", "other"), ("sensor", "other"),
+])
+def test_index_row_cannot_disagree_with_receipt_even_if_index_hash_updated(tmp_path, field, value):
+    root, _, _, row, receipt = _cache(tmp_path)
+    row[field] = value
+    _write_index(root, [row], receipt)
+    with pytest.raises(ValueError):
+        CachedPrior(root)
+
+
+def test_incomplete_index_cannot_inherit_complete_receipt(tmp_path):
+    root, _, _, _, receipt = _cache(tmp_path)
+    receipt["frame_count"] = 2
+    write_json(root / "receipt.json", receipt)
+    with pytest.raises(ValueError):
+        CachedPrior(root)
+
+
+def test_legacy_receipt_without_index_digest_still_verifies_bound_source(tmp_path):
+    root, sample, source_hash, _, receipt = _cache(tmp_path)
+    del receipt["images_sha256"]
+    write_json(root / "receipt.json", receipt)
+    np.testing.assert_array_equal(CachedPrior(root).predict(sample, source_hash),
+                                  np.full(sample.rgb.shape[:2], 2, np.float32))

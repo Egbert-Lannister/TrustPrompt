@@ -1,6 +1,6 @@
 # TrustPrompt
 
-独立的提示可信度深度补全实验项目。当前已完成 Mirror3D-NYU 的5帧真实训练集最小闭环：统一NPZ、编号/场景修正、rawDepths提示、raw_prompt、固定区域指标、逐图/逐场景汇总与对齐可视化。所有数字均来自运行产物；正式实验尚未完成。
+独立的提示可信度深度补全实验项目。已完成 Mirror3D-NYU 的5帧真实训练集最小闭环，并扩展到 UniDepthV2-S、全局/局部鲁棒对齐。全部85项测试通过；局部对齐的真实失败已保留并报告。结果见 [smoke_results.md](docs/smoke_results.md)，正式实验尚未完成。
 
 ## 环境
 
@@ -22,6 +22,22 @@ python -m venv .venv
 ```
 
 GPU基线另外需要与机器匹配的torch、torchvision、timm、safetensors及原模型依赖，参考 `docs/unidepth_smoke.md`；不在最小闭环自动安装。
+
+## 已运行的基线扩展
+
+现有cache已通过RGB、样本、预测hash和receipt身份绑定检查。UniDepth缓存的原推理耗时与评测时的读盘/对齐耗时分开记录，不将读盘速度冒称模型速度。
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.cache_unidepth --limit 1 --output cache/unidepth_preflight_v1
+.\.venv\Scripts\python.exe -m scripts.cache_unidepth
+.\.venv\Scripts\python.exe -m tp.eval.run_eval --config configs/mirror3d_unidepth_eval.yaml --output results/mirror3d_unidepth_smoke_v1
+.\.venv\Scripts\python.exe -m tp.eval.run_eval --config configs/mirror3d_robust_eval.yaml --method robust_global --output results/mirror3d_robust_global_smoke_v1
+.\.venv\Scripts\python.exe -m tp.eval.run_eval --config configs/mirror3d_robust_eval.yaml --method robust_local --output results/mirror3d_robust_local_smoke_v2
+.\.venv\Scripts\python.exe -m tp.eval.compare --reference results/mirror3d_raw_prompt_smoke_v2 --candidates results/mirror3d_unidepth_smoke_v1 results/mirror3d_robust_global_smoke_v1 results/mirror3d_robust_local_smoke_v2 --output results/mirror3d_paired_comparison_v2
+.\.venv\Scripts\python.exe -m scripts.summarize_smoke
+```
+
+这些目录当前已存在；命令展示原运行方式，复跑须选择新输出名并对应修改配置中的prior_cache。5帧配对bootstrap只作描述，不支持泛化/正式显著性结论。
 
 ## 数据路径与复现
 

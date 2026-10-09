@@ -44,6 +44,9 @@
 - “可信度可以直接当不确定度”尚待验证与校准；本阶段不作此结论。
 - UniDepth先做RGB-only原生推理，无GT、提示、材质作为模型输入；本地可用的是V2-S，不冒称V2-L。PromptDA/HAMMER等代码事实与许可在真正接入时再核，不将计划陈述当已验证。
 - 鲁棒对齐是提示驱动的免训练基线；其逆深度拟合残差阈值与评测深度rel阈值分开记录，不能调测试结果选参数。
+- 已实施鲁棒参数：1000次seeded RANSAC；`abs(s*m+t-1/P)/(1/P)<=0.05`为拟合内点条件；Huber同域delta=0.05、最多20次IRLS。每个拟合支持均匀最多抽4096点，至少50点。局部8×8网格/3×3邻块支持，系数在块中心双线性插值、边缘常值延拓。MAD为相对逆深度残差的未乘1.4826中位绝对偏差，不冒称高斯标准差。
+- 全局与局部失败不通过正值clamp修饰；不支持/非正预测为NaN进入固定分母协议。本次真实局部外推失败已记入progress，保留原数据与结果。
+- 基线cache读取时间不是推理时间：逐图结果使用evaluation_prediction_seconds/timing_component，原UniDepth推理时间单独保留，未测端到端组合速度。旧cache没有新images索引digest时，必须逐项绑定receipt中的样本/RGBhash/scene/split及frame_count；新cache额外记录index SHA256和sensor。
 
 ## 6. 状态与可追溯性
 

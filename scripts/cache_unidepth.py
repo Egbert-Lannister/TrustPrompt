@@ -124,7 +124,7 @@ def run(config_path, limit=None, output=None):
             receipt.update(stage="real_train_smoke_verified", completed_at_utc=datetime.now(timezone.utc).isoformat(),
                            images_sha256=sha256(output / "images.json"),
                            frame_count=len(rows), all_points_z_equal_depth=all(r["validation"]["points_z_exactly_equal_depth"] for r in rows),
-                           inputs=[{k:r[k] for k in ("dataset","scene","frame","split","rgb_sha256","sample_npz_sha256")} for r in rows])
+                           inputs=[{k:r[k] for k in ("dataset","sensor","scene","frame","split","rgb_sha256","sample_npz_sha256")} for r in rows])
         except BaseException as error:
             receipt.update(stage="failed", error=repr(error))
             traceback.print_exc()

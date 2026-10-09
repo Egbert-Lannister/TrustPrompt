@@ -117,7 +117,9 @@ def evaluate_manifest(config, output, command):
         write_json(output/"summary_mirror_only.json",mirror_summary)
         write_json(output/"statistics.json",dict(paired_scene_bootstrap="NA: only one method; do not fabricate paired CI",
                     affine_aligned_results="not requested; main metric is unaligned",confidence="NA: no confidence output"))
-        receipt.update(stage="small_scale_validation_passed",finished_at_utc=datetime.now(timezone.utc).isoformat(),
+        invalid_count=sum(r["metrics"]["regions"]["all"]["invalid_count"] for r in rows)
+        receipt.update(stage="completed_with_invalid_predictions" if invalid_count else "small_scale_validation_passed",
+                       invalid_prediction_count=invalid_count,finished_at_utc=datetime.now(timezone.utc).isoformat(),
                        elapsed_seconds=time.perf_counter()-started,frames=len(rows),formal_experiment_complete=False)
         log("COMPLETE: real/synthetic identity recorded, no scale alignment, fixed denominators.")
         return summary
