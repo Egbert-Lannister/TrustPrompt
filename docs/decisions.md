@@ -63,3 +63,21 @@
 - R3 RGB-Z 上界：反解公式 `Z_rgb = (Z_d + c·T)/(c·r)`，c 为 R⁻¹ 的第三行；外参只从哈希校验过的官方文件解析，平移分量对应哪个轴由 `depth_world2rgb_world.m` 的赋值语句决定，不凭记忆假设。阈值 0.5%。
 - test 锁：`run_eval` 在 `experiment_role != formal_main_result` 时拒绝 `split=test`，在创建输出目录前就报错。
 - 跨平台：Linux 工作区与 Windows 的运行写入不同输出目录，receipt 中带 `execution_platform` 与解释器路径。
+
+## 8. PromptDA 代码事实核对（原计划 §0；第 2 步前置）
+
+2026-10-09 读取官方仓库 `DepthAnything/PromptDA` main 分支，提交 `9161547ca7151e14fcc8f490ad3cc02fa9437483`（2026-01-29）。只读源码，未下载权重、未运行。
+
+| 文件 | SHA256 |
+|---|---|
+| promptda/promptda.py | `bc0ca4bb4ec61106f01f5da514ea25c45cd652c0b526409c3eef161aa14ea7b6` |
+| promptda/model/blocks.py | `ca0b2b2463d4c8186ff6a7e4595ac293bb63e8316f31e7b5dba9b14c4c0f832b` |
+| promptda/model/dpt.py | `446a7a43cb1d2a64a15e9244b6f6dfc1c680364daed0e17ba8763b43279ad962` |
+| LICENSE | `43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1` |
+
+- 许可：Apache-2.0。核实。
+- 归一化：`normalize` 对整张提示（含 0 值空洞）取 `torch.quantile(..., 0.)` 与 `quantile(..., 1.)`，即 min/max；`denormalize` 用同一对值反变换。核实。
+- 输出：`nclass=1` 分支 `output_conv2` 末端为 `nn.Sigmoid()`（`output_act='sigmoid'`），故输出被限制在 `[min(P), max(P)]`。核实。
+- 注入：每个融合块的 `resConfUnit_depth` = Conv2d(1,F,3) → act → Conv2d(F,F,3) → act → 零初始化 Conv2d(F,F,3)；提示用 `F.interpolate(mode='bilinear', align_corners=False)` 缩放到该层分辨率。核实，与原计划 §0 描述一致。
+- 推论：空洞未填时 min=0；镜面虚像若是全图最远值会决定 max。原计划“空洞先最近邻填充”的预处理是必要的，基线表注明。
+- 未核实：PromptDA-S-Transparent 权重的训练细节（HAMMER、10K 步）与 HuggingFace 上的文件，需在 Windows 下载权重时核对模型卡。
