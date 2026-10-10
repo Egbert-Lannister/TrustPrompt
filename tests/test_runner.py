@@ -51,3 +51,22 @@ def test_test_split_locked_before_method_freeze(tmp_path):
                   experiment_role="development_diagnostic_not_final_test")
     with pytest.raises(ValueError, match="locked"):
         evaluate_manifest(config, tmp_path / "run", ["test"])
+
+
+def test_time_budget_then_resume_gives_same_rows_as_one_shot(tmp_path):
+    import json, shutil
+    from tp.eval.run_eval import evaluate_manifest
+    from tp.provenance import ROOT
+    manifest = ROOT / "data/processed/synthetic_smoke_v1/manifest.json"
+    if not manifest.is_file():
+        import pytest; pytest.skip("synthetic smoke data not prepared")
+    config = dict(method="raw_prompt", split="train", manifest=str(manifest), tau=0.05, band=5,
+                  visualizations=0, experiment_role="engineering_smoke_not_final_test", seed=1)
+    one = tmp_path / "one"; evaluate_manifest(dict(config), one, ["t"])
+    two = tmp_path / "two"
+    assert evaluate_manifest(dict(config), two, ["t"], time_budget_s=0.0) is None
+    assert json.loads((two / "receipt.json").read_text())["stage"] == "partial_time_budget"
+    evaluate_manifest(dict(config), two, ["t"], resume=True)
+    strip = lambda rows: [{k: v for k, v in r.items() if k != "evaluation_prediction_seconds"} for r in rows]
+    assert strip(json.loads((one / "per_image.json").read_text())) == strip(json.loads((two / "per_image.json").read_text()))
+    assert json.loads((two / "receipt.json").read_text())["resumed_sessions"]
