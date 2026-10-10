@@ -54,6 +54,26 @@ def _temporary_connection_error(error: Exception) -> bool:
     }
 
 
+def plan_resume(existing: Mapping[str, Mapping[str, str]], prior_payloads, expected_fields):
+    """Decide which already-written frames can be kept when resuming.
+
+    ``existing`` maps frame id -> {field: sha256 of the stored array}. A frame is
+    kept only if every expected field is present and every hash equals the
+    hash recorded for that (frame, field) in the prior manifest payloads.
+    Returns (keep, rewrite): sorted frame-id lists. Nothing is trusted by name.
+    """
+    recorded = {}
+    for payload in prior_payloads:
+        recorded[(str(payload["annotation_id"]), payload["field"])] = payload["sha256"]
+    keep, rewrite = [], []
+    for frame, fields in existing.items():
+        wanted = expected_fields(frame)
+        ok = set(fields) == set(wanted) and all(
+            recorded.get((frame, field)) == digest for field, digest in fields.items())
+        (keep if ok else rewrite).append(frame)
+    return sorted(keep, key=int), sorted(rewrite, key=int)
+
+
 class HTTPRangeReader(io.RawIOBase):
     """Seekable readonly file backed by bounded Range requests and an LRU cache.
 
@@ -67,6 +87,7 @@ class HTTPRangeReader(io.RawIOBase):
         block_size: int = MIB, max_cached_blocks: int = 4,
         max_read_bytes: int = 64 * MIB, timeout: float = 30,
         max_total_download_bytes: int | None = None, expected_size: int | None = None,
+        retry_attempts: int = 3,
     ) -> None:
         super().__init__()
         if not isinstance(url, str) or not url.startswith(("https://", "http://")):
@@ -96,6 +117,8 @@ class HTTPRangeReader(io.RawIOBase):
         self._cache: OrderedDict[int, bytes] = OrderedDict()
         self.downloaded_bytes = 0
         self.request_count = 0
+        self.retry_attempts = int(retry_attempts)
+        self.retry_count = 0
         self._fetch(0, 0)  # One byte establishes size without a full-body GET.
         if expected_size is not None and (
             isinstance(expected_size, bool) or not isinstance(expected_size, int) or expected_size != self.size
@@ -154,17 +177,19 @@ class HTTPRangeReader(io.RawIOBase):
         # Retry only this missing block, preserving prior cached blocks and
         # every attempt's byte/request accounting. TLS verification is never
         # changed. Protocol/budget failures from _fetch_once pass straight out.
-        for attempt in range(3):
+        attempts = self.retry_attempts
+        for attempt in range(attempts):
             try:
                 return self._fetch_once(start, end)
             except Exception as error:
                 if not _temporary_connection_error(error):
                     raise
-                if attempt == 2:
+                self.retry_count += 1
+                if attempt == attempts - 1:
                     raise RangeConnectionError(
-                        "temporary Range connection failed after 3 attempts; acquisition incomplete"
+                        f"temporary Range connection failed after {attempts} attempts; acquisition incomplete"
                     ) from error
-                time.sleep(attempt + 1)
+                time.sleep(min(2 ** attempt, 60))
         raise AssertionError("unreachable Range retry state")
 
     def _read_response(self, response: Any, size: int) -> bytes:
@@ -292,6 +317,9 @@ def main() -> None:
     parser.add_argument('--ids', nargs='+', type=int, default=[45, 184, 245, 440, 654])
     parser.add_argument('--max-download-mib', type=int, default=100)
     # Plan revision v2 step 1c: development mode = every train+val annotation.
+    parser.add_argument('--resume', action='store_true',
+                        help='continue an INCOMPLETE cache from the same command; hash-verified frames are kept')
+    parser.add_argument('--retries', type=int, default=8, help='attempts per Range block (exponential backoff)')
     parser.add_argument('--dev', action='store_true',
                         help='select all train+val annotations (test is never read); cap 900 MiB')
     parser.add_argument('--legacy-cache', type=Path, default=Path('E:/GLARE_Data/first_surface/mirror3d/nyu_depth_v2_labeled.selected.h5'))
@@ -301,8 +329,8 @@ def main() -> None:
     allowed_splits = {'train', 'val'} if args.dev else {'train'}
     if args.dev:
         args.ids = sorted(i for i, r in mapping.items() if r['split'] in allowed_splits)
-        if not 1 <= args.max_download_mib <= 900:
-            raise ValueError('Development acquisition is capped at 900 MiB.')
+        if not 1 <= args.max_download_mib <= 1500:
+            raise ValueError('Development acquisition is capped at 1500 MiB per run.')
     else:
         if not 1 <= args.max_download_mib <= 100:
             raise ValueError('This smoke acquisition is capped at 100 MiB.')
@@ -313,8 +341,19 @@ def main() -> None:
     if any(i not in mapping or mapping[i]['split'] not in allowed_splits for i in args.ids):
         raise ValueError('Only approved non-test annotations may be read by this fetcher.')
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    prior = None
     if args.output.exists():
-        raise FileExistsError('Will not overwrite existing cache: ' + str(args.output))
+        if not args.resume:
+            raise FileExistsError('Will not overwrite existing cache: ' + str(args.output) + ' (use --resume for an INCOMPLETE one)')
+        prior = json.loads(args.output.with_suffix('.json').read_text(encoding='utf8'))
+        if prior.get('status') != 'INCOMPLETE':
+            raise ValueError('Only an INCOMPLETE cache can be resumed; status=' + str(prior.get('status')))
+        if prior.get('selected_ids') != args.ids:
+            raise ValueError('Resume must select exactly the same annotation ids as the interrupted run.')
+        if prior.get('split_reference_sha256') != hashlib.sha256(args.split_reference.read_bytes()).hexdigest():
+            raise ValueError('Split reference changed since the interrupted run.')
+    elif args.resume:
+        raise FileNotFoundError('Nothing to resume: ' + str(args.output))
     url = 'https://horatio.cs.nyu.edu/mit/silberman/nyu_depth_v2/nyu_depth_v2_labeled.mat'
     manifest = {
         'schema': 'trustprompt.nyu_subset.v1', 'created_at_utc': datetime.now(timezone.utc).isoformat(),
@@ -325,6 +364,7 @@ def main() -> None:
         'script_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'payloads': [], 'status': 'INCOMPLETE', 'test_depth_accessed': False,
         'max_download_bytes': args.max_download_mib * MIB,
+        'resume_history': (prior or {}).get('resume_history', []),
     }
     def save_manifest():
         args.output.with_suffix('.json').write_text(json.dumps(manifest, indent=2, allow_nan=False) + '\n', encoding='utf8')
@@ -335,9 +375,12 @@ def main() -> None:
     legacy = None
     try:
         with HTTPRangeReader(url, block_size=MIB, max_cached_blocks=16, max_read_bytes=8*MIB,
-                             max_total_download_bytes=args.max_download_mib*MIB,
+                             max_total_download_bytes=args.max_download_mib*MIB, timeout=60,
+                             retry_attempts=args.retries,
                              expected_size=2972037809) as reader, h5py.File(reader, 'r') as source:
             manifest['source_identity'] = reader.archive_identity
+            if prior is not None and prior.get('source_identity') != reader.archive_identity:
+                raise ValueError('Official MAT identity changed since the interrupted run; refuse to mix slices.')
             manifest['source_layouts'] = {k: {'shape': list(source[k].shape), 'dtype': str(source[k].dtype),
                                                   'chunks': source[k].chunks}
                                           for k in ['images', 'depths', 'rawDepths', 'labels', 'scenes', 'names']}
@@ -370,13 +413,35 @@ def main() -> None:
                     raise ValueError('Legacy raw-slice identity differs from the live official source.')
                 manifest['legacy_cache'] = {'path':str(args.legacy_cache), 'identity_verified':True,
                     'schema':str(legacy.attrs['schema']), 'reuse':'unchanged source slices only at exact source index; no predictions'}
-            with h5py.File(args.output, 'x') as dest:
-                dest.attrs.update(schema='trustprompt.nyu_subset.v1', source_url=url,
-                                  depth_unit='metres', source_index_rule='annotation_N_equals_h5_index_N')
-                dest.create_dataset('scenes', data=np.asarray(scenes, dtype=object), dtype=h5py.string_dtype('utf-8'))
-                dest.create_dataset('names', data=np.asarray(names, dtype=object), dtype=h5py.string_dtype('utf-8'))
-                frames = dest.create_group('frames')
+            def expected_fields(frame):
+                base = ['images', 'depths', 'rawDepths', 'labels']
+                return base if int(frame) in skipped_previous else base + ['depths_previous']
+            with h5py.File(args.output, 'r+' if prior is not None else 'x') as dest:
+                kept = []
+                if prior is None:
+                    dest.attrs.update(schema='trustprompt.nyu_subset.v1', source_url=url,
+                                      depth_unit='metres', source_index_rule='annotation_N_equals_h5_index_N')
+                    dest.create_dataset('scenes', data=np.asarray(scenes, dtype=object), dtype=h5py.string_dtype('utf-8'))
+                    dest.create_dataset('names', data=np.asarray(names, dtype=object), dtype=h5py.string_dtype('utf-8'))
+                    frames = dest.create_group('frames')
+                else:
+                    if dest.attrs.get('schema') != 'trustprompt.nyu_subset.v1' or dest.attrs.get('source_url') != url \
+                            or dest.attrs.get('complete') == 1:
+                        raise ValueError('Existing cache identity mismatch or already complete.')
+                    if list(dest['scenes'].asstr()[:]) != scenes or list(dest['names'].asstr()[:]) != names:
+                        raise ValueError('Stored scene/name metadata differ from the live source.')
+                    frames = dest['frames']
+                    existing = {k: {f: hashlib.sha256(frames[k][f][:].tobytes()).hexdigest() for f in frames[k]}
+                                for k in frames}
+                    kept, rewrite = plan_resume(existing, prior.get('payloads', []), expected_fields)
+                    for k in rewrite:
+                        del frames[k]
+                    kept_set = set(kept)
+                    manifest['payloads'] = [p for p in prior.get('payloads', []) if str(p['annotation_id']) in kept_set]
+                    print(json.dumps({'stage': 'resume_plan', 'kept': kept, 'rewritten': rewrite}), flush=True)
                 for i in args.ids:
+                    if str(i) in kept:
+                        continue
                     group = frames.create_group(str(i))
                     group.attrs.update(source_index=i, scene=scenes[i], split=mapping[i]['split'])
                     fields = [('images','images',i), ('depths','depths',i),
@@ -397,12 +462,16 @@ def main() -> None:
                 dest.attrs['complete'] = 1
             manifest['status'] = 'COMPLETE_REAL_DATA_SUBSET'
             manifest['network'] = reader.metadata
+            manifest['resume_history'].append({'resumed': prior is not None, 'downloaded_bytes': reader.downloaded_bytes,
+                                               'retry_count': reader.retry_count, 'outcome': 'complete'})
             manifest['cache_sha256'] = hashlib.sha256(args.output.read_bytes()).hexdigest()
             save_manifest()
     except BaseException as error:
         manifest['error'] = repr(error)
         if reader is not None:
             manifest['network'] = reader.metadata
+            manifest['resume_history'].append({'resumed': prior is not None, 'downloaded_bytes': reader.downloaded_bytes,
+                                               'retry_count': reader.retry_count, 'outcome': repr(error)})
         save_manifest()
         raise
     finally:

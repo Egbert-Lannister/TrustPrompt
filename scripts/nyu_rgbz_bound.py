@@ -30,6 +30,15 @@ def main():
     config = dict(toolbox=str(args.toolbox), manifest=str(args.manifest), threshold=THRESHOLD,
                   splits=["train", "val"], rule="worst pixel-corner ray, valid prompt pixels")
     receipt = start_run(args.output, config, [sys.executable, "-m", "scripts.nyu_rgbz_bound", *sys.argv[1:]], 0)
+    try:
+        run(args, config, receipt)
+    except Exception as error:
+        receipt.update(stage="failed", error=repr(error))
+        write_json(args.output / "receipt.json", receipt)
+        raise
+
+
+def run(args, config, receipt):
     texts = read_toolbox(args.toolbox)
     ext = extrinsics(texts)
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
@@ -45,6 +54,8 @@ def main():
         for name, K in (("registered_K", s.K_prompt),
                         ("physical_rgb_K_plus1px", s.K_prompt + np.array([[0, 0, 1.], [0, 0, 1.], [0, 0, 0]]))):
             gap = relative_gap(s.prompt, s.prompt_valid, K, ext["R"], ext["T"])
+            if not np.all(np.isfinite(gap[s.prompt_valid])):
+                raise ValueError("nonfinite RGB-Z gap on a valid prompt pixel")
             g = gap[s.prompt_valid]
             results[name] = dict(max=float(g.max()), p999=float(np.quantile(g, .999)),
                                  p99=float(np.quantile(g, .99)), median=float(np.median(g)), count=int(g.size))

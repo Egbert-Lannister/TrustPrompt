@@ -86,3 +86,21 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 1. Windows 运行 `scripts/windows/step1_dev.ps1`（下载约 0.03 MB 工具箱 + 最多 900 MiB NYU 切片；UniDepth 95 帧约几分钟）。
 2. 之后在 Linux 工作区运行 RGB-Z 上界与 6 个方法 × {train, val} 的评测，更新 `step1_results.md`。
 3. 同时开始第 2 步：PromptDA 源码与许可核对、推理包装（GPU 部分在 Windows）。
+
+## 2026-10-09 晚：Windows 第一次运行 step1_dev.ps1
+
+### 发生了什么
+- 工具箱 ZIP 下载成功，SHA256 `6211b20f…` 与审计记录一致。
+- NYU 切片下载在第 17 帧（annotation 347）时 TLS 握手超时，3 次重试耗尽后中止；已下载约 125 MB。缓存 `data/source_cache/nyu_dev_v1.h5` 状态为 INCOMPLETE，`complete` 标志未写入。
+- 之后的 prepare 正确拒绝了未完成的缓存；但脚本没有在失败处停下（PowerShell 的 `$ErrorActionPreference` 不作用于外部程序），继续执行了 UniDepth 步骤并最终打印 “Done”，造成误导。没有产生错误数据：prepare 只留下 receipt 为 failed 的目录，UniDepth 在创建输出前就失败。
+- 失败的 prepare 目录已改名为 `data/processed/mirror3d_dev_v1_failed_incomplete_source`（保留，不删除）。
+
+### 修复（已实现、测试通过）
+- `fetch_nyu_subset.py`：新增 `--resume`。只续传 INCOMPLETE 缓存，且要求 annotation 列表、划分文件哈希、官方 MAT 的 URL/大小/ETag/Last-Modified 都与中断前一致；已写入的帧逐字段重新计算哈希，与上次记录完全一致才保留，否则删除重下。在真实的中断缓存上演练：16 帧保留，347 帧重下。新增 `--retries`（默认 8 次，指数退避上限 60 s），单次请求超时 60 s，每次运行的下载量与重试次数写入 `resume_history`。dev 模式单次运行上限提高到 1500 MiB（按已下载部分估算全部 95 帧约 0.7–0.9 GB，900 MiB 余量不足）。
+- `step1_dev.ps1`：每步检查退出码，失败即停；已完成的步骤自动跳过；缓存存在时自动加 `--resume`。
+- 测试：102 passed，1 skipped。
+
+### 1a RGB-Z 上界 —— 5 帧训练集已运行
+- 第一次运行 `results/nyu_rgbz_bound_smoke_v1` 失败（receipt 停在 started）：解析器遇到 `R = reshape(R, [3 3])` 拒绝猜测。按官方文件实际写法修正解析：9 元素行向量取负 → MATLAB 列优先 reshape → `inv(R')`；平移按 `T = [t_x; t_z; t_y]` 的实际顺序。
+- 官方 R 的行列式为负（≈ −I）。`rgb_world2rgb_plane` 只用 X/Z、Y/Z，整体取负不改变投影，因此采用 (−R, −T) 作为物理刚体变换，并检查所有恢复出的 Z_rgb 为正。解释记入 decisions.md §9。
+- `results/nyu_rgbz_bound_smoke_v2`：5 帧 921,519 个有效提示像素，|Z_rgb − Z_raw|/Z_raw 最大 0.473%，99.9 分位 0.419%，中位 0.125%；两种主点约定结果相同到 1e-5。按 R3 规则（≤ 0.5%）判定为 `rgb_z_bounded`，但余量很小，95 帧开发集到位后重跑，若超过 0.5% 则按 R3 改写到 RGB Z。
