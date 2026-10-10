@@ -77,3 +77,15 @@ def test_gate_rejects_bad_inputs():
         gate_prompt(np.ones((2, 2)), np.ones((2, 2), bool), np.ones((2, 3)))
     with pytest.raises(ValueError):
         gate_prompt(np.ones((2, 2)), np.ones((2, 2), bool), np.ones((2, 2)), tau_gate=0)
+
+
+def test_skipping_local_leaves_global_bit_identical():
+    rng = np.random.default_rng(5)
+    m = rng.uniform(.1, .9, size=(40, 56))
+    prompt = 1 / (1.3 * m + .2)
+    prompt[rng.random(m.shape) < .2] *= 3
+    full = align_depth(1 / m, prompt, np.ones(m.shape, bool), seed=4)
+    quick = align_depth(1 / m, prompt, np.ones(m.shape, bool), seed=4, compute_local=False)
+    np.testing.assert_array_equal(full["global_depth"], quick["global_depth"])
+    np.testing.assert_array_equal(full["global_residual"], quick["global_residual"])
+    assert np.isnan(quick["local_depth"]).all() and quick["diagnostics"]["local_skipped"]

@@ -118,7 +118,8 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                 prior_depth=prior.predict(s,r["sha256"])
                 if method=="unidepth_v2_s":pred=prior_depth
                 else:
-                    aligned=align_depth(prior_depth,p,pv,seed=seed,**config.get("robust",{}))
+                    aligned=align_depth(prior_depth,p,pv,seed=seed,compute_local=ALIGNED_SOURCE[method]!="global_depth",
+                                        **config.get("robust",{}))
                     pred=aligned[ALIGNED_SOURCE[method]]
                     if method.startswith("gate_"):
                         pred,w=gate_prompt(p,pv,pred,tau_gate=float(config.get("tau_gate",0.05)))
