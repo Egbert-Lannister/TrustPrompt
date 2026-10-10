@@ -54,12 +54,20 @@ def _strip_comments(text):
 
 
 def parse_camera_params(text):
-    """Parse scalars and the rotation statement sequence from camera_params.m."""
-    body = _strip_comments(text)
+    """Parse scalars and replay the rotation statement sequence of camera_params.m.
+
+    Supported statements (anything else assigning R raises):
+      R = [-][a, b, ...]      1x9 row vector (no ';') or 3x3 row-major (with ';')
+      R = reshape(R, [3 3])   MATLAB column-major reshape
+      R = inv(R')  /  R = R'
+    """
+    body = _strip_comments(text).replace("...", " ")
     scalars = {name: float(value) for name, value in
                re.findall(rf"\b([A-Za-z_]\w*)\s*=\s*({_NUM})\s*;", body)}
+    # Protect ';' inside brackets so statements split on top-level ';' only.
+    protected = re.sub(r"\[([^\]]*)\]", lambda m: "[" + m.group(1).replace(";", "|") + "]", body)
     rotation, steps = None, []
-    for statement in re.split(r";", body):
+    for statement in protected.split(";"):
         s = " ".join(statement.split())
         if not re.match(r"^R\s*=", s):
             continue
@@ -68,58 +76,76 @@ def parse_camera_params(text):
             values = [float(v) for v in re.findall(_NUM, literal.group(2))]
             if len(values) != 9:
                 raise ValueError("rotation literal does not have 9 entries")
-            rotation = np.array(values).reshape(3, 3) * (-1.0 if literal.group(1) else 1.0)
-            steps.append("literal" + ("_negated" if literal.group(1) else ""))
+            sign = -1.0 if literal.group(1) else 1.0
+            if "|" in literal.group(2):
+                rotation = sign * np.array(values).reshape(3, 3)
+                steps.append("literal_3x3" + ("_negated" if sign < 0 else ""))
+            else:
+                rotation = sign * np.array(values).reshape(1, 9)
+                steps.append("literal_1x9" + ("_negated" if sign < 0 else ""))
+        elif re.match(r"^R\s*=\s*reshape\(\s*R\s*,\s*\[\s*3\s*,?\s*3\s*\]\s*\)$", s):
+            rotation = rotation.reshape(-1).reshape(3, 3, order="F"); steps.append("reshape_column_major")
         elif re.match(r"^R\s*=\s*inv\(\s*R\s*'\s*\)$", s):
             rotation = np.linalg.inv(rotation.T); steps.append("inv(R')")
         elif re.match(r"^R\s*=\s*R\s*'$", s):
             rotation = rotation.T; steps.append("R'")
         else:
             raise ValueError(f"unrecognised rotation statement: {s!r}")
-    if rotation is None:
-        raise ValueError("no rotation found in camera_params.m")
+    if rotation is None or rotation.shape != (3, 3):
+        raise ValueError("no 3x3 rotation obtained from camera_params.m")
     return scalars, rotation, steps
 
 
-def parse_camera_params_text(text):
-    """camera_params.m writes the rotation with ';' row separators inside [];
-    rejoin bracket content before statement splitting."""
-    body = _strip_comments(text)
-    body = re.sub(r"\[([^\]]*)\]", lambda m: "[" + m.group(1).replace(";", " ") + "]", body)
-    return parse_camera_params(body)
+parse_camera_params_text = parse_camera_params
 
 
 def parse_extrinsic_application(text):
     """Return (rotation_form, translation_axis_map) from depth_world2rgb_world.m.
 
-    Supported rotation forms: points = R * points' (column vectors) and
-    points = points * R'. Translation lines: points(k,:) = points(k,:) + t_?
-    or points(:,k) = points(:,k) + t_?. Anything else raises.
+    Supported: ``points = R * points' (+ T * ones(...))`` with ``T = [a; b; c]``
+    naming scalars, or per-row ``points(k,:) = points(k,:) + t_?`` lines.
     """
     body = " ".join(_strip_comments(text).split())
     if re.search(r"=\s*R\s*\*\s*\w+\s*'", body):
         form = "R_times_columns"
-    elif re.search(r"=\s*\w+\s*\*\s*R\s*'", body):
-        form = "rows_times_Rt"
     else:
         raise ValueError("unrecognised rotation application in depth_world2rgb_world.m")
     mapping = {}
-    for a, b, name in re.findall(
-            r"\w+\(\s*(\d|:)\s*,\s*(\d|:)\s*\)\s*=\s*\w+\(\s*\1\s*,\s*\2\s*\)\s*\+\s*(t_[xyz])", body):
-        axis = int(a) if a != ":" else int(b)
-        mapping[axis - 1] = name
+    vector = re.search(r"\bT\s*=\s*\[([^\]]*)\]", body)
+    if vector and re.search(r"\+\s*T\s*\*", body):
+        names = [n.strip() for n in vector.group(1).split(";")]
+        if len(names) != 3 or not all(re.fullmatch(r"t_[xyz]", n) for n in names):
+            raise ValueError(f"translation vector not recognised: {vector.group(1)!r}")
+        mapping = dict(enumerate(names))
+    else:
+        for a, b, name in re.findall(
+                r"\w+\(\s*(\d|:)\s*,\s*(\d|:)\s*\)\s*=\s*\w+\(\s*\1\s*,\s*\2\s*\)\s*\+\s*(t_[xyz])", body):
+            mapping[(int(a) if a != ":" else int(b)) - 1] = name
     if sorted(mapping) != [0, 1, 2]:
         raise ValueError(f"translation assignment not recognised: {mapping}")
     return form, mapping
 
 
 def extrinsics(texts):
+    """X_rgb = R X_d + T exactly as the toolbox code computes it.
+
+    rgb_world2rgb_plane divides X and Y by Z, so it is invariant to negating
+    all three coordinates. If det(R) < 0 (the toolbox literal is negated), the
+    physically consistent rigid transform with positive RGB depth is
+    (-R, -T); both forms give identical projections. The flip is recorded.
+    """
     scalars, rotation, steps = parse_camera_params_text(texts["camera_params.m"])
     form, mapping = parse_extrinsic_application(texts["depth_world2rgb_world.m"])
     translation = np.array([scalars[mapping[i]] for i in range(3)])
-    # Both supported forms mean X_rgb = R X_d + T for column vectors.
+    flipped = bool(np.linalg.det(rotation) < 0)
+    if flipped:
+        rotation, translation = -rotation, -translation
+    if np.linalg.det(rotation) <= 0:
+        raise ValueError("rotation is not proper even after the projection-invariant sign flip")
     return dict(R=rotation, T=translation, rotation_steps=steps, rotation_form=form,
                 translation_axis_map={str(k): v for k, v in mapping.items()},
+                global_sign_flip_applied=flipped,
+                sign_flip_justification="rgb_world2rgb_plane uses X/Z, Y/Z; negating (R,T) leaves projections unchanged",
                 det_R=float(np.linalg.det(rotation)),
                 orthogonality_error=float(np.abs(rotation @ rotation.T - np.eye(3)).max()))
 
@@ -137,10 +163,16 @@ def rgb_z(z_depth, K, R, T, offset=(0.0, 0.0)):
 
 
 def relative_gap(z_depth, valid, K, R, T):
-    """Worst case over pixel-corner rays of |Z_rgb - Z_d| / Z_d on valid pixels."""
+    """Worst case over pixel-corner rays of |Z_rgb - Z_d| / Z_d on valid pixels.
+
+    Raises if any recovered Z_rgb is nonpositive (sign convention error)."""
     z = np.asarray(z_depth, dtype=np.float64)
     worst = np.zeros(z.shape)
     for offset in ((-.5, -.5), (-.5, .5), (.5, -.5), (.5, .5), (0., 0.)):
-        gap = np.abs(rgb_z(z, K, R, T, offset) - z) / z
+        z_rgb = rgb_z(z, K, R, T, offset)
+        if np.any(z_rgb[valid] <= 0):
+            raise ValueError("nonpositive RGB-axis Z recovered; extrinsic sign convention is wrong")
+        with np.errstate(divide="ignore", invalid="ignore"):
+            gap = np.abs(z_rgb - z) / z
         worst = np.maximum(worst, np.where(valid, gap, 0.0))
     return np.where(valid, worst, np.nan)

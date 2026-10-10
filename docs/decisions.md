@@ -81,3 +81,9 @@
 - 注入：每个融合块的 `resConfUnit_depth` = Conv2d(1,F,3) → act → Conv2d(F,F,3) → act → 零初始化 Conv2d(F,F,3)；提示用 `F.interpolate(mode='bilinear', align_corners=False)` 缩放到该层分辨率。核实，与原计划 §0 描述一致。
 - 推论：空洞未填时 min=0；镜面虚像若是全图最远值会决定 max。原计划“空洞先最近邻填充”的预处理是必要的，基线表注明。
 - 未核实：PromptDA-S-Transparent 权重的训练细节（HAMMER、10K 步）与 HuggingFace 上的文件，需在 Windows 下载权重时核对模型卡。
+
+## 9. NYU 外参的符号约定（R3 实施）
+
+- 官方 `camera_params.m`：`R = -[9 个数]`，`R = reshape(R,[3 3])`（MATLAB 列优先），`R = inv(R')`；`depth_world2rgb_world.m`：`T = [t_x; t_z; t_y]`，`X_rgb = R·X_d + T`。解析严格按文件语句回放，未知语句报错。
+- 得到的 R 行列式为 −1（约等于 −I），不是旋转。由于 `rgb_world2rgb_plane` 用 X/Z、Y/Z 投影，对所有坐标取负投影不变，工具箱的像素位置与 (−R, −T) 完全一致。上界计算采用 (−R, −T)，并在每个有效像素检查 Z_rgb > 0；若符号约定错误会直接报错。
+- 5 帧训练集最坏差 0.473%（阈值 0.5%），判定为有界；结论只覆盖这 5 帧，95 帧开发集到位后重跑并以其为准。
