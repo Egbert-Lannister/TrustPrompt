@@ -28,13 +28,28 @@ NYU_SEMANTICS=dict(clean="deviation_from_inpainted_sensor_reference_not_gt_accur
                    main_regions="precise_mirror_only C/Cfar/band (summary_mirror_only.json)")
 
 
-def evaluate_manifest(config, output, command):
+def _resume_receipt(output,config,command):
+    """Continue an interrupted run only under identical config and source code."""
+    receipt=json.loads((output/"receipt.json").read_text(encoding="utf-8"))
+    if receipt.get("stage") not in {"partial_time_budget","started"}:
+        raise ValueError(f"cannot resume a run in stage {receipt.get('stage')!r}")
+    if json.loads((output/"config.json").read_text(encoding="utf-8"))!=json.loads(json.dumps(config)):
+        raise ValueError("resume requires the identical configuration")
+    current={k:sha256(ROOT/k) for k in receipt["source_sha256"] if (ROOT/k).is_file()}
+    if current!=receipt["source_sha256"]:
+        raise ValueError("source files changed since the run started; start a new run instead")
+    receipt.setdefault("resumed_sessions",[]).append(dict(command=command,at_utc=datetime.now(timezone.utc).isoformat()))
+    return receipt
+
+
+def evaluate_manifest(config, output, command, resume=False, time_budget_s=None):
     if config.get("split")=="test" and config.get("experiment_role")!="formal_main_result":
         raise ValueError("test split is locked until method freeze (formal_main_result only)")
     seed=int(config.get("seed",0));np.random.seed(seed)
-    receipt=start_run(output,config,command,seed)
+    resuming=resume and (output/"receipt.json").is_file()
+    receipt=_resume_receipt(output,config,command) if resuming else start_run(output,config,command,seed)
     started=time.perf_counter()
-    logs=[]
+    logs=(output/"run.log").read_text(encoding="utf-8").splitlines() if resuming and (output/"run.log").is_file() else []
     def log(message):
         logs.append(message);print(message,flush=True)
         (output/"run.log").write_text("\n".join(logs)+"\n",encoding="utf-8")
@@ -53,7 +68,7 @@ def evaluate_manifest(config, output, command):
             prior=CachedPrior(cache_root)
             receipt["model_version"]=prior.receipt["model_version"]
             receipt["prior_cache_receipt_sha256"]=sha256(cache_root/"receipt.json")
-            (output/"alignment").mkdir()
+            (output/"alignment").mkdir(exist_ok=resuming)
         else:
             raise ValueError(f"unsupported method {method}")
         manifest=Path(config["manifest"])
@@ -63,10 +78,24 @@ def evaluate_manifest(config, output, command):
         selected=[r for r in records if r["split"]==config["split"]]
         if not selected:raise ValueError("empty requested split")
         receipt.update(manifest_path=str(manifest),manifest_sha256=sha256(manifest),synthetic=data["synthetic"])
-        write_json(output/"split_manifest.json",data)
-        output.joinpath("predictions").mkdir()
+        if resuming:
+            if json.loads((output/"split_manifest.json").read_text(encoding="utf-8"))!=data:
+                raise ValueError("manifest changed since the run started")
+        else:
+            write_json(output/"split_manifest.json",data)
+        output.joinpath("predictions").mkdir(exist_ok=resuming)
+        partial_path=output/"partial_rows.jsonl"
         rows=[];mirror_rows=[]
+        if resuming and partial_path.is_file():
+            for line in partial_path.read_text(encoding="utf-8").splitlines():
+                pair=json.loads(line);rows.append(pair["row"]);mirror_rows.append(pair["mirror_row"])
+        done={(x["scene"],x["frame"]) for x in rows}
         for i,r in enumerate(selected):
+            if (r["scene"],r["frame"]) in done:continue
+            if time_budget_s is not None and time.perf_counter()-started>time_budget_s:
+                receipt.update(stage="partial_time_budget",frames_done=len(rows),frames_total=len(selected))
+                log(f"PARTIAL: {len(rows)}/{len(selected)} frames; rerun with --resume")
+                return None
             sample_path=(manifest.parent/r["path"]).resolve()
             if sha256(sample_path)!=r["sha256"]:raise ValueError("sample checksum mismatch")
             s=load_sample(sample_path)
@@ -119,6 +148,8 @@ def evaluate_manifest(config, output, command):
             mirror_masks={name:mask&(s.material==2) for name,mask in masks.items()}
             mirror_rows.append({**row,"gt_scope":"precise_mirror_only","metrics":evaluate_depth(pred,s.gt,p,mirror_masks),
                                 "population":{name:int(mask.sum()) for name,mask in mirror_masks.items()}})
+            with partial_path.open("a",encoding="utf-8") as f:
+                f.write(json.dumps(dict(row=rows[-1],mirror_row=mirror_rows[-1]),allow_nan=False)+"\n")
             if i<int(config.get("visualizations",5)):
                 alignment_panel(s,p,pred,masks,output/"visualizations"/f"{key}.png")
             log(f"{i+1}/{len(selected)} {s.key} C={row['population']['C']} holes={row['population']['hole']} invalid={row['metrics']['regions']['all']['invalid_count']}")
@@ -155,11 +186,14 @@ def main():
     p.add_argument("--output",required=True,type=Path)
     p.add_argument("--method",choices=["raw_prompt",*sorted(PRIOR_METHODS)],default=None)
     p.add_argument("--split",choices=["train","val","test"],default=None)
+    p.add_argument("--resume",action="store_true",help="continue an interrupted/time-budgeted run in --output")
+    p.add_argument("--time-budget-s",type=float,default=None,help="stop cleanly after this many seconds (resumable)")
     args=p.parse_args()
     config=yaml.safe_load(args.config.read_text(encoding="utf-8"))
     if args.method:config["method"]=args.method
     if args.split:config["split"]=args.split
-    evaluate_manifest(config,args.output,[sys.executable,"-m","tp.eval.run_eval",*sys.argv[1:]])
+    evaluate_manifest(config,args.output,[sys.executable,"-m","tp.eval.run_eval",*sys.argv[1:]],
+                      resume=args.resume,time_budget_s=args.time_budget_s)
 
 
 if __name__=="__main__":main()
