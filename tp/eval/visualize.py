@@ -33,7 +33,7 @@ def alignment_panel(sample, prompt, pred, masks, path):
     for ax in a:ax.set_axis_off()
     fig.colorbar(im,ax=[a[2],a[3],a[4]],shrink=.6,label="camera-axis depth [m]")
     fig.colorbar(err,ax=a[7],shrink=.6,label="relative error")
-    tag="SYNTHETIC ENGINEERING ONLY" if sample.metadata["synthetic"] else "REAL TRAIN SMOKE / not final test"
+    tag="SYNTHETIC ENGINEERING ONLY" if sample.metadata["synthetic"] else f"REAL {sample.split.upper()} / development, not final test"
     fig.suptitle(f"{tag} | {sample.dataset}/{sample.scene}/{sample.frame}",fontsize=14)
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     fig.savefig(path,dpi=100);plt.close(fig)
