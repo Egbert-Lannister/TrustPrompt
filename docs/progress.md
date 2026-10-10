@@ -104,3 +104,34 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 第一次运行 `results/nyu_rgbz_bound_smoke_v1` 失败（receipt 停在 started）：解析器遇到 `R = reshape(R, [3 3])` 拒绝猜测。按官方文件实际写法修正解析：9 元素行向量取负 → MATLAB 列优先 reshape → `inv(R')`；平移按 `T = [t_x; t_z; t_y]` 的实际顺序。
 - 官方 R 的行列式为负（≈ −I）。`rgb_world2rgb_plane` 只用 X/Z、Y/Z，整体取负不改变投影，因此采用 (−R, −T) 作为物理刚体变换，并检查所有恢复出的 Z_rgb 为正。解释记入 decisions.md §9。
 - `results/nyu_rgbz_bound_smoke_v2`：5 帧 921,519 个有效提示像素，|Z_rgb − Z_raw|/Z_raw 最大 0.473%，99.9 分位 0.419%，中位 0.125%；两种主点约定结果相同到 1e-5。按 R3 规则（≤ 0.5%）判定为 `rgb_z_bounded`，但余量很小，95 帧开发集到位后重跑，若超过 0.5% 则按 R3 改写到 RGB Z。
+
+## 2026-10-10 第 1 步完成：NYU 开发集（95 帧）
+
+### 数据（Windows 运行 `step1_dev.ps1`，续传后完成）
+- `data/source_cache/nyu_dev_v1.h5`：95 帧（train 76 / val 19），状态 COMPLETE；续传一次，本次下载 578.8 MB，重试 26 次。第一次中断时已写入的 16 帧经哈希校验后保留。
+- `data/processed/mirror3d_dev_v1`：95 个样本，73 个场景（55 train + 18 val）。编号回归：92 帧（3 帧的 N−1 属于 test 场景，按规则跳过）2,860,800 像素，N 正确率 99.845%，N−1 为 0.064%。
+- `cache/unidepth_dev_v1`：95 帧，`real_dev_verified`，点云 Z 与深度逐值相等。
+
+### RGB-Z 上界（R3）—— 已完成
+- `results/nyu_rgbz_bound_dev_v1b`：95 帧 19,160,518 个有效提示像素，最大 0.473%，99.9 分位 0.419%，中位 0.120%。判定 `rgb_z_bounded`，NYU 可按“配准 Z、误差 ≤ 0.473%”进入主表。
+- `results/nyu_rgbz_bound_dev_v1_killed_background`：第一次尝试在后台运行时进程被终止，receipt 为空，保留作记录。
+
+### 基线评测（6 方法 × train/val）—— 小规模验证通过，非正式结果
+- 表格：`docs/dev_results.md`（由逐图 JSON 生成）。全部 12 个运行 `small_scale_validation_passed`，无效预测 0。
+- Linux 工作区的后台进程无法跨调用存活，因此 `run_eval` 新增 `--time-budget-s` 与 `--resume`：逐帧写 `partial_rows.jsonl`，续跑要求配置、源码哈希、manifest 完全一致；续跑记录在 receipt 的 `resumed_sessions`。合成数据测试验证“分段续跑”与“一次跑完”的逐图结果相同。`mirror3d_dev_robust_local_v2_val_v1` 中一次是外部超时硬中断后续跑（receipt 停在 started，jsonl 完整）。
+- 全局对齐方法改为跳过局部分块拟合（全局结果逐位不变，有测试），首个 robust_global val 运行因代码变更改名为 `_abandoned_code_change`。
+- 配对 bootstrap 修正：原实现只要有一个场景该区域为空就整体 NA；现改为与聚合一致——空区域场景（与方法无关）排除并列出，含无效预测的场景仍使整体 NA。旧输出改名 `_superseded_empty_scene_rule`，新输出 `results/mirror3d_dev_paired_val_v2`。
+- 主要观察（val，镜面像素，19 帧 / 18 场景，参考 = 全局对齐）：
+  - 全局对齐 C AbsRel 0.135，DOR 0.313；比 5 帧冒烟（0.065、0）差，冒烟样本偏乐观。
+  - 逐块 v2 比全局差：C AbsRel +0.126，95% CI [0.014, 0.264]（16 个非空场景）。逐块拟合吸收镜中虚像的现象在开发集上依然成立。
+  - Gate（全局）与全局对齐在镜面 C 上无差别（−0.0005，CI 跨 0），继承率略升 +0.015 [0.003, 0.032]：二值一致性门控会把“与先验碰巧一致”的错误提示保留下来。
+  - 无提示 UniDepthV2-S：C AbsRel +0.092 [0.048, 0.143]，DOR +0.337 [0.129, 0.551]。
+  - Gate 的二值 w：场景平均 AUROC val 0.811 / train 0.838。
+- 面板标题此前固定写 “REAL TRAIN SMOKE”，val 运行也如此；已改为按 split 显示，今后的运行生效。
+
+### HAMMER
+- 用户反馈整包过大，本地放不下。新增 `scripts/hammer_remote.py`：通过 HTTP Range 只读 ZIP 中央目录得到全部文件列表与大小（index），再按场景/传感器/帧间隔只下载选中的文件（fetch，CRC 校验 + SHA256 记录，可续传）。用内存 ZIP 与伪造 Range 响应做了端到端测试。Linux 工作区无法访问 campar.in.tum.de，需在 Windows 运行 `scripts/windows/hammer_index.ps1`。
+
+### 下一步
+1. Windows 运行 `hammer_index.ps1`；我据此设计子集并给出体积。
+2. 第 2 步：PromptDA-S/L 推理包装（Windows GPU），在 NYU 开发集上出 C1 现象表。
