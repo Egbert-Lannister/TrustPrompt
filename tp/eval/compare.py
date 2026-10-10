@@ -8,6 +8,24 @@ from .aggregate import aggregate
 from .bootstrap import paired_scene_bootstrap
 
 
+def paired_or_na(ref_entries, cand_entries, field, seed):
+    """Scenes whose region is empty (method-independent population, so empty for
+    both) are excluded and listed, exactly as the aggregation excludes them. Any
+    scene with invalid predictions or a missing value makes the comparison NA:
+    failures are never dropped."""
+    empty=sorted(s for s in ref_entries if ref_entries[s].get("status")=="empty")
+    if any(cand_entries[s].get("status")!="empty" for s in empty):
+        raise ValueError("empty-region mismatch between methods (denominators must be method-independent)")
+    keep=[s for s in ref_entries if s not in empty]
+    rv={s:ref_entries[s].get(field) for s in keep};cv={s:cand_entries[s].get(field) for s in keep}
+    if not keep or any(v is None for v in [*rv.values(),*cv.values()]):
+        return dict(status="NA_invalid_or_missing_scene" if keep else "NA_all_scenes_empty",
+                    excluded_empty_scenes=empty,reference=rv,candidate=cv)
+    result=paired_scene_bootstrap(rv,cv,seed=seed)
+    result.update(excluded_empty_scenes=empty,interpretation="descriptive development comparison; not confirmatory")
+    return result
+
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--reference",type=Path,required=True)
@@ -16,7 +34,7 @@ def main():
     p.add_argument("--seed",type=int,default=20261009)
     args=p.parse_args()
     config=dict(reference=str(args.reference),candidates=[str(p) for p in args.candidates],
-                seed=args.seed,n_resamples=10000,scope="full_and_precise_mirror",stage="train_smoke_descriptive_only")
+                seed=args.seed,n_resamples=10000,scope="full_and_precise_mirror",stage="development_descriptive_only")
     receipt=start_run(args.output,config,[sys.executable,"-m","tp.eval.compare",*sys.argv[1:]],args.seed)
     results={}
     try:
@@ -38,25 +56,17 @@ def main():
                 for dataset,rd in ref["datasets"].items():
                     cd=cand["datasets"][dataset]
                     for region in ("C","Cfar","Cnear","clean","hole","band","all"):
-                        vals=lambda d:{s:r["metrics"]["regions"][region]["absrel"] for s,r in d["scenes"].items()}
-                        rv,cv=vals(rd),vals(cd)
-                        k=f"{dataset}.{region}.absrel"
-                        if any(x is None for x in [*rv.values(),*cv.values()]):
-                            paired[k]=dict(status="NA_empty_or_invalid_scene",reference=rv,candidate=cv)
-                        else:
-                            paired[k]=paired_scene_bootstrap(rv,cv,seed=args.seed)
-                            paired[k]["interpretation"]="descriptive training smoke; not a confirmatory test"
+                        get=lambda d:{sc:r["metrics"]["regions"][region] for sc,r in d["scenes"].items()}
+                        paired[f"{dataset}.{region}.absrel"]=paired_or_na(get(rd),get(cd),"absrel",args.seed)
                     for metric in ("IR","DOR"):
-                        vals=lambda d:{s:r["metrics"][metric]["value"] for s,r in d["scenes"].items()}
-                        rv,cv=vals(rd),vals(cd)
-                        paired[f"{dataset}.{metric}"]=(dict(status="NA_empty_or_invalid_scene",reference=rv,candidate=cv)
-                            if any(x is None for x in [*rv.values(),*cv.values()]) else paired_scene_bootstrap(rv,cv,seed=args.seed))
+                        get=lambda d:{sc:r["metrics"][metric] for sc,r in d["scenes"].items()}
+                        paired[f"{dataset}.{metric}"]=paired_or_na(get(rd),get(cd),"value",args.seed)
                 scope_results[path.name]=dict(candidate_per_image_sha256=sha256(path/name),paired=paired,
-                    qualification="NYU registered-Z exploratory; inpainted background; five train scenes")
+                    qualification="NYU registered-Z (gap <= 0.473% on dev); inpainted background; development split only")
             results[scope]=scope_results
         write_json(args.output/"paired_bootstrap.json",results)
         receipt.update(stage="descriptive_comparison_complete",formal_experiment_complete=False)
-        (args.output/"run.log").write_text("Fixed cohort/sample hashes and method-independent populations checked.\n10,000 paired scene resamples; empty/invalid scenes explicitly NA.\n",encoding="utf-8")
+        (args.output/"run.log").write_text("Fixed cohort/sample hashes and method-independent populations checked.\n10,000 paired scene resamples; empty scenes excluded and listed; invalid scenes force NA.\n",encoding="utf-8")
     except Exception as e:
         receipt.update(stage="failed",error=repr(e));raise
     finally:
