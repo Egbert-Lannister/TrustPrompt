@@ -205,6 +205,7 @@ def align_disparity(
     min_support=50,
     max_fit_points=4096,
     grid=(8, 8),
+    compute_local=True,
 ):
     """Return global/local aligned depth plus maps and JSON-safe diagnostics.
 
@@ -290,6 +291,14 @@ def align_disparity(
     global_depth, invalid_global = _depth(m, model[0], model[1], prior_valid)
     diagnostics["nonpositive_or_nonfinite_global_on_valid_prior_count"] = invalid_global
     diagnostics["invalid_global_prediction_count"] = int((~np.isfinite(global_depth)).sum())
+    if not compute_local:
+        # Global-only methods: the global model is fitted before any local work,
+        # so skipping tiles leaves global_depth bit-identical. Local maps stay NaN.
+        diagnostics["local_skipped"] = True
+        result.update(global_depth=global_depth)
+        valid = sensor_valid & np.isfinite(global_depth)
+        result["global_residual"][valid] = np.log(prompt[valid]) - np.log(global_depth[valid])
+        return result
     scales = np.full((tile_h, tile_w), model[0])
     shifts = np.full((tile_h, tile_w), model[1])
     ratios = np.full((tile_h, tile_w), np.nan)
