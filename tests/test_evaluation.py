@@ -173,3 +173,18 @@ def test_paired_bootstrap_reproducibility_constant_difference_and_holm():
         paired_scene_bootstrap(reference, {"a": 1.0})
     with pytest.raises(ValueError, match="cannot be silently removed"):
         paired_scene_bootstrap({"a": None}, {"a": 1.0})
+
+
+def test_paired_compare_excludes_only_empty_scenes_and_keeps_invalid_as_na():
+    from tp.eval.compare import paired_or_na
+    ok = lambda v: {"status": "ok", "absrel": v}
+    empty = {"status": "empty", "absrel": None}
+    ref = {"a": ok(.1), "b": ok(.2), "c": empty}
+    cand = {"a": ok(.05), "b": ok(.1), "c": empty}
+    r = paired_or_na(ref, cand, "absrel", seed=0)
+    assert r["status"] == "ok" and r["excluded_empty_scenes"] == ["c"] and r["scene_count"] == 2
+    bad = {"a": ok(.05), "b": {"status": "invalid_predictions", "absrel": None}, "c": empty}
+    assert paired_or_na(ref, bad, "absrel", seed=0)["status"] == "NA_invalid_or_missing_scene"
+    import pytest
+    with pytest.raises(ValueError):
+        paired_or_na(ref, {"a": ok(.1), "b": ok(.1), "c": ok(.3)}, "absrel", seed=0)
