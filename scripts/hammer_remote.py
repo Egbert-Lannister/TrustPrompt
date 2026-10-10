@@ -7,6 +7,8 @@ we select (scenes / sensors / frame stride), verifying each member's CRC-32
 (zipfile does this) and recording SHA256. Nothing else is downloaded.
 
   python -m scripts.hammer_remote index --output data/source_cache/hammer_index_v1.json
+  python -m scripts.hammer_remote pfetch --index data/source_cache/hammer_index_v1.json \
+      --select configs/hammer_subset_v1.yaml --dest D:/data/hammer_subset_v1 --workers 6   # parallel (preferred)
   python -m scripts.hammer_remote fetch --index data/source_cache/hammer_index_v1.json \
       --select configs/hammer_subset_v1.yaml --dest D:/data/hammer_subset_v1 --max-download-gib 40
 
@@ -158,5 +160,186 @@ def main(argv=None, opener=None):
         return fetch(reader, index, chosen, args.dest, args.dest / "hammer_fetch_receipt.json")
 
 
+
+
+# ---------------------------------------------------------------------------
+# Parallel fetch (aria2-style multi-connection, but only for selected members).
+# Members are sorted by their local-header offset and packed into contiguous
+# batches (<= batch_mib, gaps <= gap_kib merged). Each batch is one HTTP Range
+# request; members are parsed from the batch bytes, inflated, CRC/size-checked
+# and written atomically. Batches run on `workers` connections.
+# ---------------------------------------------------------------------------
+import struct
+import threading
+import time
+import urllib.request
+import zlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+LOCAL_HEADER = struct.Struct("<IHHHHHIIIHH")   # 30 bytes, signature 0x04034b50
+
+
+def plan_batches(infos, batch_bytes, gap_bytes):
+    """infos: objects with header_offset, compress_size, filename (sorted or not).
+    Returns list of (start, end_inclusive, [infos]) covering each member's local
+    header (upper-bounded by 30+name+64KiB extra) and data."""
+    infos = sorted(infos, key=lambda i: i.header_offset)
+    batches, current = [], None
+    for info in infos:
+        start = info.header_offset
+        end = start + 30 + len(info.filename.encode("utf-8")) + 65535 + info.compress_size - 1
+        if current and start - current[1] <= gap_bytes and end - current[0] + 1 <= batch_bytes:
+            current[1] = max(current[1], end); current[2].append(info)
+        else:
+            if current:
+                batches.append(tuple(current))
+            current = [start, end, [info]]
+    if current:
+        batches.append(tuple(current))
+    return batches
+
+
+def extract_from_blob(blob, blob_start, info):
+    off = info.header_offset - blob_start
+    fields = LOCAL_HEADER.unpack_from(blob, off)
+    if fields[0] != 0x04034B50:
+        raise ValueError(f"bad local header for {info.filename}")
+    name_len, extra_len = fields[9], fields[10]
+    data_off = off + 30 + name_len + extra_len
+    raw = blob[data_off:data_off + info.compress_size]
+    if len(raw) != info.compress_size:
+        raise ValueError(f"truncated member data for {info.filename}")
+    if info.compress_type == zipfile.ZIP_STORED:
+        data = bytes(raw)
+    elif info.compress_type == zipfile.ZIP_DEFLATED:
+        inflater = zlib.decompressobj(-15)
+        data = inflater.decompress(raw) + inflater.flush()
+    else:
+        raise ValueError(f"unsupported compression {info.compress_type}")
+    if len(data) != info.file_size or (zlib.crc32(data) & 0xFFFFFFFF) != info.CRC:
+        raise ValueError(f"size/CRC mismatch for {info.filename}")
+    return data
+
+
+def _range_get(url, start, end, identity, opener, timeout, attempts):
+    for attempt in range(attempts):
+        try:
+            headers = {"Range": f"bytes={start}-{end}", "Accept-Encoding": "identity"}
+            if identity.get("etag"):
+                headers["If-Range"] = identity["etag"]
+            response = opener(urllib.request.Request(url, headers=headers), timeout=timeout)
+            try:
+                if getattr(response, "status", None) != 206:
+                    raise ValueError("server did not return 206 Partial Content")
+                cr = response.headers.get("Content-Range", "")
+                m = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+)", cr.strip())
+                if not m or (int(m.group(1)), int(m.group(2))) != (start, end) or int(m.group(3)) != identity["size"]:
+                    raise ValueError(f"unexpected Content-Range {cr!r}")
+                if identity.get("etag") and response.headers.get("ETag") not in (None, identity["etag"]):
+                    raise ValueError("archive ETag changed")
+                body = response.read()
+            finally:
+                response.close()
+            if len(body) != end - start + 1:
+                raise IOError("short Range body")
+            return body
+        except ValueError:
+            raise
+        except Exception:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(min(2 ** attempt, 60))
+
+
+def parallel_fetch(url, index, chosen_names, dest, receipt_path, workers=6, batch_mib=64, gap_kib=1024,
+                   opener=None, timeout=120, attempts=8, max_bytes=None):
+    opener = opener or urllib.request.urlopen
+    receipt = json.loads(receipt_path.read_text(encoding="utf8")) if receipt_path.exists() else dict(
+        schema="trustprompt.hammer_fetch.v1", identity=index["identity"], members={}, runs=[])
+    if receipt["identity"] != index["identity"]:
+        raise ValueError("existing receipt belongs to a different archive version")
+    done = receipt["members"]
+    # Central directory (gives header offsets); also re-checks the live archive identity.
+    with open_remote(url, 256 * MIB, opener=opener) as reader:
+        if reader.archive_identity != index["identity"]:
+            raise ValueError("remote archive identity differs from the index; re-index first")
+        with zipfile.ZipFile(reader) as z:
+            by_name = {i.filename: i for i in z.infolist()}
+    todo = []
+    for name in chosen_names:
+        info = by_name[name]
+        target = safe_target(dest, name)
+        if name in done and target.is_file() and target.stat().st_size == info.file_size:
+            continue
+        todo.append(info)
+    batches = plan_batches(todo, batch_mib * MIB, gap_kib * 1024)
+    planned = sum(e - s + 1 for s, e, _ in batches)
+    if max_bytes is not None and planned > max_bytes:
+        raise ValueError(f"planned transfer {planned} B exceeds cap {max_bytes} B")
+    print(json.dumps(dict(stage="plan", members=len(todo), batches=len(batches), planned_bytes=planned)), flush=True)
+    lock, stats = threading.Lock(), dict(bytes=0, members=0, batches=0)
+
+    def work(batch):
+        start, end, infos = batch
+        end = min(end, index["identity"]["size"] - 1)
+        blob = _range_get(url, start, end, index["identity"], opener, timeout, attempts)
+        out = []
+        for info in infos:
+            data = extract_from_blob(blob, start, info)
+            target = safe_target(dest, info.filename)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            partial = target.with_name(target.name + ".part")
+            partial.write_bytes(data)
+            partial.replace(target)
+            out.append((info.filename, dict(size=info.file_size, crc=info.CRC,
+                                            sha256=hashlib.sha256(data).hexdigest())))
+        return len(blob), out
+
+    started = time.time()
+    error = None
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(work, b) for b in batches]
+        for k, future in enumerate(as_completed(futures)):
+            try:
+                nbytes, out = future.result()
+            except Exception as exc:          # keep finished batches; report and stop at the end
+                error = error or exc
+                continue
+            with lock:
+                done.update(out); stats["bytes"] += nbytes; stats["members"] += len(out); stats["batches"] += 1
+                if stats["batches"] % 10 == 0 or stats["batches"] == len(batches):
+                    receipt_path.write_text(json.dumps(receipt, indent=1), encoding="utf8")
+                    rate = stats["bytes"] / max(time.time() - started, 1e-6) / MIB
+                    print(json.dumps(dict(batches=f"{stats['batches']}/{len(batches)}",
+                                          gib=round(stats["bytes"] / GIB, 2), mib_per_s=round(rate, 1))), flush=True)
+    receipt["runs"].append(dict(finished_at_utc=datetime.now(timezone.utc).isoformat(), mode="parallel",
+                                workers=workers, batches_ok=stats["batches"], batches_planned=len(batches),
+                                downloaded_bytes=stats["bytes"], error=repr(error) if error else None))
+    receipt_path.write_text(json.dumps(receipt, indent=1), encoding="utf8")
+    if error:
+        raise RuntimeError(f"{len(batches) - stats['batches']} batches failed; re-run to resume") from error
+    return receipt
+
+
+def pfetch_main(argv=None, opener=None):
+    import yaml
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--index", type=Path, required=True); ap.add_argument("--select", type=Path, required=True)
+    ap.add_argument("--dest", type=Path, required=True); ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--batch-mib", type=int, default=64); ap.add_argument("--max-download-gib", type=float, default=20)
+    args = ap.parse_args(argv)
+    index = json.loads(args.index.read_text(encoding="utf8"))
+    rule = yaml.safe_load(args.select.read_text(encoding="utf8"))
+    chosen = [m["name"] for m in select_members(index["members"], rule)]
+    args.dest.mkdir(parents=True, exist_ok=True)
+    (args.dest / "selection_rule.yaml").write_text(args.select.read_text(encoding="utf8"), encoding="utf8")
+    return parallel_fetch(index["identity"]["url"], index, chosen, args.dest, args.dest / "hammer_fetch_receipt.json",
+                          workers=args.workers, batch_mib=args.batch_mib, opener=opener,
+                          max_bytes=int(args.max_download_gib * GIB))
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "pfetch":
+        pfetch_main(sys.argv[2:])
+    else:
+        main()

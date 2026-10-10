@@ -69,3 +69,39 @@ def test_select_rejects_by_exclude_and_keeps_non_frame_files():
                ["a/scene12/l515/depth/000001.png", "a/scene12/l515/pose.txt", "a/scene12/l515/depth/000002.png"]]
     chosen = select_members(members, {"include": ["*/l515/*"], "exclude": ["*000002*"], "frame_stride": 2})
     assert [m["name"] for m in chosen] == ["a/scene12/l515/pose.txt"]
+
+
+def test_parallel_fetch_batches_extracts_verifies_and_resumes(tmp_path):
+    from scripts.hammer_remote import pfetch_main
+    blob, log = archive(), []
+    opener = make_opener(blob, log)
+    index_path = tmp_path / "index.json"
+    main(["index", "--output", str(index_path), "--url", "https://example.org/h.zip"], opener=opener)
+    rule = tmp_path / "rule.yaml"
+    rule.write_text("include: ['*/d435/*', '*/polarization/rgb/*']\nexclude: ['*scene12*']\nframe_stride: 2\n")
+    dest = tmp_path / "par"
+    receipt = pfetch_main(["--index", str(index_path), "--select", str(rule), "--dest", str(dest),
+                           "--workers", "3", "--batch-mib", "1"], opener=opener)
+    files = sorted(p.relative_to(dest).as_posix() for p in dest.rglob("*.png"))
+    assert files == [f"_dataset_processed/scene2/{d}/{i:06d}.png" for d in ("d435/depth", "polarization/rgb") for i in (0, 2, 4)]
+    assert (dest / "_dataset_processed/scene2/polarization/rgb/000004.png").read_bytes() == bytes([11]) * 3000
+    assert len(receipt["members"]) == 7 and receipt["runs"][-1]["error"] is None
+    before = len(log)
+    pfetch_main(["--index", str(index_path), "--select", str(rule), "--dest", str(dest)], opener=opener)
+    member_requests = [n for n in log[before:] if n > 1024 * 1024]   # only block reads for the directory
+    assert not member_requests or len(log) - before < 10
+
+
+def test_extract_rejects_corrupted_member():
+    import zlib, zipfile, io
+    from scripts.hammer_remote import extract_from_blob
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("a.bin", b"x" * 4000)
+    data = bytearray(buffer.getvalue())
+    info = zipfile.ZipFile(io.BytesIO(bytes(data))).infolist()[0]
+    good = extract_from_blob(bytes(data), 0, info)
+    assert good == b"x" * 4000
+    data[info.header_offset + 30 + len("a.bin") + 5] ^= 0xFF          # flip a compressed byte
+    with pytest.raises(Exception):
+        extract_from_blob(bytes(data), 0, info)
