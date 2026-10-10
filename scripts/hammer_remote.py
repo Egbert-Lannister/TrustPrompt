@@ -30,8 +30,10 @@ from scripts.fetch_nyu_subset import GIB, MIB, HTTPRangeReader
 URL = "https://campar.in.tum.de/public_datasets/2022_arxiv_jung/_dataset_processed.zip"
 
 
-def open_remote(url, max_download_bytes, retries=8, opener=None):
-    return HTTPRangeReader(url, block_size=MIB, max_cached_blocks=64, max_read_bytes=64 * MIB,
+def open_remote(url, max_download_bytes, retries=8, opener=None, block_size=MIB, cached_blocks=64):
+    # fetch uses 8 MiB blocks: selected folders are contiguous in the ZIP, so big
+    # blocks cut the request count; excluded data between runs costs little.
+    return HTTPRangeReader(url, block_size=block_size, max_cached_blocks=cached_blocks, max_read_bytes=64 * MIB,
                            timeout=60, max_total_download_bytes=max_download_bytes,
                            retry_attempts=retries, opener=opener)
 
@@ -151,7 +153,8 @@ def main(argv=None, opener=None):
     if plan["selected_compressed"] > args.max_download_gib * GIB:
         raise ValueError("selection exceeds --max-download-gib; narrow the selection")
     args.dest.mkdir(parents=True, exist_ok=True)
-    with open_remote(index["identity"]["url"], int(args.max_download_gib * GIB) + 256 * MIB, opener=opener) as reader:
+    with open_remote(index["identity"]["url"], int(args.max_download_gib * GIB) + 256 * MIB, opener=opener,
+                     block_size=8 * MIB, cached_blocks=16) as reader:
         return fetch(reader, index, chosen, args.dest, args.dest / "hammer_fetch_receipt.json")
 
 

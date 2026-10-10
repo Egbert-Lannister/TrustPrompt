@@ -135,3 +135,11 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 ### 下一步
 1. Windows 运行 `hammer_index.ps1`；我据此设计子集并给出体积。
 2. 第 2 步：PromptDA-S/L 推理包装（Windows GPU），在 NYU 开发集上出 C1 现象表。
+
+## 2026-10-10 HAMMER 远程索引
+
+- Windows 运行 `hammer_index.ps1` 成功：只读 ZIP 中央目录 60.6 MB，得到 `data/source_cache/hammer_index_v1.json`。归档 170.46 GB（ETag `"681dead6-27b00c96a3"`，Last-Modified 2025-05-09），432,596 个文件，压缩后 158.7 GiB。服务器支持 Range。
+- 目录结构：64 个序列（`sceneN_trajM_k` 与对应 `_naked_`），每个序列有 d435 / l515_depth / l515_rgb / polarization / tof 五个相机目录。`polarization/` 下已有 RGB、`depth_d435` / `depth_l515` / `depth_tof`（三种传感器深度已投到该视角）、`_gt`、`_instance`、`_pose` 与 intrinsics，正好对应一个 Sample × 3 种传感器。体积主要来自偏振原始数据 `pol/`。
+- 子集 `configs/hammer_subset_v1.yaml`：polarization 视角全部帧 + naked 序列的 GT/位姿，65,070 个文件，下载 15.8 GiB，落盘 19.1 GiB；`hammer_subset_v1_stride2.yaml` 隔帧取，下载 7.9 GiB，落盘 9.6 GiB（dry-run 结果）。
+- 下载脚本 `scripts/windows/hammer_fetch.ps1`：需指定目标目录 `-Dest`，先检查剩余空间，失败自动等待 60 s 续传，最多 20 次。
+- 说明：Claude 在用户电脑上的 shell 是独立的 Linux 虚拟机（内核 6.8 Ubuntu），不是用户的 WSL，无法访问 campar.in.tum.de，因此下载需在 Windows 或用户自己的 WSL 中运行。

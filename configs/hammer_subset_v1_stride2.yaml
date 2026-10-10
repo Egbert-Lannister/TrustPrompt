@@ -1,0 +1,20 @@
+# HAMMER subset v1-stride2 (half the frames) (plan revision v2 section 2.2). Selection designed from data/source_cache/hammer_index_v1.json.
+# Polarization-camera view = RGB + D435/L515/ToF depth already warped to it + rendered GT, i.e. one Sample per
+# (frame, sensor). Excluded: raw polarization stacks (pol/, ~60% of the archive), stereo IR pairs, per-sensor
+# native views. Naked trajectories: only GT/pose/intrinsics (background-behind-object depth for the simulator).
+# All 64 sequences incl. test scenes 12-14 are downloaded; test frames are not opened before method freeze.
+include:
+  - "*/polarization/rgb/*"
+  - "*/polarization/depth_d435/*"
+  - "*/polarization/depth_l515/*"
+  - "*/polarization/depth_tof/*"
+  - "*/polarization/_gt/*"
+  - "*/polarization/_instance/*"
+  - "*/polarization/_pose/*"
+  - "*/polarization/intrinsics.txt"
+  - "*/extrinsics/*"
+exclude:
+  - "*naked*/polarization/rgb/*"
+  - "*naked*/polarization/depth_*/*"
+  - "*naked*/polarization/_instance/*"
+frame_stride: 2
