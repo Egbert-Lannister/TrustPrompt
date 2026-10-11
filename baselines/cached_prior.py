@@ -48,6 +48,11 @@ class CachedPrior:
         # Windows resolve on POSIX hosts too.
         path=self.root/"predictions"/PureWindowsPath(row["prediction_path"]).name
         if sha256(path)!=row["prediction_sha256"]:raise ValueError("corrupted prior prediction")
-        with np.load(path,allow_pickle=False) as z:depth=z["depth"].copy()
+        with np.load(path,allow_pickle=False) as z:
+            if "depth_q" in z.files:     # fixed-point storage: 0 = invalid prediction
+                q=z["depth_q"];depth=(q.astype(np.float64)*float(z["scale_m"])).astype(np.float32)
+                depth[q==0]=np.nan
+            else:
+                depth=z["depth"].copy()
         if depth.shape!=sample.rgb.shape[:2]:raise ValueError("prior grid mismatch")
         return depth

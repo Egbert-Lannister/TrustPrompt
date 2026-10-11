@@ -16,3 +16,4 @@ splits:
 - train
 - val
 output: E:/TrustPrompt_data/cache/promptda_vitl_raw_hammer_dev_v1
+storage: uint16_0p2mm

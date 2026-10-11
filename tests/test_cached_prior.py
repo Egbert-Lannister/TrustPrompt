@@ -190,3 +190,14 @@ def test_windows_prediction_path_basename_resolves_on_any_host():
     from pathlib import PureWindowsPath
     assert PureWindowsPath(r"D:\x\cache\predictions\45.npz").name == "45.npz"
     assert PureWindowsPath("/sessions/x/predictions/45.npz").name == "45.npz"
+
+
+def test_fixed_point_prediction_decodes_within_0p1mm_and_keeps_invalid(tmp_path):
+    import numpy as np
+    depth = np.array([[0.3501234, 1.23456], [np.nan, 13.0]], np.float32)
+    finite = np.isfinite(depth) & (depth > 0)
+    q = np.zeros(depth.shape, np.uint16); q[finite] = np.round(depth[finite] / 2e-4).astype(np.uint16)
+    np.savez_compressed(tmp_path / "p.npz", depth_q=q, scale_m=np.float64(2e-4))
+    with np.load(tmp_path / "p.npz") as z:
+        d = (z["depth_q"].astype(np.float64) * float(z["scale_m"])).astype(np.float32); d[z["depth_q"] == 0] = np.nan
+    assert np.isnan(d[1, 0]) and np.nanmax(np.abs(d - depth)) <= 1e-4 + 1e-7

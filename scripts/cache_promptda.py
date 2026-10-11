@@ -97,14 +97,24 @@ def run(config_path, limit=None, output=None):
             torch.cuda.synchronize(); seconds = time.perf_counter() - t
             name = f"{s.sensor}__{s.scene}__{s.frame}.npz"
             with (output / "predictions" / name).open("xb") as f:
-                np.savez_compressed(f, depth=depth)
+                if config.get("storage", "float32") == "uint16_0p2mm":
+                    # Fixed-point metres, step 0.2 mm (|error| <= 0.1 mm), 0 = invalid, max 13.107 m.
+                    finite = np.isfinite(depth) & (depth > 0)
+                    q = np.zeros(depth.shape, np.uint16)
+                    q[finite] = np.clip(np.round(depth[finite] / 2e-4), 1, 65535).astype(np.uint16)
+                    clipped = int((finite & (depth > 65535 * 2e-4)).sum())
+                    np.savez_compressed(f, depth_q=q, scale_m=np.float64(2e-4))
+                else:
+                    clipped = 0
+                    np.savez_compressed(f, depth=depth)
             rows.append(dict(dataset=s.dataset, sensor=s.sensor, scene=s.scene, frame=s.frame, split=s.split,
                              sample_npz_sha256=sample_hash, rgb_sha256=hashlib.sha256(s.rgb.tobytes()).hexdigest(),
                              prompt_hw_sha256=hashlib.sha256(prompt_hw.tobytes()).hexdigest(),
                              prediction_path=str(output / "predictions" / name),
                              prediction_sha256=sha256(output / "predictions" / name), seconds=seconds,
                              peak_allocated_bytes=torch.cuda.max_memory_allocated(), prompt=pinfo, report=report,
-                             invalid_pixels=int((~(np.isfinite(depth) & (depth > 0))).sum())))
+                             invalid_pixels=int((~(np.isfinite(depth) & (depth > 0))).sum()),
+                             storage=config.get("storage", "float32"), clipped_pixels=clipped))
             line = f"{k + 1}/{len(records)} {s.key} {seconds:.3f}s invalid={rows[-1]['invalid_pixels']}"
             print(line, flush=True); log.write(line + "\n")
             write_json(output / "images.json", rows)
