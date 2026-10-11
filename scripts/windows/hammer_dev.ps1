@@ -29,8 +29,11 @@ if (-not (Test-Stage cache\unidepth_hammer_dev_preflight_v1\receipt.json @("real
 if (-not (Test-Stage cache\unidepth_hammer_dev_v1\receipt.json @("real_dev_verified"))) {
   Invoke-Step "UniDepth HAMMER dev cache" { & $py -m scripts.cache_unidepth --config configs/unidepth_hammer_dev.yaml }
 }
+# Local (8x8-tile) alignment costs ~10-20 s per 832x1088 sample on CPU; it runs on val only.
+$methods = @{ "val" = @("raw_prompt", "unidepth_v2_s", "robust_global", "gate_global", "robust_local_v2", "gate_local_v2");
+              "train" = @("raw_prompt", "unidepth_v2_s", "robust_global", "gate_global") }
 foreach ($s in @("val", "train")) {
-  foreach ($m in @("raw_prompt", "unidepth_v2_s", "robust_global", "gate_global", "robust_local_v2", "gate_local_v2")) {
+  foreach ($m in $methods[$s]) {
     $out = "results/hammer_dev_${m}_${s}_v1"
     if (Test-Stage "$out\receipt.json" @("small_scale_validation_passed", "completed_with_invalid_predictions")) { continue }
     $resume = @(); if (Test-Path "$out\receipt.json") { $resume = @("--resume") }
