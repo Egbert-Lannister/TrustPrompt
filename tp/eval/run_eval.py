@@ -22,7 +22,9 @@ from .visualize import alignment_panel
 # Plan revision R4/R5: v1 local kept; v2 local and gate variants added.
 ALIGNED_SOURCE={"robust_global":"global_depth","robust_local":"local_depth","robust_local_v2":"local_depth_v2",
                 "gate_global":"global_depth","gate_local_v2":"local_depth_v2"}
-PRIOR_METHODS={"unidepth_v2_s",*ALIGNED_SOURCE}
+PRIOR_METHODS={"unidepth_v2_s","trustfill",*ALIGNED_SOURCE}
+# Module C evaluation (revision R13): trust source x fill rule. oracle_* sources read GT-derived masks.
+TRUST_SOURCES={"oracle_c","oracle_focus","gate_global"}
 # Plan revision R2: NYU background reference is inpainted from the same raw prompt.
 NYU_SEMANTICS=dict(clean="deviation_from_inpainted_sensor_reference_not_gt_accuracy",
                    hole="not_reported_for_nyu_inpainted_reference",
@@ -151,6 +153,30 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             else:
                 prior_depth=prior.predict(s,r["sha256"])
                 if method=="unidepth_v2_s":pred=prior_depth
+                elif method=="trustfill":
+                    from tp.models.fill import fill_regions
+                    src=config["trust_source"];rule=config["fill_rule"]
+                    if src not in TRUST_SOURCES:raise ValueError(f"unknown trust_source {src}")
+                    aligned=align_depth(prior_depth,p,pv,seed=seed,compute_local=False,**config.get("robust",{}))
+                    base=aligned["global_depth"]
+                    with np.errstate(divide="ignore",invalid="ignore"):
+                        prior_inv=np.where(np.isfinite(prior_depth)&(prior_depth>0),1.0/prior_depth,np.nan)
+                    if src=="oracle_c":low=masks["C"]&pv
+                    elif src=="oracle_focus":low=focus_scope(s)[1]&pv
+                    else:
+                        with np.errstate(divide="ignore",invalid="ignore"):
+                            agree=pv&np.isfinite(base)&(np.abs(p-base)/base<=float(config.get("tau_gate",0.05)))
+                        low=pv&~agree
+                        trust=trust_quality(np.where(pv,agree.astype(np.float32),np.nan),p,s.gt,pv,s.gt_valid,tau=config["tau"])
+                    fc=config.get("fill",{})
+                    pred,records=fill_regions(base,prior_inv,p,pv&~low,low,rule=rule,seed=seed,
+                                              gt=s.gt if rule=="oracle_best" else None,**fc)
+                    choices={k:sum(1 for x in records if x["choice"]==k) for k in ("k0","k1","k2","k3")}
+                    fill_summary=dict(regions=len(records),choices=choices,
+                                      choice_area={k:sum(x["area"] for x in records if x["choice"]==k) for k in choices},
+                                      low_trust_pixels=int(low.sum()),oracle=src.startswith("oracle") or rule=="oracle_best")
+                    write_json(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.json",
+                               dict(alignment=aligned["diagnostics"],fill=fill_summary,regions=records[:200]))
                 else:
                     aligned=align_depth(prior_depth,p,pv,seed=seed,compute_local=ALIGNED_SOURCE[method]!="global_depth",
                                         **config.get("robust",{}))
@@ -164,6 +190,8 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                         np.savez_compressed(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.npz",
                                             **{k:v for k,v in aligned.items() if isinstance(v,np.ndarray)})
             elapsed=time.perf_counter()-t
+            if method=="trustfill":row_extra=dict(fill_summary=fill_summary)
+            else:row_extra={}
             if pred.shape!=s.gt.shape:raise ValueError("prediction shape mismatch")
             key=f"{s.dataset}__{s.sensor}__{s.scene}__{s.frame}"
             pred_hash=hashlib.sha256(np.ascontiguousarray(pred,dtype=np.float32).tobytes()).hexdigest()
@@ -171,7 +199,7 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             if saved:np.save(output/"predictions"/f"{key}.npy",pred,allow_pickle=False)
             row={k:getattr(s,k) for k in ("dataset","scene","frame","split","sensor")}
             row.update(method=config.get("method_label",method),sample_sha256=r["sha256"],prediction_sha256=sha256(output/"predictions"/f"{key}.npy") if saved else None,
-                       prediction_array_sha256=pred_hash,prediction_saved=saved,
+                       prediction_array_sha256=pred_hash,prediction_saved=saved,**row_extra,
                        evaluation_prediction_seconds=elapsed,
                        timing_component="raw_prompt_cpu" if method=="raw_prompt" else "cache_load" if method in {"unidepth_v2_s","cached_prediction"} else "cache_load_and_cpu_alignment",
                        execution_platform=sys.platform,
