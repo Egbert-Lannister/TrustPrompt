@@ -187,3 +187,9 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - `scripts/hammer_instance_sheets.py`：为 scene 2–11 生成实例 ID 对照图与材质标注 CSV 模板（测试场景冻结后再标）。
 - 运行脚本 `scripts/windows/step2_promptda.ps1`（对照图 → 拉取并校验官方源码 → 下载 3 个权重与模型卡 → 预检 3 个样本 → 全量缓存 → 评测 → 出表）。
 - 测试：120 passed / 1 skipped。
+
+## 2026-10-11 第 2 步运行中：E 盘写满
+
+- NYU：5 个 PromptDA 缓存全部完成（`cache/promptda_*_nyu_dev_v1`）。权重以 `weights_only` 安全模式加载；预检 3 帧在传感器正确像素上的中位相对误差 0.8%–1.5%，确认权重加载正确。
+- HAMMER：PromptDA-S 缓存完成；PromptDA-L 写到 946/1,143 时 E 盘写满，receipt 为 failed。已完成的 946 帧：中位 0.89 s/帧，最大显存 3.3 GB，无效像素 0。
+- 修复：HAMMER 配置改为定点存储 `storage: uint16_0p2mm`（步长 0.2 mm，误差 ≤ 0.1 mm，0 = 无效，上限 13.107 m，超限计数记录为 clipped_pixels），`CachedPrior` 自动解码；NYU 与已完成的缓存仍为 float32，不受影响。测试 121 passed。

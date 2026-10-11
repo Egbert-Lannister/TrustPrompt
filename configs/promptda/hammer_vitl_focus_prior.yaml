@@ -16,3 +16,4 @@ splits:
 - val
 output: E:/TrustPrompt_data/cache/promptda_vitl_focus_prior_hammer_dev_v1
 note: 'ORACLE ANALYSIS: prompt built from a GT-derived mask; not a deployable method'
+storage: uint16_0p2mm

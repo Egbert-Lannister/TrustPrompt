@@ -18,3 +18,4 @@ output: E:/TrustPrompt_data/cache/promptda_vits_transparent_raw_hammer_dev_v1
 note: fine-tuned on HAMMER by the PromptDA authors (iPhone-LiDAR simulation); HAMMER
   dev scenes may be in its training data, so HAMMER numbers are not a fair comparison
   (only HAMMER test is, per plan)
+storage: uint16_0p2mm
