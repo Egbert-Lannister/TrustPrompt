@@ -78,3 +78,19 @@ def test_prepare_and_evaluate_write_object_scope(tmp_path, monkeypatch):
     assert all(r["gt_scope"] == "objects_vs_naked_gt_gt_1mm" for r in rows)
     assert rows[0]["population"]["C"] == 100 and rows[0]["metrics"]["IR"]["value"] == 1.0   # sees through object
     assert not (tmp_path / "run" / "per_image_mirror_only.json").exists()
+
+
+def test_instance_sheets_skip_test_scenes(tmp_path, monkeypatch):
+    import csv, sys
+    from scripts import hammer_instance_sheets
+    root = tmp_path / "hammer"
+    write_seq(root, "scene3_traj1_1", 5); write_seq(root, "scene13_traj1_1", 2)
+    inst = root / "scene3_traj1_1/polarization/_instance/000002.png"
+    a = np.full((48, 64), 20, np.uint8); a[10:20, 10:20] = 40
+    Image.fromarray(a).save(inst)
+    out = tmp_path / "sheets"
+    monkeypatch.setattr(sys, "argv", ["x", "--root", str(root), "--output", str(out)])
+    hammer_instance_sheets.main()
+    rows = list(csv.DictReader((out / "hammer_materials_template.csv").open()))
+    assert {r["scene"] for r in rows} == {"scene3"} and {r["instance_id"] for r in rows} == {"20", "40"}
+    assert (out / "scene03_instances.png").is_file() and not (out / "scene13_instances.png").exists()

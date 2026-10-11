@@ -11,7 +11,11 @@ from tp.provenance import ROOT, sha256, write_json
 
 METHODS = [("raw_prompt", "raw_prompt"), ("UniDepthV2-S (no prompt)", "unidepth_v2_s"),
            ("RobustAlign global", "robust_global"), ("RobustAlign local v2", "robust_local_v2"),
-           ("Gate (global)", "gate_global"), ("Gate (local v2)", "gate_local_v2")]
+           ("Gate (global)", "gate_global"), ("Gate (local v2)", "gate_local_v2"),
+           ("PromptDA-S", "promptda_vits_raw"), ("PromptDA-L", "promptda_vitl_raw"),
+           ("PromptDA-S-Transparent (saw HAMMER)", "promptda_vits_transparent_raw"),
+           ("PromptDA-L + GT focus mask, D_g fill [oracle]", "promptda_vitl_focus_prior"),
+           ("PromptDA-L + GT contamination mask, D_g fill [oracle]", "promptda_vitl_oracle_prior")]
 fmt = lambda v: "NA" if v is None else f"{v:.4f}"
 
 

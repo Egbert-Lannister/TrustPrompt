@@ -7,13 +7,13 @@ from tp.provenance import sha256
 
 
 class CachedPrior:
-    def __init__(self, root):
+    def __init__(self, root, expected_model="UniDepthV2-ViT-S14"):
         self.root=Path(root)
         self.receipt=json.loads((self.root/"receipt.json").read_text(encoding="utf-8"))
         if self.receipt["stage"] not in {"real_train_smoke_verified","real_dev_verified"}:
             raise ValueError("prior cache not verified/complete")
-        if self.receipt.get("model_version",{}).get("name")!="UniDepthV2-ViT-S14":
-            raise ValueError("prior cache model mismatch: expected UniDepthV2-ViT-S14")
+        if self.receipt.get("model_version",{}).get("name")!=expected_model:
+            raise ValueError(f"prediction cache model mismatch: expected {expected_model}")
         if self.receipt.get("images_sha256") and sha256(self.root/"images.json")!=self.receipt["images_sha256"]:
             raise ValueError("prior index hash mismatch")
         rows=json.loads((self.root/"images.json").read_text(encoding="utf-8"))
