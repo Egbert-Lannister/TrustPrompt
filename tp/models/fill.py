@@ -1,0 +1,158 @@
+"""Module C: low-degree-of-freedom region fill (plan section 5.3), rule v1.
+
+For every connected low-trust region Omega (dilated by `grow` px) we fit
+candidates on the trusted ring R = dilate(Omega, ring) minus Omega, where ring
+pixels must hold a valid, trusted prompt. All fits are in inverse depth:
+
+  k0  D_a                       base aligned prior, 0 parameters
+  k1  1/Z = s*m                 s = median of (1/P)/m on R          (1 parameter)
+  k2  1/Z = s*m + t             IRLS-Huber on R                     (2 parameters)
+  k3  1/Z = a*u + b*v + c       IRLS-Huber plane on R               (3 parameters)
+
+m is the prior's inverse depth (relative disparity). A plane in camera space
+has inverse depth affine in pixel coordinates, so k3 is exact for planar
+surfaces such as mirrors and glass panes.
+
+Rule v1 (no learning): BIC = n log(RSS/n) + k log n on the ring, RSS of the
+relative inverse-depth residual. k3 is admissible only if k2's prediction
+inside Omega is itself near-planar (relative plane-fit residual < 2%), so a
+curved object is not flattened. Fewer than `min_ring` ring points -> k0.
+
+Choices are returned per region for analysis. Candidates that produce
+nonpositive inverse depth inside Omega are inadmissible (never clamped).
+"""
+from __future__ import annotations
+
+import numpy as np
+from scipy import ndimage
+
+CANDIDATES = ("k0", "k1", "k2", "k3")
+N_PARAMS = {"k0": 0, "k1": 1, "k2": 2, "k3": 3}
+
+
+def _irls(design, y, iters=20, delta=0.05):
+    """Huber IRLS on relative residual (design @ beta - y) / y; returns beta or None."""
+    w = 1.0 / (y * y)
+    beta = None
+    for _ in range(iters):
+        sw = np.sqrt(w)
+        try:
+            new, *_ = np.linalg.lstsq(design * sw[:, None], y * sw, rcond=None)
+        except np.linalg.LinAlgError:
+            return None
+        if not np.all(np.isfinite(new)):
+            return None
+        r = np.abs((design @ new - y) / y)
+        hub = np.ones_like(r); big = r > delta; hub[big] = delta / r[big]
+        w = hub / (y * y)
+        if beta is not None and np.allclose(new, beta, rtol=1e-8, atol=1e-12):
+            beta = new; break
+        beta = new
+    return beta
+
+
+def _plane_residual(u, v, inv):
+    a = np.stack([u, v, np.ones_like(u)], 1)
+    beta = _irls(a, inv)
+    if beta is None:
+        return np.inf
+    return float(np.median(np.abs((a @ beta - inv) / inv)))
+
+
+def fill_regions(base_depth, prior_inv, prompt, trusted, low_trust, *, grow=3, ring=10, min_ring=50,
+                 min_area=20, planar_tol=0.02, rule="v1", gt=None, max_ring_points=4096, seed=0):
+    """Return (filled_depth, region_records).
+
+    base_depth: D_a (float32, NaN where invalid). prior_inv: m. prompt/trusted: sensor
+    prompt and trust mask (trusted pixels keep the prompt). low_trust: pixels to refill.
+    rule: 'v1' or a fixed candidate 'k0'..'k3', or 'oracle_best' (needs gt; picks the
+    candidate with the lowest AbsRel inside the region -- an upper bound, not a method).
+    Pixels outside every region keep the prompt where trusted, otherwise base_depth.
+    """
+    rng = np.random.default_rng(seed)
+    base = np.asarray(base_depth, np.float64)
+    out = np.where(trusted, prompt, base).astype(np.float64)
+    h, w = base.shape
+    vv, uu = np.mgrid[0:h, 0:w]
+    square = lambda r: np.ones((2 * r + 1, 2 * r + 1), bool)
+    labels, n = ndimage.label(low_trust, structure=np.ones((3, 3), bool))
+    records = []
+    objects = ndimage.find_objects(labels)
+    inv_prompt = np.where(trusted & (prompt > 0), 1.0 / np.where(prompt > 0, prompt, 1.0), np.nan)
+    for lab, sl in enumerate(objects, start=1):
+        if sl is None:
+            continue
+        pad = grow + ring + 1
+        y0, y1 = max(0, sl[0].start - pad), min(h, sl[0].stop + pad)
+        x0, x1 = max(0, sl[1].start - pad), min(w, sl[1].stop + pad)
+        comp = labels[y0:y1, x0:x1] == lab
+        area = int(comp.sum())
+        omega = ndimage.binary_dilation(comp, square(grow)) if grow else comp
+        outer = ndimage.binary_dilation(omega, square(ring))
+        ringm = outer & ~omega & trusted[y0:y1, x0:x1] & np.isfinite(inv_prompt[y0:y1, x0:x1]) \
+            & np.isfinite(prior_inv[y0:y1, x0:x1])
+        rec = dict(label=lab, area=area, ring_points=int(ringm.sum()), choice="k0", reason=None, candidates={})
+        region = (slice(y0, y1), slice(x0, x1))
+        target = omega
+        cand = {"k0": base[region]}
+        if area < min_area:
+            rec["reason"] = "below_min_area"
+        elif ringm.sum() < min_ring:
+            rec["reason"] = "insufficient_ring"
+        else:
+            idx = np.flatnonzero(ringm.ravel())
+            if idx.size > max_ring_points:
+                idx = rng.choice(idx, max_ring_points, replace=False)
+            y = inv_prompt[region].ravel()[idx]; m = prior_inv[region].ravel()[idx]
+            u = uu[region].ravel()[idx].astype(float); v = vv[region].ravel()[idx].astype(float)
+            mm = prior_inv[region]
+            fits = {}
+            ratio = y / m
+            s1 = float(np.median(ratio[np.isfinite(ratio) & (m > 0)])) if np.any(m > 0) else np.nan
+            if np.isfinite(s1) and s1 > 0:
+                fits["k1"] = (lambda s=s1: s * mm, np.array([s1]) * m)
+            b2 = _irls(np.stack([m, np.ones_like(m)], 1), y)
+            if b2 is not None:
+                fits["k2"] = (lambda b=b2: b[0] * mm + b[1], b2[0] * m + b2[1])
+            b3 = _irls(np.stack([u, v, np.ones_like(u)], 1), y)
+            if b3 is not None:
+                fits["k3"] = (lambda b=b3: b[0] * uu[region] + b[1] * vv[region] + b[2], b3[0] * u + b3[1] * v + b3[2])
+            n_r = idx.size
+            bic = {}
+            k0_ring = 1.0 / base[region].ravel()[idx]
+            rss0 = np.nansum(((k0_ring - y) / y) ** 2)
+            bic["k0"] = n_r * np.log(max(rss0, 1e-30) / n_r)
+            for k, (field, ring_pred) in fits.items():
+                inv_field = field()
+                if not np.all(np.isfinite(inv_field[target])) or np.any(inv_field[target] <= 0):
+                    rec["candidates"][k] = "inadmissible_nonpositive"; continue
+                cand[k] = 1.0 / np.where(inv_field > 0, inv_field, np.nan)
+                rss = np.sum(((ring_pred - y) / y) ** 2)
+                bic[k] = n_r * np.log(max(rss, 1e-30) / n_r) + N_PARAMS[k] * np.log(n_r)
+            if "k3" in bic and "k2" in cand:
+                inside = target
+                k2_inv = 1.0 / cand["k2"][inside]
+                pr = _plane_residual(uu[region][inside].astype(float), vv[region][inside].astype(float), k2_inv) \
+                    if inside.sum() >= 3 else np.inf
+                rec["k2_interior_plane_residual"] = pr
+                if not pr < planar_tol:
+                    bic.pop("k3"); rec["candidates"]["k3"] = "rejected_interior_not_planar"
+            rec["bic"] = {k: float(b) for k, b in bic.items()}
+            if rule == "v1":
+                rec["choice"] = min(bic, key=bic.get); rec["reason"] = "min_bic"
+            elif rule in CANDIDATES:
+                rec["choice"] = rule if rule in cand else "k0"
+                rec["reason"] = "forced" if rule in cand else f"forced_{rule}_unavailable"
+            elif rule == "oracle_best":
+                if gt is None:
+                    raise ValueError("oracle_best needs gt")
+                g = gt[region]; ok = target & (g > 0)
+                errs = {k: float(np.nanmean(np.abs(c[ok] - g[ok]) / g[ok])) for k, c in cand.items() if ok.any()}
+                rec["choice"] = min(errs, key=errs.get) if errs else "k0"; rec["reason"] = "oracle_best"; rec["oracle_errors"] = errs
+            else:
+                raise ValueError(f"unknown rule {rule}")
+        chosen = cand[rec["choice"]]
+        sub = out[region]
+        sub[target] = chosen[target]
+        records.append(rec)
+    return out.astype(np.float32), records
