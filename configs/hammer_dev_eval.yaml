@@ -1,0 +1,19 @@
+# HAMMER development evaluation (plan revision v2 section 2.2). Run per split (train / val).
+# Main scope: objects_only (GT vs naked GT); full image reported but mixes sensor background errors.
+dataset: hammer
+method: raw_prompt
+seed: 20261010
+manifest: data/processed/hammer_dev_v1/manifest.json
+prior_cache: cache/unidepth_hammer_dev_v1
+split: val
+tau: 0.05
+tau_gate: 0.05
+band: 5
+alignment: none
+visualizations: 6
+gt_scope: rendered_first_surface_full_image
+experiment_role: development_diagnostic_not_final_test
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096

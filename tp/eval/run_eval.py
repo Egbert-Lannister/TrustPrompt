@@ -28,6 +28,23 @@ NYU_SEMANTICS=dict(clean="deviation_from_inpainted_sensor_reference_not_gt_accur
                    main_regions="precise_mirror_only C/Cfar/band (summary_mirror_only.json)")
 
 
+def focus_scope(sample):
+    """Method-independent focus pixels per dataset (main scope of revision v2).
+    NYU: precise Mirror3D mirror pixels. HAMMER: object surfaces = rendered GT
+    differs from the paired naked (objects removed) GT by > 1 mm; empty when
+    no naked pair exists (recorded, never imputed)."""
+    if sample.dataset=="hammer":
+        if sample.behind is None:
+            return "objects_only",np.zeros(sample.gt.shape,bool)
+        return "objects_only",sample.gt_valid&(sample.behind>0)&(np.abs(sample.gt-sample.behind)>1e-3)
+    return "mirror_only",sample.material==2
+
+
+SCOPE_GT={"mirror_only":"precise_mirror_only","objects_only":"objects_vs_naked_gt_gt_1mm"}
+HAMMER_SEMANTICS=dict(main_regions="objects_only C/Cfar/band (summary_objects_only.json)",
+                      full_image="includes sensor errors on diffuse/dark background (e.g. D435 bias)")
+
+
 def _resume_receipt(output,config,command):
     """Continue an interrupted run only under identical config and source code."""
     receipt=json.loads((output/"receipt.json").read_text(encoding="utf-8"))
@@ -146,8 +163,9 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                        trust_quality=trust,
                        population={name:int(mask.sum()) for name,mask in masks.items()})
             rows.append(row)
-            mirror_masks={name:mask&(s.material==2) for name,mask in masks.items()}
-            mirror_rows.append({**row,"gt_scope":"precise_mirror_only","metrics":evaluate_depth(pred,s.gt,p,mirror_masks),
+            scope_name,focus=focus_scope(s)
+            mirror_masks={name:mask&focus for name,mask in masks.items()}
+            mirror_rows.append({**row,"gt_scope":SCOPE_GT[scope_name],"metrics":evaluate_depth(pred,s.gt,p,mirror_masks),
                                 "population":{name:int(mask.sum()) for name,mask in mirror_masks.items()}})
             with partial_path.open("a",encoding="utf-8") as f:
                 f.write(json.dumps(dict(row=rows[-1],mirror_row=mirror_rows[-1]),allow_nan=False)+"\n")
@@ -155,17 +173,21 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                 alignment_panel(s,p,pred,masks,output/"visualizations"/f"{key}.png")
             log(f"{i+1}/{len(selected)} {s.key} C={row['population']['C']} holes={row['population']['hole']} invalid={row['metrics']['regions']['all']['invalid_count']}")
         write_json(output/"per_image.json",rows)
-        write_json(output/"per_image_mirror_only.json",mirror_rows)
+        scopes={SCOPE_GT[k]:k for k in SCOPE_GT};scope_files={scopes[r["gt_scope"]] for r in mirror_rows}
+        if len(scope_files)!=1:raise ValueError("one focus scope per run (do not mix datasets)")
+        scope_file=scope_files.pop()
+        write_json(output/f"per_image_{scope_file}.json",mirror_rows)
         summary=aggregate(rows);mirror_summary=aggregate(mirror_rows)
         qualification=dict(strict_rgb_z_qualified=all(r["strict_rgb_z_qualified"] for r in rows),
                            camera_references=sorted({r["camera_reference"] for r in rows}),
                            experiment_role=config.get("experiment_role"),synthetic=data["synthetic"],
                            main_metric_alignment="none",scientific_claim="none; engineering smoke",
-                           metric_semantics=NYU_SEMANTICS if all(r["dataset"]=="mirror3d_nyu" for r in rows) else None)
+                           metric_semantics=NYU_SEMANTICS if all(r["dataset"]=="mirror3d_nyu" for r in rows)
+                           else HAMMER_SEMANTICS if all(r["dataset"]=="hammer" for r in rows) else None)
         summary["qualification"]=qualification;mirror_summary["qualification"]=qualification
         receipt["qualification"]=qualification
         write_json(output/"summary.json",summary)
-        write_json(output/"summary_mirror_only.json",mirror_summary)
+        write_json(output/f"summary_{scope_file}.json",mirror_summary)
         write_json(output/"statistics.json",dict(paired_scene_bootstrap="NA: only one method; do not fabricate paired CI",
                     affine_aligned_results="not requested; main metric is unaligned",confidence="binary gate agreement w (per_image trust_quality)" if method.startswith("gate_") else "NA: no confidence output"))
         invalid_count=sum(r["metrics"]["regions"]["all"]["invalid_count"] for r in rows)

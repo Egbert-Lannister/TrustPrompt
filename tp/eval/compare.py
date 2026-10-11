@@ -38,7 +38,8 @@ def main():
     receipt=start_run(args.output,config,[sys.executable,"-m","tp.eval.compare",*sys.argv[1:]],args.seed)
     results={}
     try:
-        for scope,name in (("full","per_image.json"),("mirror_only","per_image_mirror_only.json")):
+        focus=[n for n in ("mirror_only","objects_only") if (args.reference/f"per_image_{n}.json").is_file()]
+        for scope,name in (("full","per_image.json"),*[(n,f"per_image_{n}.json") for n in focus]):
             reference=json.loads((args.reference/name).read_text())
             key=lambda r:(r["dataset"],r["sensor"],r["scene"],r["frame"],r["split"])
             ref_by_key={key(r):r for r in reference}
@@ -62,7 +63,8 @@ def main():
                         get=lambda d:{sc:r["metrics"][metric] for sc,r in d["scenes"].items()}
                         paired[f"{dataset}.{metric}"]=paired_or_na(get(rd),get(cd),"value",args.seed)
                 scope_results[path.name]=dict(candidate_per_image_sha256=sha256(path/name),paired=paired,
-                    qualification="NYU registered-Z (gap <= 0.473% on dev); inpainted background; development split only")
+                    qualification=("HAMMER rendered GT; objects_only = GT vs naked GT" if focus==["objects_only"] else
+                                   "NYU registered-Z (gap <= 0.473% on dev); inpainted background")+"; development split only")
             results[scope]=scope_results
         write_json(args.output/"paired_bootstrap.json",results)
         receipt.update(stage="descriptive_comparison_complete",formal_experiment_complete=False)
