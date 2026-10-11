@@ -165,3 +165,15 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - `hammer_dev.ps1` 运行到 `gate_local_v2 val` 第 98/327 个样本时 D 盘写满（552 GB 盘剩 0.6 GB）。已完成：raw_prompt、unidepth_v2_s、robust_global、gate_global、robust_local_v2 的 val。失败目录改名为 `results/hammer_dev_gate_local_v2_val_v1_failed_disk_full`。
 - 本项目在 D 盘的 HAMMER 产物约 30 GB：results 19.6 GB（其中对齐稠密图 alignment/*.npz 共约 11 GB，未压缩预测每个运行 1.2 GB），开发子集 3.2 GB，UniDepth 缓存 5.4 GB（其中点云约占 70%）。
 - 修复（测试 114 passed）：`run_eval` 新增存储策略 `save_predictions` / `save_alignment_maps`（默认 all，NYU 行为不变；HAMMER 配置为前 20 / 前 6 个样本），所有预测的数组哈希 `prediction_array_sha256` 一律记录；`cache_unidepth` 新增 `store_points: false`（先校验点云 Z 与深度逐值相等再丢弃点云）。
+
+## 2026-10-11 HAMMER 开发评测完成（小规模验证通过，非正式结果）
+
+- 子集：train 272 帧（9 个场景，每 20 帧取 1）、val 109 帧（scene 11，每 5 帧取 1），× 3 传感器 = 1,143 个样本；1,134 个与 naked 配对，9 个位姿不符（无 behind，对象口径为空并记录）。UniDepth 缓存 1,143 个样本、`real_dev_verified`。
+- 11 个评测运行全部 `small_scale_validation_passed`，无效预测 0；val 6 个方法，train 4 个方法（逐块对齐只跑 val）。表格 `docs/hammer_dev_results.md`，含按传感器分解。
+- 统计限制：val 只有 1 个场景，场景级 bootstrap 只能描述；train 有 9 个场景。确认性统计要等测试集（3 个场景）或 LOSO 折。
+- 主要观察（物体像素）：
+  - 原始提示污染区 AbsRel：val 0.12–0.16、train 0.12–0.27（按传感器）；危险高估率 0.24–0.54。
+  - 鲁棒对齐把污染区误差降到 0.07–0.12，但继承率仍有 0.21–0.39，危险高估率 0.18–0.36，即仍有大量错误提示被保留或拟合进去。
+  - 与 NYU 镜面相反：HAMMER 上逐块对齐优于全局（val 污染区 0.072 vs 0.092，危险高估率 0.18 vs 0.27）。小物体时逐块拟合的支撑集主要是正确背景；大镜面时逐块拟合会吸收虚像。没有单一固定对齐策略在两类场景都好，这正是可信度网络 T 与“按区域选择低自由度候选”要解决的问题。
+  - Gate 的继承率高于对应的对齐方法（val 0.42 vs 0.30）：与先验碰巧一致的错误提示被保留。
+  - 无提示 UniDepthV2-S 在近距离桌面场景整体偏远（危险高估率约 0.98–0.99），不能作为度量深度直接使用。
