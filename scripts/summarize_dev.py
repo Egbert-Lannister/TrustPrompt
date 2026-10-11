@@ -15,7 +15,15 @@ METHODS = [("raw_prompt", "raw_prompt"), ("UniDepthV2-S (no prompt)", "unidepth_
            ("PromptDA-S", "promptda_vits_raw"), ("PromptDA-L", "promptda_vitl_raw"),
            ("PromptDA-S-Transparent (saw HAMMER)", "promptda_vits_transparent_raw"),
            ("PromptDA-L + GT focus mask, D_g fill [oracle]", "promptda_vitl_focus_prior"),
-           ("PromptDA-L + GT contamination mask, D_g fill [oracle]", "promptda_vitl_oracle_prior")]
+           ("PromptDA-L + GT contamination mask, D_g fill [oracle]", "promptda_vitl_oracle_prior"),
+           ("Fill k0 | GT contamination mask [oracle]", "trustfill_oracle_c_k0"),
+           ("Fill k1 | GT contamination mask [oracle]", "trustfill_oracle_c_k1"),
+           ("Fill k2 | GT contamination mask [oracle]", "trustfill_oracle_c_k2"),
+           ("Fill k3 | GT contamination mask [oracle]", "trustfill_oracle_c_k3"),
+           ("Fill rule v1 | GT contamination mask [oracle]", "trustfill_oracle_c_v1"),
+           ("Fill best-of-k per region | GT mask [oracle x2]", "trustfill_oracle_c_oracle_best"),
+           ("Fill rule v1 | GT focus mask [oracle]", "trustfill_oracle_focus_v1"),
+           ("Gate trust + fill rule v1 (deployable)", "trustfill_gate_global_v1")]
 fmt = lambda v: "NA" if v is None else f"{v:.4f}"
 
 
