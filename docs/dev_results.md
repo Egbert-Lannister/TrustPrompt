@@ -19,6 +19,14 @@ Mirror pixels (main scope):
 | PromptDA-S-Transparent (saw HAMMER) | 0.6457 | 0.0486 | 0.6861 | 0.5795 | 0.7538 | 0.7239 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0974 | 0.3983 | 0.0915 | 0.1057 | 0.1122 | 0.2863 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0958 | 0.4012 | 0.0838 | 0.1002 | 0.1143 | 0.2744 |
+| Fill k0 | GT contamination mask [oracle] | 0.1352 | 0.3719 | 0.1331 | 0.1374 | 0.1285 | 0.3076 |
+| Fill k1 | GT contamination mask [oracle] | 0.0923 | 0.5684 | 0.0955 | 0.1067 | 0.0677 | 0.2392 |
+| Fill k2 | GT contamination mask [oracle] | 0.0577 | 0.5944 | 0.0586 | 0.0805 | 0.0477 | 0.1748 |
+| Fill k3 | GT contamination mask [oracle] | 0.0874 | 0.6283 | 0.0874 | 0.0999 | 0.0966 | 0.1737 |
+| Fill rule v1 | GT contamination mask [oracle] | 0.0900 | 0.6131 | 0.0906 | 0.1021 | 0.0905 | 0.1818 |
+| Fill best-of-k per region | GT mask [oracle x2] | 0.0380 | 0.8147 | 0.0372 | 0.0635 | 0.0525 | 0.1230 |
+| Fill rule v1 | GT focus mask [oracle] | 0.1408 | 0.4507 | 0.1378 | 0.1444 | 0.0759 | 0.3230 |
+| Gate trust + fill rule v1 (deployable) | 0.1522 | 0.3339 | 0.1529 | 0.1551 | 0.1650 | 0.3067 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
 
@@ -35,6 +43,14 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | PromptDA-S-Transparent (saw HAMMER) | 0.5659 | 0.0126 | 0.6329 | 0.4390 | NA | 0 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1310 | 0.0174 | 0.1640 | 0.1599 | NA | 0 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1356 | 0.0161 | 0.1448 | 0.1598 | NA | 0 |
+| Fill k0 | GT contamination mask [oracle] | 0.1548 | 0.0012 | 0.1238 | 0.1986 | NA | 0 |
+| Fill k1 | GT contamination mask [oracle] | 0.1216 | 0.0012 | 0.1184 | 0.1856 | NA | 0 |
+| Fill k2 | GT contamination mask [oracle] | 0.0924 | 0.0012 | 0.1039 | 0.1441 | NA | 0 |
+| Fill k3 | GT contamination mask [oracle] | 0.1086 | 0.0012 | 0.1058 | 0.1565 | NA | 0 |
+| Fill rule v1 | GT contamination mask [oracle] | 0.1131 | 0.0012 | 0.1120 | 0.1551 | NA | 0 |
+| Fill best-of-k per region | GT mask [oracle x2] | 0.0723 | 0.0012 | 0.0913 | 0.1097 | NA | 0 |
+| Fill rule v1 | GT focus mask [oracle] | 0.1337 | 0.0035 | 0.3659 | 0.1921 | NA | 0 |
+| Gate trust + fill rule v1 (deployable) | 0.1698 | 0.0401 | 0.1786 | 0.2444 | 0.8112 | 0 |
 
 ## train: 76 images / 55 scenes
 
