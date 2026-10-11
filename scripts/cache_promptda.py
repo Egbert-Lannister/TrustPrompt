@@ -31,7 +31,9 @@ from tp.provenance import ROOT, sha256, start_run, write_json
 
 
 def git_source(source, *args):
-    p = subprocess.run(["git", "-C", str(source), *args], capture_output=True, text=True)
+    # The checkout may live on a drive without ownership records (exFAT); trust it for this call only.
+    safe = Path(source).resolve().as_posix()
+    p = subprocess.run(["git", "-c", f"safe.directory={safe}", "-C", str(source), *args], capture_output=True, text=True)
     return p.stdout.strip() if p.returncode == 0 else None
 
 

@@ -34,7 +34,11 @@ if (-not (Test-Path "$Src\.git")) {
   New-Item -ItemType Directory -Force (Split-Path $Src) | Out-Null
   Invoke-Step "clone PromptDA" { git clone https://github.com/DepthAnything/PromptDA.git $Src }
 }
-Invoke-Step "checkout audited commit" { git -C $Src checkout --quiet $Commit }
+# E: does not record file ownership, so git refuses the clone as "dubious". Trust only this directory, per
+# command (-c safe.directory), without touching the user's global git configuration.
+$SafeSrc = $Src -replace '\\', '/'
+Invoke-Step "checkout audited commit" { git -c "safe.directory=$SafeSrc" -C $Src checkout --quiet $Commit }
+Invoke-Step "confirm commit" { $h = git -c "safe.directory=$SafeSrc" -C $Src rev-parse HEAD; Write-Host "HEAD $h"; if ($h -ne $Commit) { exit 1 } }
 Invoke-Step "verify audited source hashes" { & $py -c @"
 import hashlib,sys
 want={'promptda/promptda.py':'bc0ca4bb4ec61106f01f5da514ea25c45cd652c0b526409c3eef161aa14ea7b6',
