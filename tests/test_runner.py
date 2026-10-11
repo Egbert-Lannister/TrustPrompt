@@ -70,3 +70,22 @@ def test_time_budget_then_resume_gives_same_rows_as_one_shot(tmp_path):
     strip = lambda rows: [{k: v for k, v in r.items() if k != "evaluation_prediction_seconds"} for r in rows]
     assert strip(json.loads((one / "per_image.json").read_text())) == strip(json.loads((two / "per_image.json").read_text()))
     assert json.loads((two / "receipt.json").read_text())["resumed_sessions"]
+
+
+def test_storage_policy_keeps_first_n_and_hashes_all(tmp_path):
+    import json, hashlib
+    import numpy as np
+    from tp.eval.run_eval import evaluate_manifest
+    from tp.provenance import ROOT
+    manifest = ROOT / "data/processed/synthetic_smoke_v1/manifest.json"
+    if not manifest.is_file():
+        import pytest; pytest.skip("synthetic smoke data not prepared")
+    cfg = dict(method="raw_prompt", split="train", manifest=str(manifest), tau=0.05, band=5, visualizations=0,
+               experiment_role="engineering_smoke_not_final_test", seed=1, save_predictions=2)
+    evaluate_manifest(cfg, tmp_path / "r", ["t"])
+    rows = json.loads((tmp_path / "r" / "per_image.json").read_text())
+    assert [r["prediction_saved"] for r in rows] == [True, True] + [False] * (len(rows) - 2)
+    assert all(r["prediction_array_sha256"] for r in rows)
+    saved = np.load(next((tmp_path / "r" / "predictions").glob("*.npy")))
+    first = [r for r in rows if r["prediction_saved"]]
+    assert hashlib.sha256(np.ascontiguousarray(saved, dtype=np.float32).tobytes()).hexdigest() in {r["prediction_array_sha256"] for r in first}

@@ -159,3 +159,9 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 对齐检查（5 帧 × 3 传感器，`results/hammer_alignment_check_v1/`）：边缘对齐良好；L515 在玻璃瓶、酒杯、餐具上出现预期的偏远（穿透）区域。
 - 待运行：`scripts/windows/hammer_dev.ps1`（物化 → UniDepth 缓存 → 6 基线 × val/train → 配对比较 → 表格）。
 - 新增人工任务：HAMMER 逐实例材质标注（约 100 个实例），用于分材质分析与“GT 材质掩码”基线。
+
+## 2026-10-11 HAMMER 开发评测：D 盘写满
+
+- `hammer_dev.ps1` 运行到 `gate_local_v2 val` 第 98/327 个样本时 D 盘写满（552 GB 盘剩 0.6 GB）。已完成：raw_prompt、unidepth_v2_s、robust_global、gate_global、robust_local_v2 的 val。失败目录改名为 `results/hammer_dev_gate_local_v2_val_v1_failed_disk_full`。
+- 本项目在 D 盘的 HAMMER 产物约 30 GB：results 19.6 GB（其中对齐稠密图 alignment/*.npz 共约 11 GB，未压缩预测每个运行 1.2 GB），开发子集 3.2 GB，UniDepth 缓存 5.4 GB（其中点云约占 70%）。
+- 修复（测试 114 passed）：`run_eval` 新增存储策略 `save_predictions` / `save_alignment_maps`（默认 all，NYU 行为不变；HAMMER 配置为前 20 / 前 6 个样本），所有预测的数组哈希 `prediction_array_sha256` 一律记录；`cache_unidepth` 新增 `store_points: false`（先校验点云 Z 与深度逐值相等再丢弃点云）。

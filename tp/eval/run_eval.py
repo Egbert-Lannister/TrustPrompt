@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -102,6 +103,12 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             write_json(output/"split_manifest.json",data)
         output.joinpath("predictions").mkdir(exist_ok=resuming)
         partial_path=output/"partial_rows.jsonl"
+        # Storage policy (HAMMER: 832x1088 float32 maps fill disks). Default keeps NYU behaviour.
+        save_pred=config.get("save_predictions","all");save_maps=config.get("save_alignment_maps","all")
+        keep_pred=lambda i:save_pred=="all" or (isinstance(save_pred,int) and i<save_pred)
+        keep_maps=lambda i:save_maps=="all" or (isinstance(save_maps,int) and i<save_maps)
+        receipt["storage_policy"]=dict(save_predictions=save_pred,save_alignment_maps=save_maps,
+                                       prediction_array_sha256="sha256 of float32 C-order bytes, always recorded")
         rows=[];mirror_rows=[]
         if resuming and partial_path.is_file():
             for line in partial_path.read_text(encoding="utf-8").splitlines():
@@ -143,14 +150,18 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                         aligned["gate_w"]=w
                         trust=trust_quality(w,p,s.gt,pv,s.gt_valid,tau=config["tau"])
                     write_json(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.json",aligned["diagnostics"])
-                    np.savez_compressed(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.npz",
-                                        **{k:v for k,v in aligned.items() if isinstance(v,np.ndarray)})
+                    if keep_maps(i):   # dense maps are large; diagnostics JSON is always kept
+                        np.savez_compressed(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.npz",
+                                            **{k:v for k,v in aligned.items() if isinstance(v,np.ndarray)})
             elapsed=time.perf_counter()-t
             if pred.shape!=s.gt.shape:raise ValueError("prediction shape mismatch")
             key=f"{s.dataset}__{s.sensor}__{s.scene}__{s.frame}"
-            np.save(output/"predictions"/f"{key}.npy",pred,allow_pickle=False)
+            pred_hash=hashlib.sha256(np.ascontiguousarray(pred,dtype=np.float32).tobytes()).hexdigest()
+            saved=keep_pred(i)
+            if saved:np.save(output/"predictions"/f"{key}.npy",pred,allow_pickle=False)
             row={k:getattr(s,k) for k in ("dataset","scene","frame","split","sensor")}
-            row.update(method=method,sample_sha256=r["sha256"],prediction_sha256=sha256(output/"predictions"/f"{key}.npy"),
+            row.update(method=method,sample_sha256=r["sha256"],prediction_sha256=sha256(output/"predictions"/f"{key}.npy") if saved else None,
+                       prediction_array_sha256=pred_hash,prediction_saved=saved,
                        evaluation_prediction_seconds=elapsed,
                        timing_component="raw_prompt_cpu" if method=="raw_prompt" else "cache_load" if method=="unidepth_v2_s" else "cache_load_and_cpu_alignment",
                        execution_platform=sys.platform,
