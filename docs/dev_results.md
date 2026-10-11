@@ -14,6 +14,11 @@ Mirror pixels (main scope):
 | RobustAlign local v2 | 0.2613 | 0.3554 | 0.2720 | 0.2521 | 0.2069 | 0.4253 |
 | Gate (global) | 0.1346 | 0.3604 | 0.1324 | 0.1400 | 0.1430 | 0.3160 |
 | Gate (local v2) | 0.2617 | 0.3442 | 0.2720 | 0.2528 | 0.2192 | 0.4253 |
+| PromptDA-S | 0.5935 | 0.0518 | 0.6297 | 0.5521 | 0.6758 | 0.7075 |
+| PromptDA-L | 0.4669 | 0.1135 | 0.4832 | 0.4251 | 0.4716 | 0.5831 |
+| PromptDA-S-Transparent (saw HAMMER) | 0.6457 | 0.0486 | 0.6861 | 0.5795 | 0.7538 | 0.7239 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0974 | 0.3983 | 0.0915 | 0.1057 | 0.1122 | 0.2863 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0958 | 0.4012 | 0.0838 | 0.1002 | 0.1143 | 0.2744 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
 
@@ -25,6 +30,11 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | RobustAlign local v2 | 0.2564 | 0.0253 | 0.2290 | 0.2724 | NA | 0 |
 | Gate (global) | 0.1549 | 0.0350 | 0.1661 | 0.2292 | 0.8112 | 0 |
 | Gate (local v2) | 0.2582 | 0.0145 | 0.2721 | 0.2727 | 0.8045 | 0 |
+| PromptDA-S | 0.5266 | 0.0117 | 0.5829 | 0.4362 | NA | 0 |
+| PromptDA-L | 0.4348 | 0.0156 | 0.4732 | 0.3867 | NA | 0 |
+| PromptDA-S-Transparent (saw HAMMER) | 0.5659 | 0.0126 | 0.6329 | 0.4390 | NA | 0 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1310 | 0.0174 | 0.1640 | 0.1599 | NA | 0 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1356 | 0.0161 | 0.1448 | 0.1598 | NA | 0 |
 
 ## train: 76 images / 55 scenes
 
@@ -38,6 +48,11 @@ Mirror pixels (main scope):
 | RobustAlign local v2 | 0.2315 | 0.4075 | 0.2315 | 0.2156 | 0.1967 | 0.3700 |
 | Gate (global) | 0.1287 | 0.4557 | 0.1280 | 0.1251 | 0.1167 | 0.2591 |
 | Gate (local v2) | 0.2334 | 0.3971 | 0.2334 | 0.2163 | 0.2081 | 0.3748 |
+| PromptDA-S | 0.6886 | 0.0247 | 0.6937 | 0.6106 | 0.7276 | 0.8027 |
+| PromptDA-L | 0.6169 | 0.0895 | 0.6195 | 0.5358 | 0.6691 | 0.7369 |
+| PromptDA-S-Transparent (saw HAMMER) | 0.7630 | 0.0057 | 0.7685 | 0.6817 | 0.7994 | 0.8363 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1310 | 0.4664 | 0.1304 | 0.1279 | 0.1150 | 0.2696 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1307 | 0.4662 | 0.1301 | 0.1263 | 0.1157 | 0.2667 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
 
@@ -49,5 +64,10 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | RobustAlign local v2 | 0.2293 | 0.0202 | 0.2163 | 0.2942 | NA | 0 |
 | Gate (global) | 0.1426 | 0.0174 | 0.1581 | 0.2202 | 0.8376 | 0 |
 | Gate (local v2) | 0.2316 | 0.0096 | 0.2529 | 0.2970 | 0.8302 | 0 |
+| PromptDA-S | 0.5831 | 0.0115 | 0.6621 | 0.5243 | NA | 0 |
+| PromptDA-L | 0.5465 | 0.0137 | 0.6265 | 0.4918 | NA | 0 |
+| PromptDA-S-Transparent (saw HAMMER) | 0.6400 | 0.0129 | 0.7208 | 0.5388 | NA | 0 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1460 | 0.0145 | 0.1655 | 0.2029 | NA | 0 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1467 | 0.0144 | 0.1637 | 0.2020 | NA | 0 |
 
 Paired scene bootstrap on val (reference = RobustAlign global): `results/mirror3d_dev_paired_val_v2/paired_bootstrap.json` (empty-region scenes excluded and listed).

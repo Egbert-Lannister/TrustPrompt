@@ -14,6 +14,11 @@ Object pixels, GT vs naked GT (main scope):
 | RobustAlign local v2 | 0.0724 | 0.4113 | 0.0745 | 0.0596 | 0.3144 | 0.1829 |
 | Gate (global) | 0.0971 | 0.2634 | 0.0995 | 0.0816 | 0.4194 | 0.2773 |
 | Gate (local v2) | 0.0796 | 0.2646 | 0.0821 | 0.0611 | 0.4634 | 0.2005 |
+| PromptDA-S | 0.0532 | 0.6076 | 0.0504 | 0.0394 | 0.2148 | 0.0472 |
+| PromptDA-L | 0.0434 | 0.7132 | 0.0398 | 0.0347 | 0.1546 | 0.0260 |
+| PromptDA-S-Transparent (saw HAMMER) | 0.0514 | 0.6430 | 0.0483 | 0.0411 | 0.1916 | 0.0411 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0451 | 0.6826 | 0.0438 | 0.0410 | 0.1987 | 0.0597 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0321 | 0.8059 | 0.0317 | 0.0255 | 0.1145 | 0.0342 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -25,6 +30,11 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | RobustAlign local v2 | 0.0584 | 0.0187 | 0.2700 | 0.0929 | NA | 0 |
 | Gate (global) | 0.0735 | 0.0341 | 0.4035 | 0.1415 | 0.6911 | 0 |
 | Gate (local v2) | 0.0673 | 0.0153 | 0.5005 | 0.1060 | 0.7259 | 0 |
+| PromptDA-S | 0.0771 | 0.0134 | 0.4415 | 0.0860 | NA | 0 |
+| PromptDA-L | 0.0660 | 0.0139 | 0.3477 | 0.0570 | NA | 0 |
+| PromptDA-S-Transparent (saw HAMMER) | 0.0780 | 0.0145 | 0.4645 | 0.0893 | NA | 0 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0585 | 0.0146 | 0.3373 | 0.0439 | NA | 0 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0409 | 0.0127 | 0.1618 | 0.0411 | NA | 0 |
 
 ### val: per sensor, object pixels
 
@@ -48,6 +58,21 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | Gate (local v2) | d435 | 0.0783 | 0.0814 | 0.5616 | 0.2068 | 2052129 |
 | Gate (local v2) | helios | 0.0789 | 0.0803 | 0.3811 | 0.2039 | 2019586 |
 | Gate (local v2) | l515 | 0.0816 | 0.0846 | 0.4475 | 0.1906 | 1860763 |
+| PromptDA-S | d435 | 0.0631 | 0.0580 | 0.3530 | 0.0643 | 2052129 |
+| PromptDA-S | helios | 0.0579 | 0.0550 | 0.1846 | 0.0569 | 2019586 |
+| PromptDA-S | l515 | 0.0386 | 0.0381 | 0.1067 | 0.0203 | 1860763 |
+| PromptDA-L | d435 | 0.0533 | 0.0485 | 0.2510 | 0.0338 | 2052129 |
+| PromptDA-L | helios | 0.0471 | 0.0427 | 0.1238 | 0.0283 | 2019586 |
+| PromptDA-L | l515 | 0.0300 | 0.0282 | 0.0889 | 0.0161 | 1860763 |
+| PromptDA-S-Transparent (saw HAMMER) | d435 | 0.0677 | 0.0623 | 0.3118 | 0.0605 | 2052129 |
+| PromptDA-S-Transparent (saw HAMMER) | helios | 0.0515 | 0.0480 | 0.1530 | 0.0407 | 2019586 |
+| PromptDA-S-Transparent (saw HAMMER) | l515 | 0.0350 | 0.0345 | 0.1101 | 0.0222 | 1860763 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | d435 | 0.0536 | 0.0530 | 0.2761 | 0.0790 | 2052129 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | helios | 0.0431 | 0.0406 | 0.1788 | 0.0604 | 2019586 |
+| PromptDA-L + GT focus mask, D_g fill [oracle] | l515 | 0.0386 | 0.0378 | 0.1413 | 0.0396 | 1860763 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | d435 | 0.0421 | 0.0424 | 0.2086 | 0.0492 | 2052129 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | helios | 0.0272 | 0.0260 | 0.0611 | 0.0347 | 2019586 |
+| PromptDA-L + GT contamination mask, D_g fill [oracle] | l515 | 0.0269 | 0.0266 | 0.0738 | 0.0187 | 1860763 |
 
 ## train: 816 images / 9 scenes
 
@@ -59,6 +84,7 @@ Object pixels, GT vs naked GT (main scope):
 | UniDepthV2-S (no prompt) | 0.5987 | 0.0041 | 0.6020 | 0.5780 | 0.0446 | 0.9835 |
 | RobustAlign global | 0.1095 | 0.3100 | 0.1111 | 0.0970 | 0.2688 | 0.3176 |
 | Gate (global) | 0.1125 | 0.2276 | 0.1142 | 0.0961 | 0.3551 | 0.3176 |
+| PromptDA-L | 0.0426 | 0.7204 | 0.0414 | 0.0324 | 0.0885 | 0.0553 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -68,6 +94,7 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | UniDepthV2-S (no prompt) | 0.5294 | 0.4902 | 0.0468 | 0.9720 | NA | 0 |
 | RobustAlign global | 0.0789 | 0.0411 | 0.2227 | 0.1695 | NA | 0 |
 | Gate (global) | 0.0839 | 0.0344 | 0.3853 | 0.1696 | 0.6990 | 0 |
+| PromptDA-L | 0.0670 | 0.0146 | 0.3418 | 0.0954 | NA | 0 |
 
 ### train: per sensor, object pixels
 
@@ -85,5 +112,8 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | Gate (global) | d435 | 0.1044 | 0.1055 | 0.5071 | 0.3023 | 8671677 |
 | Gate (global) | helios | 0.1245 | 0.1254 | 0.2839 | 0.3689 | 8389450 |
 | Gate (global) | l515 | 0.1087 | 0.1116 | 0.2744 | 0.2815 | 7402395 |
+| PromptDA-L | d435 | 0.0433 | 0.0407 | 0.1434 | 0.0189 | 8671677 |
+| PromptDA-L | helios | 0.0560 | 0.0557 | 0.0780 | 0.1118 | 8389450 |
+| PromptDA-L | l515 | 0.0286 | 0.0279 | 0.0441 | 0.0351 | 7402395 |
 
 Statistics: val is a single scene (scene 11), so scene-level paired bootstrap is descriptive only (`results/hammer_dev_paired_val_v1`); confirmatory statistics need the 3 test scenes or LOSO folds.

@@ -193,3 +193,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - NYU：5 个 PromptDA 缓存全部完成（`cache/promptda_*_nyu_dev_v1`）。权重以 `weights_only` 安全模式加载；预检 3 帧在传感器正确像素上的中位相对误差 0.8%–1.5%，确认权重加载正确。
 - HAMMER：PromptDA-S 缓存完成；PromptDA-L 写到 946/1,143 时 E 盘写满，receipt 为 failed。已完成的 946 帧：中位 0.89 s/帧，最大显存 3.3 GB，无效像素 0。
 - 修复：HAMMER 配置改为定点存储 `storage: uint16_0p2mm`（步长 0.2 mm，误差 ≤ 0.1 mm，0 = 无效，上限 13.107 m，超限计数记录为 clipped_pixels），`CachedPrior` 自动解码；NYU 与已完成的缓存仍为 float32，不受影响。测试 121 passed。
+
+## 2026-10-11 第 2 步完成（小规模验证通过，非正式结果）
+
+- 16 个评测运行与 10 个预测缓存全部校验通过（`small_scale_validation_passed` / `real_dev_verified`），无效预测 0，均在干净提交上运行。
+- 结论与数字见 `docs/c1_analysis.md`：镜面上 PromptDA 大量继承错误提示（显著差于免训练对齐）；HAMMER 小物体上 PromptDA-L 最好；继承程度随污染面积上升（NYU ρ = 0.49）。神谕掩码 + D_g 填充在镜面上 ≈ D_g，提示填充质量是瓶颈。
+- 计划修订 R13 已写入 `plan_revision_v2.md` §3.5。
+- 下一步（第 3 步）：实现模块 C 的填充候选 k0–k3 与规则选择 v1，先用神谕掩码在 NYU / HAMMER 开发集上评估上界（CPU）；随后污染模拟器 v0 与 T v0。
