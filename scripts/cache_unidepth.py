@@ -130,6 +130,9 @@ def run(config_path, limit=None, output=None):
                     arrays, report = predictor.predict_rgb(rgb)
                     torch.cuda.synchronize(); seconds = time.perf_counter() - begin
                     prediction_path = output / "predictions" / f"{identities['scene']}__{frame}.npz"
+                    if not config.get("store_points", True):
+                        # points Z == depth is verified in `report` before the point cloud is dropped.
+                        arrays = {k: v for k, v in arrays.items() if k != "points"}
                     with prediction_path.open("xb") as stream: np.savez_compressed(stream, **arrays)
                     peak_a, peak_r, shared = torch.cuda.max_memory_allocated(), torch.cuda.max_memory_reserved(), False
                     done_rgb[rgb_hash] = (prediction_path, report)

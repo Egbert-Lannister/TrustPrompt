@@ -15,3 +15,4 @@ camera_input: none
 input: rgb_only
 scale_alignment: none
 stage: real_dev_not_formal_experiment
+store_points: false   # verified-equal point cloud not kept (saves ~70% of cache size)

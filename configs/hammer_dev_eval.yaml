@@ -17,3 +17,7 @@ robust:
   ransac_iterations: 1000
   min_support: 50
   max_fit_points: 4096
+# Storage policy: keep the first N predictions / alignment maps (in manifest order); hashes of all
+# predictions are recorded in per_image.json (prediction_array_sha256). Diagnostics JSON always kept.
+save_predictions: 20
+save_alignment_maps: 6
