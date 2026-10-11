@@ -1,0 +1,18 @@
+model: PromptDA-S
+encoder: vits
+variant: raw
+source: E:/TrustPrompt_data/external/PromptDA
+ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vits/model.ckpt
+model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vits/README.md
+seed: 20261011
+tau: 0.05
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+processed: data/processed/mirror3d_dev_v1
+prior_cache: cache/unidepth_dev_v1
+splits:
+- train
+- val
+output: cache/promptda_vits_raw_nyu_dev_v1

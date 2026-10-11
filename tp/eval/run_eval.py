@@ -78,6 +78,14 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
         if method=="raw_prompt":
             from baselines.raw_prompt import predict
             receipt["model_version"]="raw_prompt.native_grid_edt_then_center_nearest.v1; no checkpoint"
+        elif method=="cached_prediction":
+            # Any verified prediction cache (e.g. PromptDA); `method_label` names it in the rows.
+            from baselines.cached_prior import CachedPrior
+            cache_root=Path(config["prediction_cache"])
+            if not cache_root.is_absolute():cache_root=ROOT/cache_root
+            cached=CachedPrior(cache_root,expected_model=config["expected_model"])
+            receipt["model_version"]=cached.receipt["model_version"]
+            receipt["prediction_cache_receipt_sha256"]=sha256(cache_root/"receipt.json")
         elif method in PRIOR_METHODS:
             from baselines.cached_prior import CachedPrior
             from tp.align.robust import align_depth,gate_prompt
@@ -138,6 +146,8 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             trust=dict(status="not_provided",reason="no prompt-trust output from this baseline")
             if method=="raw_prompt":
                 pred=predict(s)
+            elif method=="cached_prediction":
+                pred=cached.predict(s,r["sha256"])
             else:
                 prior_depth=prior.predict(s,r["sha256"])
                 if method=="unidepth_v2_s":pred=prior_depth
@@ -160,12 +170,12 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             saved=keep_pred(i)
             if saved:np.save(output/"predictions"/f"{key}.npy",pred,allow_pickle=False)
             row={k:getattr(s,k) for k in ("dataset","scene","frame","split","sensor")}
-            row.update(method=method,sample_sha256=r["sha256"],prediction_sha256=sha256(output/"predictions"/f"{key}.npy") if saved else None,
+            row.update(method=config.get("method_label",method),sample_sha256=r["sha256"],prediction_sha256=sha256(output/"predictions"/f"{key}.npy") if saved else None,
                        prediction_array_sha256=pred_hash,prediction_saved=saved,
                        evaluation_prediction_seconds=elapsed,
-                       timing_component="raw_prompt_cpu" if method=="raw_prompt" else "cache_load" if method=="unidepth_v2_s" else "cache_load_and_cpu_alignment",
+                       timing_component="raw_prompt_cpu" if method=="raw_prompt" else "cache_load" if method in {"unidepth_v2_s","cached_prediction"} else "cache_load_and_cpu_alignment",
                        execution_platform=sys.platform,
-                       original_prior_inference_seconds=None if method=="raw_prompt" else prior.record(s)["seconds"],
+                       original_prior_inference_seconds=None if method=="raw_prompt" else (cached if method=="cached_prediction" else prior).record(s)["seconds"],
                        end_to_end_inference_timing_measured=method=="raw_prompt",
                        synthetic=s.metadata["synthetic"],gt_scope=s.metadata["gt_scope"],
                        camera_reference=s.metadata.get("camera_reference","synthetic exact camera Z"),
@@ -218,12 +228,18 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument("--config",required=True,type=Path)
     p.add_argument("--output",required=True,type=Path)
-    p.add_argument("--method",choices=["raw_prompt",*sorted(PRIOR_METHODS)],default=None)
+    p.add_argument("--method",choices=["raw_prompt","cached_prediction",*sorted(PRIOR_METHODS)],default=None)
     p.add_argument("--split",choices=["train","val","test"],default=None)
     p.add_argument("--resume",action="store_true",help="continue an interrupted/time-budgeted run in --output")
     p.add_argument("--time-budget-s",type=float,default=None,help="stop cleanly after this many seconds (resumable)")
+    p.add_argument("--set",action="append",default=[],metavar="KEY=VALUE",
+                   help="override a config key (value parsed as YAML), recorded in config.json")
     args=p.parse_args()
     config=yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    for item in args.set:
+        key,_,value=item.partition("=")
+        if not key or not _:raise ValueError(f"--set expects KEY=VALUE, got {item!r}")
+        config[key]=yaml.safe_load(value)
     if args.method:config["method"]=args.method
     if args.split:config["split"]=args.split
     evaluate_manifest(config,args.output,[sys.executable,"-m","tp.eval.run_eval",*sys.argv[1:]],

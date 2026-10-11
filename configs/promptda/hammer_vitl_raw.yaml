@@ -1,0 +1,18 @@
+model: PromptDA-L
+encoder: vitl
+variant: raw
+source: E:/TrustPrompt_data/external/PromptDA
+ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+seed: 20261011
+tau: 0.05
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+processed: data/processed/hammer_dev_v1
+prior_cache: cache/unidepth_hammer_dev_v1
+splits:
+- train
+- val
+output: E:/TrustPrompt_data/cache/promptda_vitl_raw_hammer_dev_v1

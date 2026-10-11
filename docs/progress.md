@@ -177,3 +177,13 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 与 NYU 镜面相反：HAMMER 上逐块对齐优于全局（val 污染区 0.072 vs 0.092，危险高估率 0.18 vs 0.27）。小物体时逐块拟合的支撑集主要是正确背景；大镜面时逐块拟合会吸收虚像。没有单一固定对齐策略在两类场景都好，这正是可信度网络 T 与“按区域选择低自由度候选”要解决的问题。
   - Gate 的继承率高于对应的对齐方法（val 0.42 vs 0.30）：与先验碰巧一致的错误提示被保留。
   - 无提示 UniDepthV2-S 在近距离桌面场景整体偏远（危险高估率约 0.98–0.99），不能作为度量深度直接使用。
+
+## 2026-10-11 第 2 步（C1：PromptDA 是否继承错误提示）—— 代码已实现，等待 Windows GPU 运行
+
+- `baselines/promptda.py`：按官方推理流程（提交 9161547，已审计）包装 PromptDA；本地源码 + 本地权重，不在运行时下载。与官方的偏差逐条记录：边长不是 14 倍数的图像（NYU 456×608）缩放到最近的 14 倍数（462×602）；输出双线性缩放回 RGB 网格；提示空洞先在原生网格最近邻填充再缩到 192×256。
+- 提示变体：`raw`（可部署方法）；`focus_prior`、`oracle_prior` 为**神谕分析**：分别用真值得到的关注区域掩码（NYU 镜面 / HAMMER 物体）或污染掩码（|P−GT|/GT > 5%）删除提示，再用全局鲁棒对齐先验 D_g 填充。后者给出“完美可信度 + k0 填充”的上界。
+- `scripts/cache_promptda.py`：生成带校验的预测缓存（权重 SHA256、源码提交与哈希、逐样本输入输出哈希、显存与耗时）；`run_eval --method cached_prediction` 可评测任意已验证缓存，`--set` 覆盖配置并写入 config.json。
+- 实验配置 `configs/promptda/*.yaml`：NYU 开发集上 S、L、S-Transparent、L+关注掩码、L+污染掩码；HAMMER 开发集 val 上同样 5 种，另加 L 在 train（9 个场景）上跑一次以便做统计。PromptDA-S-Transparent 由作者在 HAMMER 上微调过，它在 HAMMER 开发集上的数字不构成公平比较，表中已标注。
+- `scripts/hammer_instance_sheets.py`：为 scene 2–11 生成实例 ID 对照图与材质标注 CSV 模板（测试场景冻结后再标）。
+- 运行脚本 `scripts/windows/step2_promptda.ps1`（对照图 → 拉取并校验官方源码 → 下载 3 个权重与模型卡 → 预检 3 个样本 → 全量缓存 → 评测 → 出表）。
+- 测试：120 passed / 1 skipped。
