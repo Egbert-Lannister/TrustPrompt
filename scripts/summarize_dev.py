@@ -35,6 +35,8 @@ def table(split):
     mirror, full, out = [], [], {}
     for name, key in METHODS:
         base = ROOT / "results" / f"{CFG['prefix']}_{key}_{split}_v1"
+        if not (base / "receipt.json").is_file():
+            continue                      # e.g. HAMMER local alignment runs on val only
         receipt = json.loads((base / "receipt.json").read_text())
         mr = json.loads((base / f"per_image_{CFG['scope']}.json").read_text())
         fr = json.loads((base / "per_image.json").read_text())
