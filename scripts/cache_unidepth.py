@@ -58,10 +58,15 @@ def run(config_path, limit=None, output=None):
     frames = config["frames"]
     if frames == "manifest":
         records = json.loads((ROOT / config["processed"] / "manifest.json").read_text(encoding="utf8"))["records"]
-        frames = [r["frame"] for r in records if r["split"] in allowed_splits]
-    frames = frames[:limit] if limit is not None else frames
-    if not frames or len(frames) > (95 if dev else 5):
-        raise ValueError("Frame count outside bounds (smoke 1-5, dev <= 95)")
+        # (label, relative sample path); several sensor samples may share one RGB frame.
+        items = [(r["frame"], r["path"]) for r in records if r["split"] in allowed_splits]
+    else:
+        items = [(str(f), f"{f}.npz") for f in frames]
+    items = items[:limit] if limit is not None else items
+    max_samples = int(config.get("max_samples", 95 if dev else 5))
+    if not items or len(items) > max_samples:
+        raise ValueError(f"Sample count outside bounds (1..{max_samples})")
+    frames = [label for label, _ in items]
     output = Path(output or config["output"])
     if not output.is_absolute(): output = ROOT / output
     output = output.resolve()
@@ -110,21 +115,29 @@ def run(config_path, limit=None, output=None):
             receipt["load_seconds"] = time.perf_counter() - begin
             rows = []
             (output / "predictions").mkdir()
-            for frame in frames:
-                path = (ROOT / config["processed"] / f"{frame}.npz").resolve()
+            done_rgb = {}   # rgb sha256 -> (prediction_path, report): RGB-only model, infer once per image
+            for frame, rel in items:
+                path = (ROOT / config["processed"] / rel).resolve()
                 rgb, identities = load_rgb_training_npz(path, allowed_splits)
                 if identities["frame"] != str(frame): raise ValueError("Frame identity mismatch")
-                torch.cuda.reset_peak_memory_stats()
-                torch.cuda.synchronize(); begin = time.perf_counter()
-                arrays, report = predictor.predict_rgb(rgb)
-                torch.cuda.synchronize(); seconds = time.perf_counter() - begin
-                prediction_path = output / "predictions" / f"{frame}.npz"
-                with prediction_path.open("xb") as stream: np.savez_compressed(stream, **arrays)
+                rgb_hash = hashlib.sha256(rgb.tobytes()).hexdigest()
+                if rgb_hash in done_rgb:
+                    prediction_path, report = done_rgb[rgb_hash]
+                    seconds, peak_a, peak_r, shared = None, None, None, True
+                else:
+                    torch.cuda.reset_peak_memory_stats()
+                    torch.cuda.synchronize(); begin = time.perf_counter()
+                    arrays, report = predictor.predict_rgb(rgb)
+                    torch.cuda.synchronize(); seconds = time.perf_counter() - begin
+                    prediction_path = output / "predictions" / f"{identities['scene']}__{frame}.npz"
+                    with prediction_path.open("xb") as stream: np.savez_compressed(stream, **arrays)
+                    peak_a, peak_r, shared = torch.cuda.max_memory_allocated(), torch.cuda.max_memory_reserved(), False
+                    done_rgb[rgb_hash] = (prediction_path, report)
                 row = {**identities, "sample_path": str(path), "sample_npz_sha256": sha256(path),
-                    "rgb_sha256": hashlib.sha256(rgb.tobytes()).hexdigest(), "rgb_shape": list(rgb.shape),
+                    "rgb_sha256": rgb_hash, "rgb_shape": list(rgb.shape),
                     "prediction_path": str(prediction_path), "prediction_sha256": sha256(prediction_path),
-                    "seconds": seconds, "peak_allocated_bytes": torch.cuda.max_memory_allocated(),
-                    "peak_reserved_bytes": torch.cuda.max_memory_reserved(), "validation": report}
+                    "seconds": seconds, "prediction_shared_with_same_rgb": shared,
+                    "peak_allocated_bytes": peak_a, "peak_reserved_bytes": peak_r, "validation": report}
                 rows.append(row)
                 print(json.dumps(row, ensure_ascii=False), flush=True)
                 write_json(output / "images.json", rows)

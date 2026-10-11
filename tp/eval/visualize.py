@@ -10,17 +10,23 @@ from matplotlib.colors import ListedColormap
 def alignment_panel(sample, prompt, pred, masks, path):
     fig,axes=plt.subplots(2,4,figsize=(16,8),constrained_layout=True)
     a=axes.ravel()
-    a[0].imshow(sample.rgb);a[0].set_title("RGB (released crop)")
+    hammer=sample.dataset=="hammer"
+    a[0].imshow(sample.rgb);a[0].set_title(f"RGB ({sample.sensor} prompt)" if hammer else "RGB (released crop)")
     a[1].imshow(sample.rgb)
-    mirror=sample.material==2
-    if mirror.any():a[1].contour(mirror,levels=[.5],colors=["magenta"],linewidths=.7)
-    a[1].set_title("RGB + precise mirror contour")
+    if hammer and sample.behind is not None:
+        focus=sample.gt_valid&(np.abs(sample.gt-sample.behind)>1e-3);label="RGB + object contour (GT vs naked)"
+    else:
+        focus=sample.material==2;label="RGB + precise mirror contour"
+    if focus.any():a[1].contour(focus,levels=[.5],colors=["magenta"],linewidths=.7)
+    a[1].set_title(label)
     cm=plt.get_cmap("turbo").copy();cm.set_bad("black")
-    im=a[2].imshow(np.where(np.isfinite(prompt)&(prompt>0),prompt,np.nan),vmin=0,vmax=10,cmap=cm)
+    vmax=float(np.ceil(np.nanpercentile(np.where(sample.gt_valid,sample.gt,np.nan),99.5)*1.5)) if hammer else 10
+    im=a[2].imshow(np.where(np.isfinite(prompt)&(prompt>0),prompt,np.nan),vmin=0,vmax=vmax,cmap=cm)
     a[2].set_title("Raw prompt / holes black [m]")
-    a[3].imshow(np.where(sample.gt_valid,sample.gt,np.nan),vmin=0,vmax=10,cmap=cm)
-    a[3].set_title("Refined GT; background inpainted" if not sample.metadata["synthetic"] else "Synthetic analytic GT [m]")
-    a[4].imshow(pred,vmin=0,vmax=10,cmap=cm);a[4].set_title("Prediction [m]")
+    a[3].imshow(np.where(sample.gt_valid,sample.gt,np.nan),vmin=0,vmax=vmax,cmap=cm)
+    a[3].set_title("Synthetic analytic GT [m]" if sample.metadata["synthetic"] else
+                   "Rendered first-surface GT [m]" if hammer else "Refined GT; background inpainted")
+    a[4].imshow(pred,vmin=0,vmax=vmax,cmap=cm);a[4].set_title("Prediction [m]")
     labels=np.zeros(sample.gt.shape,dtype=np.uint8)
     labels[masks["clean_all"]]=1;labels[masks["Cfar"]]=2;labels[masks["Cnear"]]=3;labels[masks["hole"]]=4
     a[5].imshow(labels,cmap=ListedColormap(["black","#43a047","#e53935","#f9a825","#1976d2"]),vmin=0,vmax=4)

@@ -143,3 +143,19 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 子集 `configs/hammer_subset_v1.yaml`：polarization 视角全部帧 + naked 序列的 GT/位姿，65,070 个文件，下载 15.8 GiB，落盘 19.1 GiB；`hammer_subset_v1_stride2.yaml` 隔帧取，下载 7.9 GiB，落盘 9.6 GiB（dry-run 结果）。
 - 下载脚本 `scripts/windows/hammer_fetch.ps1`：需指定目标目录 `-Dest`，先检查剩余空间，失败自动等待 60 s 续传，最多 20 次。
 - 说明：Claude 在用户电脑上的 shell 是独立的 Linux 虚拟机（内核 6.8 Ubuntu），不是用户的 WSL，无法访问 campar.in.tum.de，因此下载需在 Windows 或用户自己的 WSL 中运行。
+
+## 2026-10-11 HAMMER 接入
+
+- 下载完成：`E:\TrustPrompt_data\hammer_subset_v1`，65,070 个文件全部通过大小与 CRC 校验，17.03 GB。
+- Claude 在用户电脑上的 shell 无法挂载 E 盘该目录（挂载失败），可列目录与暂存单个文件。因此逐帧审计在 Claude 工作区用暂存文件完成；全量处理由 Windows 脚本执行。
+- 审计（`docs/hammer_audit.md`）：16 位毫米深度；GT 为轴向 Z；naked 按位姿配对；无材质标签；D435 背景系统偏远 2–4%。
+- 代码〔已实现、测试通过〕：
+  - `tp/data/hammer.py`：每帧 × 3 传感器生成 Sample，`behind` = 配对的 naked GT；按场景划分（2–10 train / 11 val / 12–14 test），test 默认拒绝；每个样本记录全部源文件 SHA256。
+  - `scripts/prepare_hammer.py`：物化开发子集（train 每 20 帧、val 每 5 帧，约 1,100 个样本、约 3.4 GB）。全量约 52 GB 不物化，训练时由加载器直接读 E 盘。
+  - `run_eval`：按数据集选择主口径（NYU mirror_only / HAMMER objects_only），输出 `per_image_objects_only.json`；面板标题按数据集显示。
+  - `cache_unidepth`：按 manifest 记录运行，同一 RGB 只推理一次，三个传感器样本共享；`CachedPrior` 身份加入 sensor。
+  - `compare` 自动识别主口径；`summarize_dev --dataset hammer`。
+  - 测试 113 passed / 1 skipped（含合成 HAMMER 目录上的加载、配对、test 锁、prepare→evaluate 端到端）。
+- 对齐检查（5 帧 × 3 传感器，`results/hammer_alignment_check_v1/`）：边缘对齐良好；L515 在玻璃瓶、酒杯、餐具上出现预期的偏远（穿透）区域。
+- 待运行：`scripts/windows/hammer_dev.ps1`（物化 → UniDepth 缓存 → 6 基线 × val/train → 配对比较 → 表格）。
+- 新增人工任务：HAMMER 逐实例材质标注（约 100 个实例），用于分材质分析与“GT 材质掩码”基线。

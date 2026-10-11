@@ -22,10 +22,12 @@ class CachedPrior:
         inputs=self.receipt.get("inputs",[])
         if len(rows)!=self.receipt.get("frame_count") or len(inputs)!=len(rows):
             raise ValueError("prior index/receipt frame count mismatch")
-        bound={(r["dataset"],r["scene"],r["frame"]):r for r in inputs}
+        # Sensor is part of the identity when present (HAMMER: 3 sensor samples share one RGB).
+        ident=lambda r:(r["dataset"],r.get("sensor"),r["scene"],r["frame"])
+        bound={ident(r):r for r in inputs}
         if len(bound)!=len(inputs):raise ValueError("duplicate receipt input")
         for row in rows:
-            r=bound.get((row["dataset"],row["scene"],row["frame"]))
+            r=bound.get(ident(row)) or (bound.get((row["dataset"],None,row["scene"],row["frame"])) if "sensor" not in inputs[0] else None)
             if r is None or any(row[k]!=r[k] for k in ("split","rgb_sha256","sample_npz_sha256")):
                 raise ValueError("prior index identity/hash differs from receipt input")
             if "sensor" in r and row["sensor"]!=r["sensor"]:
