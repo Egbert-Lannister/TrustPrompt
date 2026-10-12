@@ -21,7 +21,10 @@ RULES = ["v1", "aic", "gric", "holdout_sector", "holdout_radial", "oracle_best"]
 DETECT = [("RobustAlign global", "robust_global"), ("PromptDA-L", "promptda_vitl_raw"),
           ("Gate + v1", "trustfill_gate_global_v1"), ("Detector + k0", "trustfill_depthor_k0"),
           ("Detector + v1", "trustfill_depthor_v1"), ("Detector + sector hold-out", "trustfill_depthor_holdout_sector"),
+          ("Detector, gate off + k0", "trustfill_depthor_nogate_k0"),
+          ("Detector, gate off + v1", "trustfill_depthor_nogate_v1"),
           ("PromptDA-L + detector mask", "promptda_vitl_detector_prior"),
+          ("PromptDA-L + detector mask, gate off", "promptda_vitl_detector_nogate_prior"),
           ("GT mask + v1 [oracle]", "trustfill_oracle_c_v1"),
           ("PromptDA-L + GT mask [oracle]", "promptda_vitl_oracle_prior")]
 fmt = lambda v, d=4: "NA" if v is None or (isinstance(v, float) and not np.isfinite(v)) else f"{v:.{d}f}"
@@ -83,10 +86,11 @@ def main():
                 if x:
                     lines.append(f"| {name} | {fmt(x['c'])} | {fmt(x['c_full'])} | {fmt(x['clean_full'])} | {fmt(x['ir'])} | "
                                  f"{fmt(x['dor'])} | {fmt(x['auroc_image_mean'], 3)} |")
-            d = (det.get("trustfill_depthor_v1") or {}).get("detector")
-            if d:
-                lines += ["", f"Detector: mean Spearman γ {d['gamma_mean']:.3f}; threshold modes {d['modes']}; "
-                              f"mean flagged fraction of valid prompt {d['anomaly_fraction']:.3f}."]
+            for k, tag in (("trustfill_depthor_v1", "paper thresholds"), ("trustfill_depthor_nogate_v1", "Spearman gate off")):
+                d = (det.get(k) or {}).get("detector")
+                if d:
+                    lines += ["", f"Detector ({tag}): mean Spearman γ {d['gamma_mean']:.3f}; threshold modes {d['modes']}; "
+                                  f"mean flagged fraction of valid prompt {d['anomaly_fraction']:.3f}."]
             lines.append("")
             payload[f"{ds}/{split}"] = dict(selection=res, detector=det)
     (ROOT / "docs/selection_results.md").write_text("\n".join(lines), encoding="utf-8")

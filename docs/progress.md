@@ -231,3 +231,12 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 修正汇总表：填充行的标签里含有 `|`，导致这些行在 Markdown 表格里错位一列（JSON 不受影响）。已改用括号。
 - 结论见 `docs/fill_analysis.md`：镜面上低自由度填充（真值掩码）显著优于全局对齐，但选择规则离神谕选择差约 0.06；HAMMER 小物体上，即使有真值掩码，填充也显著差于 PromptDA-L，物体上最好的是 PromptDA-L + 真值掩码；可部署的 Gate + v1 没有收益，T 仍是必需的。
 - 配对检验只给 bootstrap 区间，`tp/eval/compare.py` 尚未做 Holm 校正（正式结果前需补上）。
+
+## 2026-10-12 R14：检测器基线与选择规则（代码已实现；冒烟通过；正式开发集运行待 Windows）
+
+- 文献核查与用户确认后写入修订 R14（`plan_revision_v2.md` §3.6）：DEPTHOR++ 是最接近的先行工作；论文主线改为“提示继承 + 针对错误值的 T + 验证式区域补全”。
+- `tp/models/fill.py`：新增选择规则 aic / gric / holdout_sector / holdout_radial，以及选择遗憾诊断。
+- `tp/models/depthor_det.py`：DEPTHOR++ 式检测器复现。接入 `run_eval`（trust_source=depthor）和 PromptDA（variant detector_prior，可部署）。
+- `scripts/summarize_selection.py` → `docs/selection_results.md`；`scripts/windows/step4_r14.ps1`：先跑 GPU 缓存（4 个 PromptDA-L 检测器缓存），再并行跑 CPU 评测（45 个运行），按 receipt 判断成败，最后出表。
+- 冒烟（Linux 工作区，非正式）：NYU val 19 帧约 1.2 s/帧，HAMMER 约 1.5 s/图。检测器分数的逐图 AUROC 在 NYU 上多为 0.86–0.99，但论文门控在 10/19 帧上关闭了检测；在 HAMMER 上门控全部关闭（γ ≈ 0.98–0.99），关闭门控后约剔除 4% 的提示。
+- 测试：150 passed / 1 skipped。
