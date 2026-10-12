@@ -27,9 +27,23 @@ from __future__ import annotations
 import zlib
 
 import numpy as np
-from scipy import ndimage, stats
+from scipy import ndimage   # no scipy stats module: with Anaconda MKL it loads a second OpenMP runtime next to torch's
 
 PAPER = dict(delta=0.5, eps=1e-6, alpha=15.0, p=0.04, k=40.0, u=0.9, hi=0.95, lo=0.85)
+
+
+def average_ranks(x):
+    """Ranks with ties averaged (as scipy's rankdata), numpy only."""
+    _, inv, counts = np.unique(np.asarray(x), return_inverse=True, return_counts=True)
+    starts = np.cumsum(counts) - counts
+    return (starts + 1 + (counts - 1) / 2.0)[inv.ravel()]
+
+
+def spearman(a, b):
+    ra, rb = average_ranks(a), average_ranks(b)
+    ra -= ra.mean(); rb -= rb.mean()
+    den = np.sqrt((ra * ra).sum() * (rb * rb).sum())
+    return float((ra * rb).sum() / den) if den > 0 else float("nan")
 
 
 def otsu_threshold(x, bins=256):
@@ -100,7 +114,7 @@ def detect(prompt, prompt_valid, rel_depth, *, seed=0, max_points=30000, n_ref=4
     ref = np.arange(d.size) if d.size <= n_ref else np.sort(rng.choice(d.size, n_ref, replace=False))
     a, s_term, g_term = point_scores(d, r, px, py, ref, **{k: v for k, v in paper.items() if k in ("delta", "alpha", "eps")})
     sub = np.arange(d.size) if d.size <= 20000 else rng.choice(d.size, 20000, replace=False)
-    gamma = float(stats.spearmanr(d[sub], r[sub]).statistic)
+    gamma = spearman(d[sub], r[sub])
     t, mode = threshold(a, gamma, **{k: v for k, v in paper.items() if k in ("p", "k", "u", "hi", "lo")})
     grid_a = np.full(gv.shape, np.nan); grid_a[gv] = a
     # nearest valid grid sample for every pixel

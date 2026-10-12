@@ -65,3 +65,18 @@ def test_small_region_is_skipped_by_the_spearman_gate_although_scores_separate()
     an, score, info = detect(prompt, np.ones_like(depth, bool), depth, seed=1)
     assert info["threshold_mode"] == "gamma_gt_hi_no_anomaly" and an.sum() == 0
     assert np.nanmean(score[mirror]) > 5 * np.nanmean(score[~mirror])
+
+
+def test_numpy_spearman_matches_scipy_including_ties():
+    from scipy import stats
+    from tp.models.depthor_det import average_ranks, spearman
+    rng = np.random.default_rng(0)
+    a = rng.integers(0, 20, 500).astype(float); b = a + rng.normal(0, 5, 500)
+    np.testing.assert_allclose(average_ranks(a), stats.rankdata(a))
+    assert abs(spearman(a, b) - stats.spearmanr(a, b).statistic) < 1e-12
+
+
+def test_detector_module_does_not_import_scipy_stats():
+    import subprocess, sys
+    code = "import sys, tp.models.depthor_det; sys.exit(1 if 'scipy.stats' in sys.modules else 0)"
+    assert subprocess.run([sys.executable, "-c", code]).returncode == 0
