@@ -1,0 +1,24 @@
+# Revision R14, experiment (a). Detector config must equal the trustfill eval --set detector=... so masks match.
+model: PromptDA-L
+encoder: vitl
+variant: detector_prior
+source: E:/TrustPrompt_data/external/PromptDA
+ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+seed: 20261011
+tau: 0.05
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+processed: data/processed/mirror3d_dev_v1
+prior_cache: cache/unidepth_dev_v1
+splits:
+- train
+- val
+output: cache/promptda_vitl_detector_nogate_prior_nyu_dev_v1
+detector:
+  seed: 0
+  hi: 1.01
+note: 'DEPLOYABLE BASELINE SENSITIVITY (R14): DEPTHOR++-style detector with the Spearman
+  gate disabled (hi=1.01), flagged pixels removed, filled with D_g'

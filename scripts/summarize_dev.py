@@ -31,7 +31,10 @@ METHODS = [("raw_prompt", "raw_prompt"), ("UniDepthV2-S (no prompt)", "unidepth_
            ("DEPTHOR++-style detector + D_g (k0) (deployable)", "trustfill_depthor_k0"),
            ("DEPTHOR++-style detector + fill rule v1 (deployable)", "trustfill_depthor_v1"),
            ("DEPTHOR++-style detector + sector hold-out (deployable)", "trustfill_depthor_holdout_sector"),
-           ("PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable)", "promptda_vitl_detector_prior")]
+           ("DEPTHOR++-style detector, gate off + D_g (k0) (deployable)", "trustfill_depthor_nogate_k0"),
+           ("DEPTHOR++-style detector, gate off + fill rule v1 (deployable)", "trustfill_depthor_nogate_v1"),
+           ("PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable)", "promptda_vitl_detector_prior"),
+           ("PromptDA-L + DEPTHOR++-style detector, gate off (deployable)", "promptda_vitl_detector_nogate_prior")]
 fmt = lambda v: "NA" if v is None else f"{v:.4f}"
 
 
