@@ -240,3 +240,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - `scripts/summarize_selection.py` → `docs/selection_results.md`；`scripts/windows/step4_r14.ps1`：先跑 GPU 缓存（4 个 PromptDA-L 检测器缓存），再并行跑 CPU 评测（45 个运行），按 receipt 判断成败，最后出表。
 - 冒烟（Linux 工作区，非正式）：NYU val 19 帧约 1.2 s/帧，HAMMER 约 1.5 s/图。检测器分数的逐图 AUROC 在 NYU 上多为 0.86–0.99，但论文门控在 10/19 帧上关闭了检测；在 HAMMER 上门控全部关闭（γ ≈ 0.98–0.99），关闭门控后约剔除 4% 的提示。
 - 测试：150 passed / 1 skipped。
+- 第一次 Windows 运行：PromptDA 预检时进程被 Intel OpenMP 中止（libiomp5md.dll 重复初始化）。原因是 venv 基于 Anaconda，检测器导入的 scipy.stats 加载了 MKL 自带的 OpenMP，与 torch 自带的那份冲突。已改为用 numpy 计算 Spearman，测试确认与 scipy 一致，并确认检测器模块不再加载 scipy.stats；没有使用不安全的 KMP_DUPLICATE_LIB_OK。中止的预检目录改名为 `_failed_omp_duplicate` 保留。测试 152 passed。
