@@ -20,7 +20,7 @@ function Invoke-Step([string]$Name, [scriptblock]$Body) {
   & $Body
   if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $Name (exit $LASTEXITCODE)"; exit $LASTEXITCODE }
 }
-$DS = @{
+$Sets = @{
   nyu    = @{ eval = "configs/mirror3d_dev_eval.yaml"; prefix = "mirror3d_dev"; cache = "cache";                     tag = "nyu" }
   hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   cache = "E:\TrustPrompt_data\cache"; tag = "hammer" }
 }
@@ -31,8 +31,8 @@ $fill = "fill={grow: 3, ring: 10, min_ring: 50, min_area: 20}"
 if ($Phase -ne "cpu") {
   foreach ($ds in @("nyu", "hammer")) {
     foreach ($v in @("detector", "detector_nogate")) {
-      $name = "promptda_vitl_${v}_prior_$($DS[$ds].tag)_dev_v1"
-      $out = Join-Path $DS[$ds].cache $name
+      $cacheName = "promptda_vitl_${v}_prior_$($Sets[$ds].tag)_dev_v1"
+      $out = Join-Path $Sets[$ds].cache $cacheName
       $cfg = "configs/promptda/$($ds)_vitl_${v}_prior.yaml"
       $steps = @(
         @{ dir = "${out}_preflight"; extra = @("--limit", "3", "--output", "${out}_preflight") },
@@ -58,7 +58,7 @@ if ($Phase -eq "gpu") { exit 0 }
 $jobs = @()
 foreach ($ds in @("hammer", "nyu")) {
   foreach ($s in @("train", "val")) {
-    $d = $DS[$ds]
+    $d = $Sets[$ds]
     $rules = @("aic", "gric", "holdout_sector", "holdout_radial"); if ($ds -eq "hammer" -and $s -eq "train") { $rules += "oracle_best" }
     foreach ($rule in $rules) {
       $label = "trustfill_oracle_c_$rule"
