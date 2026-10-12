@@ -38,7 +38,17 @@ foreach ($j in $todo) {
   $running += Start-Process -FilePath $py -ArgumentList $argline -NoNewWindow -PassThru -RedirectStandardOutput $log -RedirectStandardError "$log.err"
 }
 $running | Wait-Process
-$bad = @($running | Where-Object { $_.ExitCode -ne 0 })
+# Start-Process -PassThru leaves ExitCode null in Windows PowerShell 5 (no cached handle), so success is
+# judged from each run's receipt stage, the same test used to skip finished runs above.
+$bad = @()
+foreach ($j in $jobs) {
+  $r = "$($j.out)\receipt.json"
+  $stage = if (Test-Path $r) { (Get-Content $r -Raw | ConvertFrom-Json).stage } else { "missing" }
+  if (-not (@("small_scale_validation_passed","completed_with_invalid_predictions") -contains $stage)) {
+    Write-Host "FAILED ($stage): $($j.out)"; $bad += $j
+  }
+}
 if ($bad.Count -gt 0) { Write-Host "$($bad.Count) runs FAILED; see results\_logs\*.err, then re-run this script."; exit 1 }
-& $py -m scripts.summarize_dev; & $py -m scripts.summarize_dev --dataset hammer
+& $py -m scripts.summarize_dev; if ($LASTEXITCODE -ne 0) { exit 1 }
+& $py -m scripts.summarize_dev --dataset hammer; if ($LASTEXITCODE -ne 0) { exit 1 }
 Write-Host "ALL STEP-3 FILL RUNS SUCCEEDED ($(Get-Date -Format HH:mm:ss)). Tell Claude."
