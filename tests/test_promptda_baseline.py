@@ -69,3 +69,12 @@ def test_cached_prediction_method_evaluates_any_verified_cache(tmp_path):
     assert all(r["metrics"]["regions"]["all"]["absrel"] == 0 for r in out)
     with pytest.raises(ValueError, match="model mismatch"):
         evaluate_manifest(dict(cfg, expected_model="other"), tmp_path / "run2", ["t"])
+
+
+def test_detector_prior_variant_is_deployable_and_removes_flagged_pixels():
+    from baselines.promptda import DEPLOYABLE, VARIANTS, prepare_prompt
+    assert "detector_prior" in VARIANTS and "detector_prior" in DEPLOYABLE and "oracle_prior" not in DEPLOYABLE
+    p = np.full((96, 128), 2.0, np.float32); valid = np.ones_like(p, bool)
+    remove = np.zeros_like(valid); remove[:, :64] = True
+    out, info = prepare_prompt(p, valid, variant="detector_prior", remove=remove, fill_depth=np.full_like(p, 3.0))
+    assert out.shape == (192, 256) and np.isclose(out[:, :100].mean(), 3.0) and np.isclose(out[:, 160:].mean(), 2.0)

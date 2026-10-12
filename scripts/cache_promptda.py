@@ -5,7 +5,8 @@
 Only train/val samples are admitted. The model receives RGB and the prepared
 192x256 prompt only. Variants focus_prior / oracle_prior additionally read the
 GT-derived focus or contamination mask to build the prompt; they are oracle
-analyses and are labelled so in every record. D_g for those variants comes from
+analyses and are labelled so in every record. Variant detector_prior removes the
+pixels flagged by the DEPTHOR++-style detector (no GT; deployable baseline). D_g for those variants comes from
 the verified UniDepth cache + global robust alignment (same code/seed as the
 RobustAlign baseline). Outputs are immutable; the run records the checkpoint
 SHA256, the source commit and hashes, and per-sample input/output hashes.
@@ -23,7 +24,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from baselines.promptda import VARIANTS, PromptDAPredictor, prepare_prompt
+from baselines.promptda import DEPLOYABLE, VARIANTS, PromptDAPredictor, prepare_prompt
 from tp.data.schema import load_sample
 from tp.eval.regions import regions
 from tp.eval.run_eval import focus_scope
@@ -56,7 +57,7 @@ def run(config_path, limit=None, output=None):
         source, ckpt = Path(config["source"]), Path(config["ckpt"])
         receipt["model_version"] = dict(
             name=config["model"], encoder=config["encoder"], variant=config["variant"],
-            oracle=config["variant"] != "raw", checkpoint=str(ckpt), checkpoint_sha256=sha256(ckpt),
+            oracle=config["variant"] not in DEPLOYABLE, checkpoint=str(ckpt), checkpoint_sha256=sha256(ckpt),
             model_card=config.get("model_card"), source=str(source), source_commit=git_source(source, "rev-parse", "HEAD"),
             source_status=git_source(source, "status", "--porcelain=v1"),
             source_hashes={str(p.relative_to(source)): sha256(p) for p in sorted((source / "promptda").rglob("*.py"))},
@@ -82,13 +83,18 @@ def run(config_path, limit=None, output=None):
             if sample_hash != r["sha256"]:
                 raise ValueError("sample checksum mismatch")
             s = load_sample(path)
-            remove = fill = None
+            remove = fill = det_info = None
             if config["variant"] != "raw":
                 d = align_depth(prior.predict(s, sample_hash), s.prompt, s.prompt_valid, seed=int(config["seed"]),
                                 compute_local=False, **config.get("robust", {}))
                 fill = d["global_depth"]
                 if config["variant"] == "focus_prior":
                     remove = focus_scope(s)[1]
+                elif config["variant"] == "detector_prior":
+                    from tp.geom import resize_nearest
+                    from tp.models.depthor_det import detect_for_sample
+                    an, _, det_info = detect_for_sample(s, prior.predict(s, sample_hash), config.get("detector", {}))
+                    remove = an if an.shape == s.prompt.shape else resize_nearest(an, s.prompt.shape)
                 else:
                     remove = regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=float(config["tau"]), band=5)["C"]
             prompt_hw, pinfo = prepare_prompt(s.prompt, s.prompt_valid, variant=config["variant"], remove=remove, fill_depth=fill)
@@ -114,7 +120,7 @@ def run(config_path, limit=None, output=None):
                              prediction_sha256=sha256(output / "predictions" / name), seconds=seconds,
                              peak_allocated_bytes=torch.cuda.max_memory_allocated(), prompt=pinfo, report=report,
                              invalid_pixels=int((~(np.isfinite(depth) & (depth > 0))).sum()),
-                             storage=config.get("storage", "float32"), clipped_pixels=clipped))
+                             storage=config.get("storage", "float32"), clipped_pixels=clipped, detector=det_info))
             line = f"{k + 1}/{len(records)} {s.key} {seconds:.3f}s invalid={rows[-1]['invalid_pixels']}"
             print(line, flush=True); log.write(line + "\n")
             write_json(output / "images.json", rows)

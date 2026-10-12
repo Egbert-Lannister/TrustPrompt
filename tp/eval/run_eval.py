@@ -24,7 +24,7 @@ ALIGNED_SOURCE={"robust_global":"global_depth","robust_local":"local_depth","rob
                 "gate_global":"global_depth","gate_local_v2":"local_depth_v2"}
 PRIOR_METHODS={"unidepth_v2_s","trustfill",*ALIGNED_SOURCE}
 # Module C evaluation (revision R13): trust source x fill rule. oracle_* sources read GT-derived masks.
-TRUST_SOURCES={"oracle_c","oracle_focus","gate_global"}
+TRUST_SOURCES={"oracle_c","oracle_focus","gate_global","depthor"}   # depthor: DEPTHOR++-style baseline (R14)
 # Plan revision R2: NYU background reference is inpainted from the same raw prompt.
 NYU_SEMANTICS=dict(clean="deviation_from_inpainted_sensor_reference_not_gt_accuracy",
                    hole="not_reported_for_nyu_inpainted_reference",
@@ -161,20 +161,39 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                     base=aligned["global_depth"]
                     with np.errstate(divide="ignore",invalid="ignore"):
                         prior_inv=np.where(np.isfinite(prior_depth)&(prior_depth>0),1.0/prior_depth,np.nan)
+                    det_info=None
                     if src=="oracle_c":low=masks["C"]&pv
                     elif src=="oracle_focus":low=focus_scope(s)[1]&pv
+                    elif src=="depthor":
+                        from tp.models.depthor_det import detect_for_sample,trust_from_score
+                        an,score,det_info=detect_for_sample(s,prior_depth,config.get("detector",{}))
+                        low=an&pv
+                        tw=np.where(pv,np.nan_to_num(trust_from_score(score),nan=1.0),np.nan)  # unscored = kept = trusted
+                        trust=trust_quality(tw,p,s.gt,pv,s.gt_valid,tau=config["tau"])
                     else:
                         with np.errstate(divide="ignore",invalid="ignore"):
                             agree=pv&np.isfinite(base)&(np.abs(p-base)/base<=float(config.get("tau_gate",0.05)))
                         low=pv&~agree
                         trust=trust_quality(np.where(pv,agree.astype(np.float32),np.nan),p,s.gt,pv,s.gt_valid,tau=config["tau"])
                     fc=config.get("fill",{})
+                    # diag_gt only annotates records with per-candidate GT errors (selection regret);
+                    # the rule never reads it (tests/test_fill.py checks the output is unchanged).
                     pred,records=fill_regions(base,prior_inv,p,pv&~low,low,rule=rule,seed=seed,
-                                              gt=s.gt if rule=="oracle_best" else None,**fc)
+                                              gt=s.gt if rule=="oracle_best" else None,diag_gt=s.gt,**fc)
                     choices={k:sum(1 for x in records if x["choice"]==k) for k in ("k0","k1","k2","k3")}
                     fill_summary=dict(regions=len(records),choices=choices,
                                       choice_area={k:sum(x["area"] for x in records if x["choice"]==k) for k in choices},
                                       low_trust_pixels=int(low.sum()),oracle=src.startswith("oracle") or rule=="oracle_best")
+                    scored=[x for x in records if x.get("oracle_errors") and len(x["oracle_errors"])>1]
+                    if scored:
+                        area=sum(x["area"] for x in scored)
+                        best=[min(x["oracle_errors"],key=x["oracle_errors"].get) for x in scored]
+                        fill_summary["selection"]=dict(
+                            regions_with_alternatives=len(scored),
+                            oracle_match_area_fraction=sum(x["area"] for x,b in zip(scored,best) if x["choice"]==b)/area,
+                            area_weighted_regret=sum(x["area"]*(x["oracle_errors"][x["choice"]]-min(x["oracle_errors"].values()))
+                                                     for x in scored)/area)
+                    if det_info is not None:fill_summary["detector"]=det_info
                     write_json(output/"alignment"/f"{s.sensor}__{s.scene}__{s.frame}.json",
                                dict(alignment=aligned["diagnostics"],fill=fill_summary,regions=records[:200]))
                 else:
