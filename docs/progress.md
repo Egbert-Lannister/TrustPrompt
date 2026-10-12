@@ -224,3 +224,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   2. 反射中无法渲染的部分在 NYU 镜面上占大部分，远距离常数占比偏高。
   3. 计划 §4.1 的结构光“暗色/低纹理区域空洞”只用了亮度阈值。
 - 测试：133 passed / 1 skipped。
+
+## 2026-10-12 第 3 步完成：NYU train 与 HAMMER 填充上界（小规模验证通过，非正式结果）
+
+- `step3_fill.ps1` 的 21 个运行全部完成（receipt 均为 `small_scale_validation_passed`，`.err` 为空）。脚本最后报告的“17 runs FAILED”是误报：Windows PowerShell 5 中 `Start-Process -PassThru` 返回的进程对象 `ExitCode` 为空，脚本把空值当成了失败，并因此跳过了汇总步骤。已改为按每个运行的 receipt stage 判断，汇总命令也加了退出码检查。汇总已在 Linux 工作区补跑。
+- 修正汇总表：填充行的标签里含有 `|`，导致这些行在 Markdown 表格里错位一列（JSON 不受影响）。已改用括号。
+- 结论见 `docs/fill_analysis.md`：镜面上低自由度填充（真值掩码）显著优于全局对齐，但选择规则离神谕选择差约 0.06；HAMMER 小物体上，即使有真值掩码，填充也显著差于 PromptDA-L，物体上最好的是 PromptDA-L + 真值掩码；可部署的 Gate + v1 没有收益，T 仍是必需的。
+- 配对检验只给 bootstrap 区间，`tp/eval/compare.py` 尚未做 Holm 校正（正式结果前需补上）。

@@ -19,13 +19,13 @@ Mirror pixels (main scope):
 | PromptDA-S-Transparent (saw HAMMER) | 0.6457 | 0.0486 | 0.6861 | 0.5795 | 0.7538 | 0.7239 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0974 | 0.3983 | 0.0915 | 0.1057 | 0.1122 | 0.2863 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0958 | 0.4012 | 0.0838 | 0.1002 | 0.1143 | 0.2744 |
-| Fill k0 | GT contamination mask [oracle] | 0.1352 | 0.3719 | 0.1331 | 0.1374 | 0.1285 | 0.3076 |
-| Fill k1 | GT contamination mask [oracle] | 0.0923 | 0.5684 | 0.0955 | 0.1067 | 0.0677 | 0.2392 |
-| Fill k2 | GT contamination mask [oracle] | 0.0577 | 0.5944 | 0.0586 | 0.0805 | 0.0477 | 0.1748 |
-| Fill k3 | GT contamination mask [oracle] | 0.0874 | 0.6283 | 0.0874 | 0.0999 | 0.0966 | 0.1737 |
-| Fill rule v1 | GT contamination mask [oracle] | 0.0900 | 0.6131 | 0.0906 | 0.1021 | 0.0905 | 0.1818 |
-| Fill best-of-k per region | GT mask [oracle x2] | 0.0380 | 0.8147 | 0.0372 | 0.0635 | 0.0525 | 0.1230 |
-| Fill rule v1 | GT focus mask [oracle] | 0.1408 | 0.4507 | 0.1378 | 0.1444 | 0.0759 | 0.3230 |
+| Fill k0 (GT contamination mask [oracle]) | 0.1352 | 0.3719 | 0.1331 | 0.1374 | 0.1285 | 0.3076 |
+| Fill k1 (GT contamination mask [oracle]) | 0.0923 | 0.5684 | 0.0955 | 0.1067 | 0.0677 | 0.2392 |
+| Fill k2 (GT contamination mask [oracle]) | 0.0577 | 0.5944 | 0.0586 | 0.0805 | 0.0477 | 0.1748 |
+| Fill k3 (GT contamination mask [oracle]) | 0.0874 | 0.6283 | 0.0874 | 0.0999 | 0.0966 | 0.1737 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.0900 | 0.6131 | 0.0906 | 0.1021 | 0.0905 | 0.1818 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0380 | 0.8147 | 0.0372 | 0.0635 | 0.0525 | 0.1230 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.1408 | 0.4507 | 0.1378 | 0.1444 | 0.0759 | 0.3230 |
 | Gate trust + fill rule v1 (deployable) | 0.1522 | 0.3339 | 0.1529 | 0.1551 | 0.1650 | 0.3067 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
@@ -43,13 +43,13 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | PromptDA-S-Transparent (saw HAMMER) | 0.5659 | 0.0126 | 0.6329 | 0.4390 | NA | 0 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1310 | 0.0174 | 0.1640 | 0.1599 | NA | 0 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1356 | 0.0161 | 0.1448 | 0.1598 | NA | 0 |
-| Fill k0 | GT contamination mask [oracle] | 0.1548 | 0.0012 | 0.1238 | 0.1986 | NA | 0 |
-| Fill k1 | GT contamination mask [oracle] | 0.1216 | 0.0012 | 0.1184 | 0.1856 | NA | 0 |
-| Fill k2 | GT contamination mask [oracle] | 0.0924 | 0.0012 | 0.1039 | 0.1441 | NA | 0 |
-| Fill k3 | GT contamination mask [oracle] | 0.1086 | 0.0012 | 0.1058 | 0.1565 | NA | 0 |
-| Fill rule v1 | GT contamination mask [oracle] | 0.1131 | 0.0012 | 0.1120 | 0.1551 | NA | 0 |
-| Fill best-of-k per region | GT mask [oracle x2] | 0.0723 | 0.0012 | 0.0913 | 0.1097 | NA | 0 |
-| Fill rule v1 | GT focus mask [oracle] | 0.1337 | 0.0035 | 0.3659 | 0.1921 | NA | 0 |
+| Fill k0 (GT contamination mask [oracle]) | 0.1548 | 0.0012 | 0.1238 | 0.1986 | NA | 0 |
+| Fill k1 (GT contamination mask [oracle]) | 0.1216 | 0.0012 | 0.1184 | 0.1856 | NA | 0 |
+| Fill k2 (GT contamination mask [oracle]) | 0.0924 | 0.0012 | 0.1039 | 0.1441 | NA | 0 |
+| Fill k3 (GT contamination mask [oracle]) | 0.1086 | 0.0012 | 0.1058 | 0.1565 | NA | 0 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.1131 | 0.0012 | 0.1120 | 0.1551 | NA | 0 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0723 | 0.0012 | 0.0913 | 0.1097 | NA | 0 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.1337 | 0.0035 | 0.3659 | 0.1921 | NA | 0 |
 | Gate trust + fill rule v1 (deployable) | 0.1698 | 0.0401 | 0.1786 | 0.2444 | 0.8112 | 0 |
 
 ## train: 76 images / 55 scenes
@@ -69,6 +69,14 @@ Mirror pixels (main scope):
 | PromptDA-S-Transparent (saw HAMMER) | 0.7630 | 0.0057 | 0.7685 | 0.6817 | 0.7994 | 0.8363 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1310 | 0.4664 | 0.1304 | 0.1279 | 0.1150 | 0.2696 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1307 | 0.4662 | 0.1301 | 0.1263 | 0.1157 | 0.2667 |
+| Fill k0 (GT contamination mask [oracle]) | 0.1278 | 0.4651 | 0.1271 | 0.1242 | 0.1063 | 0.2576 |
+| Fill k1 (GT contamination mask [oracle]) | 0.1040 | 0.5472 | 0.1043 | 0.1047 | 0.0916 | 0.2433 |
+| Fill k2 (GT contamination mask [oracle]) | 0.1099 | 0.5953 | 0.1100 | 0.1087 | 0.0996 | 0.2419 |
+| Fill k3 (GT contamination mask [oracle]) | 0.0543 | 0.7543 | 0.0544 | 0.0685 | 0.0079 | 0.1111 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.0995 | 0.6478 | 0.0996 | 0.1021 | 0.0799 | 0.2139 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0384 | 0.8458 | 0.0386 | 0.0555 | 0.0085 | 0.0850 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.1344 | 0.5872 | 0.1347 | 0.1268 | 0.0907 | 0.2585 |
+| Gate trust + fill rule v1 (deployable) | 0.1238 | 0.5429 | 0.1232 | 0.1212 | 0.1302 | 0.2634 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
 
@@ -85,5 +93,13 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | PromptDA-S-Transparent (saw HAMMER) | 0.6400 | 0.0129 | 0.7208 | 0.5388 | NA | 0 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.1460 | 0.0145 | 0.1655 | 0.2029 | NA | 0 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.1467 | 0.0144 | 0.1637 | 0.2020 | NA | 0 |
+| Fill k0 (GT contamination mask [oracle]) | 0.1412 | 0.0011 | 0.1257 | 0.2056 | NA | 0 |
+| Fill k1 (GT contamination mask [oracle]) | 0.1235 | 0.0011 | 0.1301 | 0.2026 | NA | 0 |
+| Fill k2 (GT contamination mask [oracle]) | 0.1277 | 0.0011 | 0.1387 | 0.2016 | NA | 0 |
+| Fill k3 (GT contamination mask [oracle]) | 0.0787 | 0.0011 | 0.0500 | 0.1210 | NA | 0 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.1179 | 0.0011 | 0.1199 | 0.1808 | NA | 0 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0657 | 0.0011 | 0.0472 | 0.0975 | NA | 0 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.1335 | 0.0014 | 0.2815 | 0.1842 | NA | 0 |
+| Gate trust + fill rule v1 (deployable) | 0.1377 | 0.0164 | 0.1640 | 0.2288 | 0.8376 | 0 |
 
 Paired scene bootstrap on val (reference = RobustAlign global): `results/mirror3d_dev_paired_val_v2/paired_bootstrap.json` (empty-region scenes excluded and listed).

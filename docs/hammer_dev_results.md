@@ -19,6 +19,14 @@ Object pixels, GT vs naked GT (main scope):
 | PromptDA-S-Transparent (saw HAMMER) | 0.0514 | 0.6430 | 0.0483 | 0.0411 | 0.1916 | 0.0411 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0451 | 0.6826 | 0.0438 | 0.0410 | 0.1987 | 0.0597 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0321 | 0.8059 | 0.0317 | 0.0255 | 0.1145 | 0.0342 |
+| Fill k0 (GT contamination mask [oracle]) | 0.0923 | 0.3820 | 0.0945 | 0.0742 | 0.2974 | 0.2480 |
+| Fill k1 (GT contamination mask [oracle]) | 0.0760 | 0.4764 | 0.0778 | 0.0568 | 0.2521 | 0.1833 |
+| Fill k2 (GT contamination mask [oracle]) | 0.0583 | 0.5629 | 0.0595 | 0.0483 | 0.2100 | 0.1273 |
+| Fill k3 (GT contamination mask [oracle]) | 0.1341 | 0.2501 | 0.1374 | 0.0904 | 0.4781 | 0.3686 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.0593 | 0.5506 | 0.0602 | 0.0490 | 0.2215 | 0.1289 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0552 | 0.5891 | 0.0566 | 0.0466 | 0.1942 | 0.1230 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.0709 | 0.4555 | 0.0725 | 0.0660 | 0.2715 | 0.1999 |
+| Gate trust + fill rule v1 (deployable) | 0.0940 | 0.2961 | 0.0965 | 0.0777 | 0.4047 | 0.2611 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -35,6 +43,14 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | PromptDA-S-Transparent (saw HAMMER) | 0.0780 | 0.0145 | 0.4645 | 0.0893 | NA | 0 |
 | PromptDA-L + GT focus mask, D_g fill [oracle] | 0.0585 | 0.0146 | 0.3373 | 0.0439 | NA | 0 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | 0.0409 | 0.0127 | 0.1618 | 0.0411 | NA | 0 |
+| Fill k0 (GT contamination mask [oracle]) | 0.0677 | 0.0130 | 0.2289 | 0.1282 | NA | 0 |
+| Fill k1 (GT contamination mask [oracle]) | 0.0581 | 0.0130 | 0.1785 | 0.0885 | NA | 0 |
+| Fill k2 (GT contamination mask [oracle]) | 0.0469 | 0.0130 | 0.1316 | 0.0639 | NA | 0 |
+| Fill k3 (GT contamination mask [oracle]) | 0.0963 | 0.0130 | 0.3108 | 0.1768 | NA | 0 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.0479 | 0.0130 | 0.1394 | 0.0639 | NA | 0 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0426 | 0.0130 | 0.1153 | 0.0613 | NA | 0 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.0868 | 0.0235 | 0.4915 | 0.1308 | NA | 0 |
+| Gate trust + fill rule v1 (deployable) | 0.0709 | 0.0310 | 0.3889 | 0.1320 | 0.6911 | 0 |
 
 ### val: per sensor, object pixels
 
@@ -73,6 +89,30 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | d435 | 0.0421 | 0.0424 | 0.2086 | 0.0492 | 2052129 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | helios | 0.0272 | 0.0260 | 0.0611 | 0.0347 | 2019586 |
 | PromptDA-L + GT contamination mask, D_g fill [oracle] | l515 | 0.0269 | 0.0266 | 0.0738 | 0.0187 | 1860763 |
+| Fill k0 (GT contamination mask [oracle]) | d435 | 0.0886 | 0.0906 | 0.3645 | 0.2647 | 2052129 |
+| Fill k0 (GT contamination mask [oracle]) | helios | 0.0864 | 0.0874 | 0.2445 | 0.2348 | 2019586 |
+| Fill k0 (GT contamination mask [oracle]) | l515 | 0.1018 | 0.1055 | 0.2832 | 0.2445 | 1860763 |
+| Fill k1 (GT contamination mask [oracle]) | d435 | 0.0593 | 0.0616 | 0.2541 | 0.1522 | 2052129 |
+| Fill k1 (GT contamination mask [oracle]) | helios | 0.0924 | 0.0934 | 0.2245 | 0.2337 | 2019586 |
+| Fill k1 (GT contamination mask [oracle]) | l515 | 0.0763 | 0.0782 | 0.2777 | 0.1640 | 1860763 |
+| Fill k2 (GT contamination mask [oracle]) | d435 | 0.0493 | 0.0501 | 0.2023 | 0.0978 | 2052129 |
+| Fill k2 (GT contamination mask [oracle]) | helios | 0.0624 | 0.0627 | 0.1937 | 0.1598 | 2019586 |
+| Fill k2 (GT contamination mask [oracle]) | l515 | 0.0631 | 0.0655 | 0.2338 | 0.1245 | 1860763 |
+| Fill k3 (GT contamination mask [oracle]) | d435 | 0.0875 | 0.0889 | 0.3993 | 0.2494 | 2052129 |
+| Fill k3 (GT contamination mask [oracle]) | helios | 0.1718 | 0.1757 | 0.4897 | 0.4902 | 2019586 |
+| Fill k3 (GT contamination mask [oracle]) | l515 | 0.1429 | 0.1476 | 0.5453 | 0.3664 | 1860763 |
+| Fill rule v1 (GT contamination mask [oracle]) | d435 | 0.0512 | 0.0517 | 0.2217 | 0.1033 | 2052129 |
+| Fill rule v1 (GT contamination mask [oracle]) | helios | 0.0630 | 0.0630 | 0.2010 | 0.1597 | 2019586 |
+| Fill rule v1 (GT contamination mask [oracle]) | l515 | 0.0636 | 0.0658 | 0.2417 | 0.1237 | 1860763 |
+| Fill best-of-k per region (GT mask [oracle x2]) | d435 | 0.0454 | 0.0469 | 0.1786 | 0.0954 | 2052129 |
+| Fill best-of-k per region (GT mask [oracle x2]) | helios | 0.0593 | 0.0597 | 0.1796 | 0.1522 | 2019586 |
+| Fill best-of-k per region (GT mask [oracle x2]) | l515 | 0.0610 | 0.0632 | 0.2244 | 0.1212 | 1860763 |
+| Fill rule v1 (GT focus mask [oracle]) | d435 | 0.0739 | 0.0751 | 0.3373 | 0.2314 | 2052129 |
+| Fill rule v1 (GT focus mask [oracle]) | helios | 0.0609 | 0.0613 | 0.1724 | 0.1607 | 2019586 |
+| Fill rule v1 (GT focus mask [oracle]) | l515 | 0.0778 | 0.0811 | 0.3048 | 0.2077 | 1860763 |
+| Gate trust + fill rule v1 (deployable) | d435 | 0.0926 | 0.0948 | 0.5189 | 0.2730 | 2052129 |
+| Gate trust + fill rule v1 (deployable) | helios | 0.0885 | 0.0900 | 0.3125 | 0.2480 | 2019586 |
+| Gate trust + fill rule v1 (deployable) | l515 | 0.1009 | 0.1046 | 0.3828 | 0.2623 | 1860763 |
 
 ## train: 816 images / 9 scenes
 
@@ -85,6 +125,11 @@ Object pixels, GT vs naked GT (main scope):
 | RobustAlign global | 0.1095 | 0.3100 | 0.1111 | 0.0970 | 0.2688 | 0.3176 |
 | Gate (global) | 0.1125 | 0.2276 | 0.1142 | 0.0961 | 0.3551 | 0.3176 |
 | PromptDA-L | 0.0426 | 0.7204 | 0.0414 | 0.0324 | 0.0885 | 0.0553 |
+| Fill k2 (GT contamination mask [oracle]) | 0.0776 | 0.4894 | 0.0790 | 0.0629 | 0.1904 | 0.1697 |
+| Fill k3 (GT contamination mask [oracle]) | 0.2051 | 0.1946 | 0.2099 | 0.1373 | 0.3814 | 0.4744 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.0797 | 0.4720 | 0.0812 | 0.0637 | 0.2099 | 0.1755 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.1274 | 0.2870 | 0.1301 | 0.1039 | 0.3425 | 0.3721 |
+| Gate trust + fill rule v1 (deployable) | 0.1130 | 0.2292 | 0.1149 | 0.0937 | 0.3827 | 0.3060 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -95,6 +140,11 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | RobustAlign global | 0.0789 | 0.0411 | 0.2227 | 0.1695 | NA | 0 |
 | Gate (global) | 0.0839 | 0.0344 | 0.3853 | 0.1696 | 0.6990 | 0 |
 | PromptDA-L | 0.0670 | 0.0146 | 0.3418 | 0.0954 | NA | 0 |
+| Fill k2 (GT contamination mask [oracle]) | 0.0538 | 0.0146 | 0.1177 | 0.0735 | NA | 0 |
+| Fill k3 (GT contamination mask [oracle]) | 0.1298 | 0.0146 | 0.2558 | 0.2302 | NA | 0 |
+| Fill rule v1 (GT contamination mask [oracle]) | 0.0556 | 0.0146 | 0.1299 | 0.0772 | NA | 0 |
+| Fill rule v1 (GT focus mask [oracle]) | 0.1080 | 0.0258 | 0.5184 | 0.2122 | NA | 0 |
+| Gate trust + fill rule v1 (deployable) | 0.0835 | 0.0293 | 0.3982 | 0.1599 | 0.6990 | 0 |
 
 ### train: per sensor, object pixels
 
@@ -115,5 +165,20 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | PromptDA-L | d435 | 0.0433 | 0.0407 | 0.1434 | 0.0189 | 8671677 |
 | PromptDA-L | helios | 0.0560 | 0.0557 | 0.0780 | 0.1118 | 8389450 |
 | PromptDA-L | l515 | 0.0286 | 0.0279 | 0.0441 | 0.0351 | 7402395 |
+| Fill k2 (GT contamination mask [oracle]) | d435 | 0.0650 | 0.0653 | 0.2578 | 0.1361 | 8671677 |
+| Fill k2 (GT contamination mask [oracle]) | helios | 0.0810 | 0.0816 | 0.1367 | 0.1851 | 8389450 |
+| Fill k2 (GT contamination mask [oracle]) | l515 | 0.0868 | 0.0901 | 0.1767 | 0.1878 | 7402395 |
+| Fill k3 (GT contamination mask [oracle]) | d435 | 0.1415 | 0.1443 | 0.3708 | 0.3391 | 8671677 |
+| Fill k3 (GT contamination mask [oracle]) | helios | 0.2426 | 0.2456 | 0.3557 | 0.5888 | 8389450 |
+| Fill k3 (GT contamination mask [oracle]) | l515 | 0.2313 | 0.2399 | 0.4176 | 0.4954 | 7402395 |
+| Fill rule v1 (GT contamination mask [oracle]) | d435 | 0.0667 | 0.0670 | 0.2850 | 0.1389 | 8671677 |
+| Fill rule v1 (GT contamination mask [oracle]) | helios | 0.0836 | 0.0843 | 0.1542 | 0.1953 | 8389450 |
+| Fill rule v1 (GT contamination mask [oracle]) | l515 | 0.0889 | 0.0922 | 0.1904 | 0.1924 | 7402395 |
+| Fill rule v1 (GT focus mask [oracle]) | d435 | 0.1121 | 0.1143 | 0.3639 | 0.3375 | 8671677 |
+| Fill rule v1 (GT focus mask [oracle]) | helios | 0.1223 | 0.1235 | 0.2978 | 0.3823 | 8389450 |
+| Fill rule v1 (GT focus mask [oracle]) | l515 | 0.1477 | 0.1526 | 0.3657 | 0.3964 | 7402395 |
+| Gate trust + fill rule v1 (deployable) | d435 | 0.1025 | 0.1039 | 0.5581 | 0.2705 | 8671677 |
+| Gate trust + fill rule v1 (deployable) | helios | 0.1255 | 0.1265 | 0.2952 | 0.3641 | 8389450 |
+| Gate trust + fill rule v1 (deployable) | l515 | 0.1110 | 0.1141 | 0.2947 | 0.2832 | 7402395 |
 
 Statistics: val is a single scene (scene 11), so scene-level paired bootstrap is descriptive only (`results/hammer_dev_paired_val_v1`); confirmatory statistics need the 3 test scenes or LOSO folds.
