@@ -18,6 +18,20 @@ relative inverse-depth residual. k3 is admissible only if k2's prediction
 inside Omega is itself near-planar (relative plane-fit residual < 2%), so a
 curved object is not flattened. Fewer than `min_ring` ring points -> k0.
 
+Selection rules added in revision R14 (all use the same candidates and the same
+k3 interior-planarity admissibility check; only the scoring differs):
+  aic             n log(RSS/n) + 2k on the ring
+  gric            Torr-style robust criterion: sum min(e^2/sigma^2, 2) + k log(3n),
+                  sigma = 1.4826 MAD of the most general admissible fit; the
+                  lambda1*d*n term is identical for all candidates (all are surfaces)
+  holdout_sector  ring split into `sectors` angular sectors about the region
+                  centroid; fit on the others, score = mean over folds of the
+                  median relative inverse-depth error on the held-out sector
+  holdout_radial  fit on the outer half of the ring, score on the inner half
+                  (Chebyshev distance to Omega <= ring // 2): radial extrapolation
+`diag_gt` (optional) only adds per-candidate GT errors to the records for
+analysis of selection regret; no rule except oracle_best reads ground truth.
+
 Choices are returned per region for analysis. Candidates that produce
 nonpositive inverse depth inside Omega are inadmissible (never clamped).
 """
@@ -27,6 +41,7 @@ import numpy as np
 from scipy import ndimage
 
 CANDIDATES = ("k0", "k1", "k2", "k3")
+SCORED_RULES = ("v1", "aic", "gric", "holdout_sector", "holdout_radial")
 N_PARAMS = {"k0": 0, "k1": 1, "k2": 2, "k3": 3}
 
 
@@ -59,16 +74,48 @@ def _plane_residual(u, v, inv):
     return float(np.median(np.abs((a @ beta - inv) / inv)))
 
 
+def _fit_predict(kind, y, m, u, v, m_eval, u_eval, v_eval):
+    """Fit candidate `kind` on (y, m, u, v) and return inverse-depth predictions at the eval points."""
+    if kind == "k1":
+        ok = np.isfinite(y / m) & (m > 0)
+        if not ok.any():
+            return None
+        s1 = float(np.median((y / m)[ok]))
+        return s1 * m_eval if np.isfinite(s1) and s1 > 0 else None
+    if kind == "k2":
+        b = _irls(np.stack([m, np.ones_like(m)], 1), y)
+        return None if b is None else b[0] * m_eval + b[1]
+    if kind == "k3":
+        if y.size < 3:
+            return None
+        b = _irls(np.stack([u, v, np.ones_like(u)], 1), y)
+        return None if b is None else b[0] * u_eval + b[1] * v_eval + b[2]
+    raise ValueError(kind)
+
+
+def _heldout_error(kind, train, val, k0_val):
+    """Median |pred - y| / y on the validation points (inverse depth)."""
+    y, m, u, v = train
+    yv, mv, uv, vv = val
+    pred = k0_val if kind == "k0" else _fit_predict(kind, y, m, u, v, mv, uv, vv)
+    if pred is None or not np.all(np.isfinite(pred)):
+        return np.inf
+    return float(np.median(np.abs(pred - yv) / yv))
+
+
 def fill_regions(base_depth, prior_inv, prompt, trusted, low_trust, *, grow=3, ring=10, min_ring=50,
-                 min_area=20, planar_tol=0.02, rule="v1", gt=None, max_ring_points=4096, seed=0):
+                 min_area=20, planar_tol=0.02, rule="v1", gt=None, max_ring_points=4096, seed=0,
+                 sectors=8, min_fold_points=10, diag_gt=None):
     """Return (filled_depth, region_records).
 
     base_depth: D_a (float32, NaN where invalid). prior_inv: m. prompt/trusted: sensor
     prompt and trust mask (trusted pixels keep the prompt). low_trust: pixels to refill.
-    rule: 'v1' or a fixed candidate 'k0'..'k3', or 'oracle_best' (needs gt; picks the
+    rule: one of SCORED_RULES, a fixed candidate 'k0'..'k3', or 'oracle_best' (needs gt; picks the
     candidate with the lowest AbsRel inside the region -- an upper bound, not a method).
     Pixels outside every region keep the prompt where trusted, otherwise base_depth.
     """
+    if rule not in SCORED_RULES + CANDIDATES + ("oracle_best",):
+        raise ValueError(f"unknown rule {rule}")
     rng = np.random.default_rng(seed)
     base = np.asarray(base_depth, np.float64)
     out = np.where(trusted, prompt, base).astype(np.float64)
@@ -138,8 +185,57 @@ def fill_regions(base_depth, prior_inv, prompt, trusted, low_trust, *, grow=3, r
                 if not pr < planar_tol:
                     bic.pop("k3"); rec["candidates"]["k3"] = "rejected_interior_not_planar"
             rec["bic"] = {k: float(b) for k, b in bic.items()}
+            if rule in SCORED_RULES and rule != "v1":
+                admissible = list(bic)            # same admissibility as v1 (incl. k3 planarity check)
+                score = {}
+                if rule in ("aic", "gric"):
+                    preds = {"k0": k0_ring, **{k: fits[k][1] for k in admissible if k != "k0"}}
+                    res = {k: (preds[k] - y) / y for k in admissible}
+                    if rule == "aic":
+                        for k in admissible:
+                            rss = np.nansum(res[k] ** 2)
+                            score[k] = n_r * np.log(max(rss, 1e-30) / n_r) + 2 * N_PARAMS[k]
+                    else:
+                        general = max(admissible, key=lambda k: N_PARAMS[k])
+                        sigma = max(1.4826 * float(np.nanmedian(np.abs(res[general]))), 1e-6)
+                        rec["gric_sigma"] = sigma
+                        for k in admissible:
+                            score[k] = float(np.nansum(np.minimum(res[k] ** 2 / sigma ** 2, 2.0))) \
+                                + N_PARAMS[k] * np.log(3 * n_r)
+                else:
+                    pts = (y, m, u, v)
+                    if rule == "holdout_sector":
+                        cy, cx = ndimage.center_of_mass(omega)
+                        ang = np.arctan2(v - (y0 + cy), u - (x0 + cx))
+                        fold = np.floor((ang + np.pi) / (2 * np.pi) * sectors).astype(int) % sectors
+                        folds = [fold == f for f in range(sectors)]
+                    else:
+                        dist = ndimage.distance_transform_cdt(~omega, metric="chessboard")
+                        dist_pts = dist.ravel()[idx]
+                        folds = [dist_pts <= ring // 2]
+                    errs = {k: [] for k in admissible}
+                    used = 0
+                    for vmask in folds:
+                        tmask = ~vmask
+                        if vmask.sum() < min_fold_points or tmask.sum() < min_fold_points:
+                            continue
+                        used += 1
+                        tr = tuple(a[tmask] for a in pts); va = tuple(a[vmask] for a in pts)
+                        for k in admissible:
+                            errs[k].append(_heldout_error(k, tr, va, k0_ring[vmask]))
+                    rec["holdout_folds_used"] = used
+                    if used:
+                        score = {k: float(np.mean(e)) for k, e in errs.items()}
+                    else:
+                        score = dict(bic); rec["holdout_fallback"] = "no_usable_fold_bic"
+                rec["selection_scores"] = {k: float(x) for k, x in score.items()}
+                finite = {k: x for k, x in score.items() if np.isfinite(x)}
+                rec["choice"] = min(finite, key=finite.get) if finite else "k0"
+                rec["reason"] = f"min_{rule}"
             if rule == "v1":
                 rec["choice"] = min(bic, key=bic.get); rec["reason"] = "min_bic"
+            elif rule in SCORED_RULES:
+                pass
             elif rule in CANDIDATES:
                 rec["choice"] = rule if rule in cand else "k0"
                 rec["reason"] = "forced" if rule in cand else f"forced_{rule}_unavailable"
@@ -151,6 +247,10 @@ def fill_regions(base_depth, prior_inv, prompt, trusted, low_trust, *, grow=3, r
                 rec["choice"] = min(errs, key=errs.get) if errs else "k0"; rec["reason"] = "oracle_best"; rec["oracle_errors"] = errs
             else:
                 raise ValueError(f"unknown rule {rule}")
+        if diag_gt is not None and "oracle_errors" not in rec:
+            g = diag_gt[region]; ok = target & (g > 0) & np.isfinite(g)
+            if ok.any():
+                rec["oracle_errors"] = {k: float(np.nanmean(np.abs(c[ok] - g[ok]) / g[ok])) for k, c in cand.items()}
         chosen = cand[rec["choice"]]
         sub = out[region]
         sub[target] = chosen[target]

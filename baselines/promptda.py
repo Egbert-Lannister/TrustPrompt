@@ -19,6 +19,8 @@ masks and are labelled oracle analyses):
                the global robust-aligned prior D_g ("GT material mask" baseline)
   oracle_prior every contaminated prompt pixel C (|P-GT|/GT > tau) removed and
                filled with D_g: upper bound of a perfect trust map with k0 fill
+  detector_prior pixels flagged by the DEPTHOR++-style detector (tp/models/depthor_det.py,
+               no GT) removed and filled with D_g: deployable baseline (revision R14)
 """
 from __future__ import annotations
 
@@ -31,7 +33,8 @@ from tp.geom.camera import nearest_fill, resize_nearest
 
 PROMPT_HW = (192, 256)
 MAX_SIZE = 1008
-VARIANTS = ("raw", "focus_prior", "oracle_prior")
+VARIANTS = ("raw", "focus_prior", "oracle_prior", "detector_prior")
+DEPLOYABLE = ("raw", "detector_prior")
 
 
 def model_input_size(h, w, max_size=MAX_SIZE, multiple=14):
@@ -54,7 +57,7 @@ def prepare_prompt(prompt, prompt_valid, *, variant="raw", remove=None, fill_dep
     info = dict(variant=variant, native_valid=int(keep.sum()))
     if variant != "raw":
         if remove is None or fill_depth is None:
-            raise ValueError("oracle/focus variants need `remove` and `fill_depth`")
+            raise ValueError("non-raw variants need `remove` and `fill_depth`")
         keep &= ~remove
         p = p.copy()
         fd = np.asarray(fill_depth, np.float32)
