@@ -38,6 +38,8 @@ Object pixels, GT vs naked GT (main scope):
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.1092 | 0.0944 | 0.1123 | 0.0708 | 0.7563 | 0.2712 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0391 | 0.7404 | 0.0371 | 0.0320 | 0.1615 | 0.0330 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0362 | 0.7546 | 0.0355 | 0.0313 | 0.1519 | 0.0387 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.0512 | 0.7008 | 0.0512 | 0.0490 | 0.1545 | 0.1376 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.0334 | 0.7942 | 0.0323 | 0.0277 | 0.1221 | 0.0322 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -73,6 +75,8 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.0935 | 0.0139 | 0.7557 | 0.1466 | 0.7295 | 0 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0552 | 0.0140 | 0.3187 | 0.0394 | NA | 0 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0491 | 0.0146 | 0.2999 | 0.0432 | NA | 0 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.0506 | 0.0322 | 0.2211 | 0.0863 | NA | 0 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.0436 | 0.0132 | 0.2115 | 0.0378 | NA | 0 |
 
 ### val: per sensor, object pixels
 
@@ -168,6 +172,12 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | d435 | 0.0469 | 0.0468 | 0.2588 | 0.0516 | 2052129 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | helios | 0.0320 | 0.0305 | 0.1062 | 0.0325 | 2019586 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | l515 | 0.0297 | 0.0292 | 0.0905 | 0.0319 | 1860763 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | d435 | 0.0588 | 0.0590 | 0.2492 | 0.1642 | 2052129 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | helios | 0.0457 | 0.0453 | 0.1052 | 0.1190 | 2019586 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | l515 | 0.0489 | 0.0494 | 0.1091 | 0.1294 | 1860763 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | d435 | 0.0426 | 0.0414 | 0.2129 | 0.0358 | 2052129 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | helios | 0.0298 | 0.0285 | 0.0757 | 0.0410 | 2019586 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | l515 | 0.0278 | 0.0271 | 0.0778 | 0.0199 | 1860763 |
 
 ## train: 816 images / 9 scenes
 
@@ -197,6 +207,8 @@ Object pixels, GT vs naked GT (main scope):
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.1418 | 0.0790 | 0.1440 | 0.0931 | 0.6876 | 0.3789 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0377 | 0.7657 | 0.0368 | 0.0324 | 0.0841 | 0.0336 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0392 | 0.7473 | 0.0388 | 0.0342 | 0.0858 | 0.0352 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.0557 | 0.6474 | 0.0555 | 0.0548 | 0.1027 | 0.0944 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.0380 | 0.7674 | 0.0377 | 0.0315 | 0.0592 | 0.0312 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -224,6 +236,8 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.1125 | 0.0166 | 0.7404 | 0.2267 | 0.6903 | 0 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0532 | 0.0165 | 0.2977 | 0.0490 | NA | 0 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0518 | 0.0172 | 0.2831 | 0.0473 | NA | 0 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.0585 | 0.0330 | 0.2073 | 0.0862 | NA | 0 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.0466 | 0.0149 | 0.1469 | 0.0427 | NA | 0 |
 
 ### train: per sensor, object pixels
 
@@ -295,5 +309,11 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | d435 | 0.0421 | 0.0413 | 0.1508 | 0.0236 | 8671677 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | helios | 0.0442 | 0.0441 | 0.0722 | 0.0616 | 8389450 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | l515 | 0.0312 | 0.0309 | 0.0344 | 0.0204 | 7402395 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | d435 | 0.0570 | 0.0565 | 0.1819 | 0.0811 | 8671677 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | helios | 0.0645 | 0.0645 | 0.0870 | 0.1452 | 8389450 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | l515 | 0.0455 | 0.0454 | 0.0393 | 0.0568 | 7402395 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | d435 | 0.0396 | 0.0390 | 0.1030 | 0.0232 | 8671677 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | helios | 0.0425 | 0.0424 | 0.0492 | 0.0532 | 8389450 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | l515 | 0.0318 | 0.0317 | 0.0254 | 0.0173 | 7402395 |
 
 Statistics: val is a single scene (scene 11), so scene-level paired bootstrap is descriptive only (`results/hammer_dev_paired_val_v1`); confirmatory statistics need the 3 test scenes or LOSO folds.

@@ -262,3 +262,12 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 汇总：`scripts/summarize_trust.py` → `docs/trust_v0_results.md`，分 val（样本外）、train 留出场景（训练未拟合）、train 全部（对 T 是样本内）三组报告。
 - 脚本：`scripts/windows/step5_t_v0.ps1`。
 - 测试：numpy 部分在本地工作区；torch 部分（前向、AUROC、合成数据上的训练 → 推理 → 缓存读取全流程、编码器 hook）在云端工作区用 CPU torch 2.14 通过。真实数据冒烟：build_trust_data（HAMMER 2 帧）、run_eval cached_trust（HAMMER 3 帧，手工构造的可信度缓存）。
+
+## 2026-10-13 T v0 完成（小规模验证通过，非正式结果）
+
+- `step5_t_v0.ps1` 全部成功（2 小时 11 分）：Gate + PromptDA 对照、编码器特征（hook 在真实 PromptDA-S 上工作正常）、训练数据、4 种训练方式、可信度缓存、T + PromptDA，以及 24 个评测。按留出场景 AUROC 选中的版本是 real。
+- 结论见 `docs/t_v0_analysis.md`：
+  - 样本外可信度 AUROC，T 为 0.84–0.96，Gate 和检测器为 0.68–0.86。
+  - HAMMER 物体上，T 掩码 + PromptDA-L 是最好的可部署组合（val 0.0334，上界 0.0321）。
+  - NYU 镜面上暂无收益：T 过于保守，漏检 10–40% 的镜面污染；阈值和版本选择的标准没有对准主范围和不对称的代价。
+- 下一步建议 T v1：代价敏感的选择（训练数据加存 GT）、区域一致的掩码后处理、特征正则化；并尽快补充镜面数据。
