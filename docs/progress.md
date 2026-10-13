@@ -243,3 +243,12 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 第一次 Windows 运行：PromptDA 预检时进程被 Intel OpenMP 中止（libiomp5md.dll 重复初始化）。原因是 venv 基于 Anaconda，检测器导入的 scipy.stats 加载了 MKL 自带的 OpenMP，与 torch 自带的那份冲突。已改为用 numpy 计算 Spearman，测试确认与 scipy 一致，并确认检测器模块不再加载 scipy.stats；没有使用不安全的 KMP_DUPLICATE_LIB_OK。中止的预检目录改名为 `_failed_omp_duplicate` 保留。测试 152 passed。
 - 第二次 Windows 运行（2026-10-12）：GPU 阶段完成，4 个检测器缓存均为 `real_dev_verified`。CPU 阶段 45 个评测中 11 个成功，35 个因 D 盘写满失败。原因是我的代码：检测器可信度是连续值，`trust_quality` 的风险-覆盖率曲线每个不同取值记一个点，每张 HAMMER 图约 3.5 MB，8 个运行合计约 11 GB。已改为把检测器可信度量化到 1e-3（最多 1001 个点，测试覆盖）。失败目录只删除过大的行文件（partial_rows / per_image / summary），保留 receipt、配置、命令、日志、源码快照，并改名为 `_failed_disk_full`。D 盘恢复到 12 GB 可用。脚本加了 D 盘空间检查：开始前估算所需空间，空间低于 3 GB 时暂停启动新运行。
 - Windows 上 HAMMER 检测器缓存实际约 10 s/帧（PromptDA 1.2–1.4 s），明显慢于 Linux 工作区，可能与内存紧张导致的换页有关，尚未确认。
+
+## 2026-10-13 R14 实验完成（小规模验证通过，非正式结果）
+
+- `step4_r14.ps1` 全部成功：4 个检测器缓存 + 45 个评测，第三次运行用时 3 小时。
+- 结论见 `docs/r14_analysis.md`：
+  - 选择规则：没有一个能把 v1 到神谕的差距缩小三分之一，按预设判据保留 v1，取消贡献 3。
+  - DEPTHOR++ 式检测器：接 PromptDA-L 很强，在 HAMMER 上接近 GT 掩码，在 NYU 镜面上仍离上界很远；接填充很弱。
+  - T 的提升空间集中在大面积污染上。
+- 待补：Gate 掩码 + PromptDA-L（GPU）。
