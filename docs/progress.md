@@ -271,3 +271,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - HAMMER 物体上，T 掩码 + PromptDA-L 是最好的可部署组合（val 0.0334，上界 0.0321）。
   - NYU 镜面上暂无收益：T 过于保守，漏检 10–40% 的镜面污染；阈值和版本选择的标准没有对准主范围和不对称的代价。
 - 下一步建议 T v1：代价敏感的选择（训练数据加存 GT）、区域一致的掩码后处理、特征正则化；并尽快补充镜面数据。
+
+## 2026-10-13 T v1（代码已实现；测试通过；待 Windows 运行）
+
+- 训练数据 v1（加存 GT 和主范围掩码）；`tp/trust/post.py` 掩码后处理；`train_trust --selection error`（按替换误差联合选择 checkpoint、阈值和后处理）；编码器特征 dropout；`infer_trust` 把选中的后处理写进缓存。
+- `scripts/trust_mask_diagnostics.py`：在 val 和 train 留出场景上，对比 Gate 与 T v0/v1 各版本的主范围召回、全图召回和误标率。
+- `scripts/windows/step6_t_v1.ps1`：重建数据 → 训练 4 种版本 → 推理 → 按留出场景替换误差选版本 → PromptDA-L + T v1 → 20 个评测 → 汇总表和掩码诊断。
+- 测试：本地 numpy 部分通过；torch 部分（含 v1 全流程）在云端 CPU torch 上 13 passed。

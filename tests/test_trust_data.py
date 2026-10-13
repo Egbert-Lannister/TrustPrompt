@@ -60,3 +60,28 @@ def test_trust_cache_reads_and_checks_hashes(tmp_path):
     assert t.shape == (832, 1088) and np.allclose(t, 0.25) and c.threshold == 0.4
     with pytest.raises(ValueError):
         c.trust(S(), "other")
+
+
+def test_postprocess_fills_holes_inside_flagged_regions_only():
+    from tp.trust.post import postprocess, postprocess_trust
+    flag = np.zeros((40, 40), bool); flag[10:30, 10:30] = True; flag[18:22, 18:22] = False   # a hole in a mirror
+    flag[2, 2] = False
+    valid = np.ones_like(flag); valid[0:5, 0:5] = False
+    out = postprocess(flag, valid)
+    assert out[10:30, 10:30].all() and not out[:9].any() and not out[:, 31:].any()
+    trust = np.where(flag, 0.1, 0.9).astype(np.float32)
+    t2 = postprocess_trust(trust, 0.4, valid)
+    assert np.array_equal(t2 < 0.4, out) and np.allclose(t2[~out], 0.9)
+
+
+def test_replacement_error_rewards_flagging_exactly_the_bad_pixels():
+    from tp.trust.data import replacement_error
+    gt = np.full((192, 256), 2.0, np.float32); p = gt.copy(); p[50:100, 50:100] = 6.0
+    dg = gt * 1.1
+    a = dict(prompt=p.astype(np.float16), dg=dg.astype(np.float16), gt=gt.astype(np.float16), valid=np.ones_like(gt, bool),
+             gt_valid=np.ones_like(gt, bool), focus=np.zeros_like(gt, bool))
+    a["focus"][40:110, 40:110] = True
+    perfect = np.where(p > 3, 0.0, 1.0)
+    keep_all, flag_all = np.ones_like(gt), np.zeros_like(gt)
+    sp, fp = replacement_error(perfect, 0.5, a); sk, fk = replacement_error(keep_all, 0.5, a); sa, fa = replacement_error(flag_all, 0.5, a)
+    assert sp < sa < sk and fp < fa < fk and abs(sa - 0.1) < 1e-3

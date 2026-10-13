@@ -39,10 +39,11 @@ class Block(nn.Module):
 
 
 class TrustNetV0(nn.Module):
-    def __init__(self, in_ch=IN_CH, feat_ch=384, width=32, use_features=True, feat_proj=64):
+    def __init__(self, in_ch=IN_CH, feat_ch=384, width=32, use_features=True, feat_proj=64, feat_dropout=0.0):
         super().__init__()
         w = width; self.use_features = use_features; fp = feat_proj if use_features else 0
-        self.fproj = nn.Sequential(nn.Conv2d(feat_ch, feat_proj, 1), nn.GELU()) if use_features else None
+        # T v1: optional Dropout2d on the projected encoder features (no parameters; v0 checkpoints still load)
+        self.fproj = nn.Sequential(nn.Conv2d(feat_ch, feat_proj, 1), nn.GELU(), nn.Dropout2d(feat_dropout)) if use_features else None
         self.e1 = Block(in_ch, w); self.e2 = Block(w, 2 * w)
         self.e3 = Block(2 * w + fp, 4 * w); self.e4 = Block(4 * w + fp, 4 * w)
         self.d3 = Block(8 * w, 2 * w); self.d2 = Block(4 * w, w); self.d1 = Block(2 * w, w)
