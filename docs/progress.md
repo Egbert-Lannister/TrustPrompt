@@ -252,3 +252,13 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - DEPTHOR++ 式检测器：接 PromptDA-L 很强，在 HAMMER 上接近 GT 掩码，在 NYU 镜面上仍离上界很远；接填充很弱。
   - T 的提升空间集中在大面积污染上。
 - 待补：Gate 掩码 + PromptDA-L（GPU）。
+
+## 2026-10-13 T v0（代码已实现；测试通过；正式开发集运行待 Windows）
+
+- 数据：`tp/trust/data.py`、`scripts/build_trust_data.py`（192×256 网格，真实提示 + 每个 train 样本 4 个模拟变体，分片并行）。
+- 特征：`baselines/promptda.encoder_tokens` + `scripts/cache_encoder_features.py`（PromptDA-S 编码器，24×32×384，fp16）。
+- 模型与训练：`tp/trust/model.py`（小 U-Net，约 1M 参数，9 通道输入 + 编码器特征）、`scripts/train_trust.py`（在 train 留出场景上选择）、`scripts/infer_trust.py`、`tp/trust/cache.py`。
+- 接入：`run_eval` 新增 trust_source=cached_trust；PromptDA 新增 gate_prior 与 trust_prior 两个可部署变体；`cache_promptda` 支持 `--set`。
+- 汇总：`scripts/summarize_trust.py` → `docs/trust_v0_results.md`，分 val（样本外）、train 留出场景（训练未拟合）、train 全部（对 T 是样本内）三组报告。
+- 脚本：`scripts/windows/step5_t_v0.ps1`。
+- 测试：numpy 部分在本地工作区；torch 部分（前向、AUROC、合成数据上的训练 → 推理 → 缓存读取全流程、编码器 hook）在云端工作区用 CPU torch 2.14 通过。真实数据冒烟：build_trust_data（HAMMER 2 帧）、run_eval cached_trust（HAMMER 3 帧，手工构造的可信度缓存）。

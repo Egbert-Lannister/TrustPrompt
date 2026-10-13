@@ -38,8 +38,11 @@ def git_source(source, *args):
     return p.stdout.strip() if p.returncode == 0 else None
 
 
-def run(config_path, limit=None, output=None):
+def run(config_path, limit=None, output=None, overrides=()):
     config = yaml.safe_load(Path(config_path).read_text(encoding="utf8"))
+    for item in overrides:                      # --set KEY=VALUE (YAML value), recorded in config.json
+        key, _, value = item.partition("=")
+        config[key] = yaml.safe_load(value)
     if config["variant"] not in VARIANTS:
         raise ValueError("unknown variant")
     allowed = set(config.get("splits", ["train", "val"]))
@@ -76,7 +79,7 @@ def run(config_path, limit=None, output=None):
             pc = Path(config["prior_cache"]); prior = CachedPrior(pc if pc.is_absolute() else ROOT / pc)
             receipt["prior_cache_receipt_sha256"] = sha256(prior.root / "receipt.json")
         (output / "predictions").mkdir()
-        rows = []
+        rows = []; tcache = None
         for k, r in enumerate(records):
             path = (processed / r["path"]).resolve()
             sample_hash = sha256(path)
@@ -90,6 +93,18 @@ def run(config_path, limit=None, output=None):
                 fill = d["global_depth"]
                 if config["variant"] == "focus_prior":
                     remove = focus_scope(s)[1]
+                elif config["variant"] == "gate_prior":
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        remove = s.prompt_valid & np.isfinite(fill) & (np.abs(s.prompt - fill) / fill > float(config["tau_gate"]))
+                    det_info = dict(tau_gate=float(config["tau_gate"]), flagged=int(remove.sum()))
+                elif config["variant"] == "trust_prior":
+                    if tcache is None:
+                        from tp.trust.cache import TrustCache
+                        tcache = TrustCache(config["trust_cache"])
+                        receipt["trust_cache_receipt_sha256"] = sha256(tcache.root / "receipt.json")
+                    thr = float(config.get("trust_threshold", tcache.threshold))
+                    remove = s.prompt_valid & (tcache.trust(s, sample_hash, s.prompt.shape) < thr)
+                    det_info = dict(threshold=thr, flagged=int(remove.sum()))
                 elif config["variant"] == "detector_prior":
                     from tp.geom import resize_nearest
                     from tp.models.depthor_det import detect_for_sample
@@ -138,4 +153,5 @@ def run(config_path, limit=None, output=None):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--config", required=True)
     ap.add_argument("--limit", type=int); ap.add_argument("--output")
-    a = ap.parse_args(); run(a.config, a.limit, a.output)
+    ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
+    a = ap.parse_args(); run(a.config, a.limit, a.output, a.set)

@@ -24,7 +24,7 @@ ALIGNED_SOURCE={"robust_global":"global_depth","robust_local":"local_depth","rob
                 "gate_global":"global_depth","gate_local_v2":"local_depth_v2"}
 PRIOR_METHODS={"unidepth_v2_s","trustfill",*ALIGNED_SOURCE}
 # Module C evaluation (revision R13): trust source x fill rule. oracle_* sources read GT-derived masks.
-TRUST_SOURCES={"oracle_c","oracle_focus","gate_global","depthor"}   # depthor: DEPTHOR++-style baseline (R14)
+TRUST_SOURCES={"oracle_c","oracle_focus","gate_global","depthor","cached_trust"}   # depthor: R14 baseline; cached_trust: T v0
 # Plan revision R2: NYU background reference is inpainted from the same raw prompt.
 NYU_SEMANTICS=dict(clean="deviation_from_inpainted_sensor_reference_not_gt_accuracy",
                    hole="not_reported_for_nyu_inpainted_reference",
@@ -124,6 +124,7 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             for line in partial_path.read_text(encoding="utf-8").splitlines():
                 pair=json.loads(line);rows.append(pair["row"]);mirror_rows.append(pair["mirror_row"])
         done={(x["scene"],x["frame"]) for x in rows}
+        tcache=None
         for i,r in enumerate(selected):
             if (r["scene"],r["frame"]) in done:continue
             if time_budget_s is not None and time.perf_counter()-started>time_budget_s:
@@ -173,6 +174,16 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                         # value (~3.5 MB per HAMMER image); <= 1001 tie groups keep rows small (decisions sec. 11).
                         tw=np.round(tw,3)
                         trust=trust_quality(tw,p,s.gt,pv,s.gt_valid,tau=config["tau"])
+                    elif src=="cached_trust":
+                        if tcache is None:
+                            from tp.trust.cache import TrustCache
+                            tcache=TrustCache(config["trust_cache"])
+                            receipt["trust_cache_receipt_sha256"]=sha256(tcache.root/"receipt.json")
+                        thr=float(config.get("trust_threshold",tcache.threshold))
+                        tmap=tcache.trust(s,r["sha256"],s.gt.shape)
+                        low=pv&(tmap<thr)
+                        det_info=dict(trust_cache=str(tcache.root),threshold=thr,flagged=int(low.sum()),valid=int(pv.sum()))
+                        trust=trust_quality(np.where(pv,np.round(np.clip(tmap,0,1),3),np.nan),p,s.gt,pv,s.gt_valid,tau=config["tau"])
                     else:
                         with np.errstate(divide="ignore",invalid="ignore"):
                             agree=pv&np.isfinite(base)&(np.abs(p-base)/base<=float(config.get("tau_gate",0.05)))
