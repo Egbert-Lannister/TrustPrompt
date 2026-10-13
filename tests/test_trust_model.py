@@ -40,8 +40,10 @@ def _fake_shard(root, dataset, scenes, split, rng):
             p = gt.copy(); lab = np.zeros((192, 256), np.uint8)
             p[60:120, 80:160] *= 1.6; lab[60:120, 80:160] = 1                 # a far "mirror" block
             f = d / "items" / f"d435__{sc}__f0__{variant}.npz"
-            np.savez_compressed(f, prompt=p.astype(np.float16), valid=np.ones_like(lab, bool), dg=gt.astype(np.float16),
-                                rgb=np.zeros((192, 256, 3), np.uint8), label=lab)
+            focus = np.zeros_like(lab, bool); focus[50:130, 70:170] = True
+            np.savez_compressed(f, prompt=p.astype(np.float16), valid=np.ones_like(lab, bool), dg=(gt * 1.05).astype(np.float16),
+                                rgb=np.zeros((192, 256, 3), np.uint8), label=lab, gt=gt.astype(np.float16),
+                                gt_valid=np.ones_like(lab, bool), focus=focus)
             index.append(dict(dataset=dataset, split=split, scene=sc, frame="f0", sensor="d435", variant=variant,
                               rgb_sha256=f"rgb_{sc}", sample_sha256=f"s_{sc}", path=f"items/{f.name}", sha256=sha256(f),
                               clean=int((lab == 0).sum()), contaminated=int((lab == 1).sum())))
@@ -117,3 +119,36 @@ def test_encoder_hook_takes_deepest_patch_tokens_from_a_dinov2_like_model():
     assert find_encoder_norm(pred.model) == "pretrained.norm"
     feat, info = encoder_tokens(pred, np.zeros((456, 608, 3), np.uint8), np.ones((192, 256), np.float32))
     assert feat.shape == (8, 24, 32) and info["hook_calls"] == 3 and info["token_grid"] == [33, 43]
+
+
+def test_v1_error_selection_post_processing_and_mask_diagnostics(tmp_path):
+    rng = np.random.default_rng(1)
+    data = tmp_path / "data_hammer"; feats = tmp_path / "feat"; (feats / "features").mkdir(parents=True)
+    idx = _fake_shard(data, "hammer", ["scene2", "scene10"], "train", rng)
+    feat_index = {}
+    for e in idx:
+        f = feats / "features" / f"{e['rgb_sha256']}.npy"
+        if not f.exists():
+            np.save(f, np.zeros((384, 24, 32), np.float16))
+        feat_index[e["rgb_sha256"]] = dict(path=f"features/{f.name}")
+    write_json(feats / "index.json", feat_index); write_json(feats / "receipt.json", dict(stage="features_verified"))
+    root = Path(__file__).resolve().parents[1]
+    model = tmp_path / "model"
+    r = subprocess.run([sys.executable, "-m", "scripts.train_trust", "--data", str(data), "--features", str(feats),
+                        "--regime", "real_sim", "--output", str(model), "--steps", "60", "--batch", "2", "--eval-every", "30",
+                        "--device", "cpu", "--selection", "error", "--feat-dropout", "0.2", "--feat-drop-sample", "0.2"],
+                       cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    b = json.loads((model / "receipt.json").read_text())["best"]
+    assert b["selection"] == "error" and isinstance(b["post"], bool) and b["objective"] < 0.05     # D_g error is 0.05
+    cache = tmp_path / "cache_hammer"
+    r = subprocess.run([sys.executable, "-m", "scripts.infer_trust", "--model", str(model), "--data", str(data),
+                        "--features", str(feats), "--output", str(cache), "--device", "cpu"], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert json.loads((cache / "receipt.json").read_text())["post"] == b["post"]
+    out = tmp_path / "diag"
+    r = subprocess.run([sys.executable, "-m", "scripts.trust_mask_diagnostics", "--data", str(data),
+                        "--caches", f"v1={tmp_path / 'cache_{tag}'}", "--output", str(out)], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    res = json.loads(Path(f"{out}.json").read_text())["results"]
+    assert res["hammer/train holdout/v1"]["recall_scope"] > 0.9 and res["hammer/train holdout/Gate"]["images"] == 1

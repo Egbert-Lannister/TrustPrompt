@@ -21,6 +21,8 @@ METHODS = [("RobustAlign global", "robust_global"), ("PromptDA-L", "promptda_vit
            ("PromptDA-L + Gate mask", "promptda_vitl_gate_prior"),
            ("PromptDA-L + detector mask (gate off)", "promptda_vitl_detector_nogate_prior"),
            ("PromptDA-L + T v0 mask [selected regime]", "promptda_vitl_trust_prior"),
+           *[(f"T v1 [{r}] + fill v1", f"trustfill_t_v1_{r}_v1") for r in REGIMES],
+           ("PromptDA-L + T v1 mask [selected regime]", "promptda_vitl_trust_v1_prior"),
            ("GT mask + fill v1 [oracle]", "trustfill_oracle_c_v1"),
            ("PromptDA-L + GT mask [oracle]", "promptda_vitl_oracle_prior")]
 DATA = {"mirror3d_nyu": ("mirror3d_dev", "mirror_only", "NYU mirrors"), "hammer": ("hammer_dev", "objects_only", "HAMMER objects")}
@@ -65,18 +67,20 @@ def main():
              "Trust AUROC: clean prompt pixels as positives, scene mean. **val and train-holdout are out of fit for T; "
              "train-all is in sample for T.**", ""]
     payload = {}
-    for r in REGIMES:
-        p = ROOT / "results" / f"trust_t_v0_{r}"
-        if (p / "receipt.json").is_file():
-            rec = json.loads((p / "receipt.json").read_text())
-            payload.setdefault("models", {})[r] = {k: rec.get(k) for k in ("stage", "best", "pos_weight", "counts", "train_seconds", "parameters")}
+    for ver in ("v0", "v1"):
+        for r in REGIMES:
+            p = ROOT / "results" / f"trust_t_{ver}_{r}"
+            if (p / "receipt.json").is_file():
+                rec = json.loads((p / "receipt.json").read_text())
+                payload.setdefault("models", {})[f"{ver} {r}"] = {k: rec.get(k) for k in ("stage", "best", "pos_weight", "counts", "train_seconds", "parameters")}
     if payload.get("models"):
         lines += ["## Models (selection on train-split holdout scenes)", "",
-                  "| Regime | stage | selection AUROC | threshold | F1 | params | train s |", "|---|---|---:|---:|---:|---:|---:|"]
+                  "| Model | stage | step | selection AUROC | threshold | post | replacement error | params | train s |",
+                  "|---|---|---:|---:|---:|---|---:|---:|---:|"]
         for r, m in payload["models"].items():
             b = m.get("best") or {}
-            lines.append(f"| {r} | {m['stage']} | {fmt(b.get('selection_auroc'), 3)} | {b.get('threshold')} | "
-                         f"{fmt(b.get('mean_f1'), 3)} | {m.get('parameters')} | {fmt(m.get('train_seconds'), 0)} |")
+            lines.append(f"| {r} | {m['stage']} | {b.get('step')} | {fmt(b.get('selection_auroc'), 3)} | {b.get('threshold')} | "
+                         f"{b.get('post', False)} | {fmt(b.get('objective'))} | {m.get('parameters')} | {fmt(m.get('train_seconds'), 0)} |")
         lines.append("")
     head = ["| Method | C AbsRel | C full | IR | DOR | trust AUROC |", "|---|---:|---:|---:|---:|---:|"]
     for ds, (prefix, scope, label) in DATA.items():

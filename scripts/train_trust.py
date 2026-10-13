@@ -6,7 +6,11 @@
 
 Training uses the train split only. Model selection (checkpoint and the binary threshold) uses
 train-split scenes held out by tp.trust.data.scene_inner_holdout (real prompts only); the val
-split is never read here, so val stays a clean development report. Regimes: real (real sensor
+split is never read here, so val stays a clean development report.
+  --selection f1     (v0) checkpoint by mean per-image AUROC, threshold by pooled pixel F1
+  --selection error  (v1) checkpoint, threshold and post-processing jointly by the replacement
+                     error (tp.trust.data.replacement_error; needs v1 data with gt/focus):
+                     mean over datasets of the per-image mean of (scope error + full error) / 2 Regimes: real (real sensor
 prompts), sim (simulated variants only), real_sim (both). Datasets are sampled with equal weight.
 """
 import argparse
@@ -108,6 +112,29 @@ def selection_metrics(preds, entries, thresholds=np.round(np.arange(0.05, 0.96, 
                 threshold=float(thresholds[best]), mean_f1_at_threshold=float(mean_f1[best]))
 
 
+def error_selection(preds, entries, thresholds=np.round(np.arange(0.05, 0.96, 0.05), 2), posts=(False, True)):
+    from tp.trust.data import replacement_error
+    arrays = [np.load(e["file"]) for e in entries]
+    if "gt" not in arrays[0]:
+        raise ValueError("--selection error needs v1 trust data (gt, gt_valid, focus)")
+    arrays = [{k: a[k] for k in ("prompt", "dg", "gt", "valid", "gt_valid", "focus")} for a in arrays]
+    best = None; table = {}
+    for post in posts:
+        for t in thresholds:
+            per = {}
+            for (prob, _), e, a in zip(preds, entries, arrays):
+                sc, full = replacement_error(prob, t, a, post=post)
+                if full is None:
+                    continue
+                per.setdefault(e["dataset"], []).append(full if sc is None else 0.5 * (sc + full))
+            score = float(np.mean([np.mean(v) for v in per.values()]))
+            table[f"{'post' if post else 'raw'}@{t:.2f}"] = score
+            if best is None or score < best["objective"]:
+                best = dict(objective=score, threshold=float(t), post=bool(post),
+                            per_dataset={k: float(np.mean(v)) for k, v in per.items()})
+    return best, table
+
+
 def run(a):
     import torch
     from tp.trust.model import TrustNetV0
@@ -142,7 +169,7 @@ def run(a):
                        device=a.device, torch=torch.__version__,
                        gpu=torch.cuda.get_device_name() if a.device.startswith("cuda") else None)
         write_json(out / "receipt.json", receipt)
-        model = TrustNetV0(use_features=not a.no_features).to(a.device)
+        model = TrustNetV0(use_features=not a.no_features, feat_dropout=a.feat_dropout).to(a.device)
         opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
         sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, a.steps)
         lossf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=a.device), reduction="none")
@@ -156,6 +183,8 @@ def run(a):
                 x, y = x[..., ::-1].copy(), y[..., ::-1].copy()
                 f = f[..., ::-1].copy() if f is not None else None
             x = torch.from_numpy(x).to(a.device); yt = torch.from_numpy(y.astype(np.int64)).to(a.device)
+            if f is not None and a.feat_drop_sample > 0:      # v1: drop whole feature maps for some samples
+                f = f * (rng.random(len(f)) >= a.feat_drop_sample)[:, None, None, None].astype(np.float32)
             ft = torch.from_numpy(f).to(a.device) if f is not None else None
             logit = model(x, ft)[:, 0]
             mask = (yt != 255).float()
@@ -164,17 +193,31 @@ def run(a):
             if step % 50 == 0:
                 say(f"step {step} loss {loss.item():.4f} lr {sched.get_last_lr()[0]:.2e} {time.time() - t0:.0f}s")
             if step % a.eval_every == 0 or step == a.steps:
-                m = selection_metrics(predict_trust(model, sel, feats, not a.no_features, a.device), sel)
-                history.append(dict(step=step, loss=float(loss.item()), **{k: m[k] for k in ("score", "threshold", "mean_f1_at_threshold")},
-                                    per_dataset={k: v["auroc"] for k, v in m["per_dataset"].items()}))
-                say(f"select step {step}: AUROC {m['score']:.4f} {history[-1]['per_dataset']} thr {m['threshold']} F1 {m['mean_f1_at_threshold']:.3f}")
-                if best is None or m["score"] > best["score"]:
-                    best = dict(step=step, **m)
+                preds = predict_trust(model, sel, feats, not a.no_features, a.device)
+                m = selection_metrics(preds, sel)
+                h = dict(step=step, loss=float(loss.item()), **{k: m[k] for k in ("score", "threshold", "mean_f1_at_threshold")},
+                         per_dataset={k: v["auroc"] for k, v in m["per_dataset"].items()})
+                if a.selection == "error":
+                    eb, etable = error_selection(preds, sel)
+                    h.update(error=eb, error_table=etable)
+                    better = best is None or eb["objective"] < best["error"]["objective"]
+                    say(f"select step {step}: AUROC {m['score']:.4f} | replacement error {eb['objective']:.4f} "
+                        f"thr {eb['threshold']} post {eb['post']} {eb['per_dataset']}")
+                else:
+                    better = best is None or m["score"] > best["score"]
+                    say(f"select step {step}: AUROC {m['score']:.4f} {h['per_dataset']} thr {m['threshold']} F1 {m['mean_f1_at_threshold']:.3f}")
+                history.append(h)
+                if better:
+                    best = dict(step=step, **m, error=h.get("error"))
                     torch.save(model.state_dict(), out / "best.pt")
         write_json(out / "history.json", history)
         receipt.update(stage="trust_model_trained", completed_at_utc=datetime.now(timezone.utc).isoformat(),
-                       best=dict(step=best["step"], selection_auroc=best["score"], threshold=best["threshold"],
-                                 mean_f1=best["mean_f1_at_threshold"], per_dataset=best["per_dataset"]),
+                       best=dict(step=best["step"], selection_auroc=best["score"], mean_f1=best["mean_f1_at_threshold"],
+                                 per_dataset=best["per_dataset"], selection=a.selection,
+                                 threshold=best["error"]["threshold"] if a.selection == "error" else best["threshold"],
+                                 post=bool(best["error"]["post"]) if a.selection == "error" else False,
+                                 objective=best["error"]["objective"] if a.selection == "error" else None,
+                                 objective_per_dataset=best["error"]["per_dataset"] if a.selection == "error" else None),
                        checkpoint_sha256=sha256(out / "best.pt"), train_seconds=time.time() - t0,
                        parameters=int(sum(p.numel() for p in model.parameters())))
     except BaseException as error:
@@ -191,4 +234,6 @@ if __name__ == "__main__":
     ap.add_argument("--batch", type=int, default=8); ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--eval-every", type=int, default=500); ap.add_argument("--seed", type=int, default=20261013)
     ap.add_argument("--device", default="cuda"); ap.add_argument("--no-features", action="store_true")
+    ap.add_argument("--selection", choices=["f1", "error"], default="f1")
+    ap.add_argument("--feat-dropout", type=float, default=0.0); ap.add_argument("--feat-drop-sample", type=float, default=0.0)
     run(ap.parse_args())
