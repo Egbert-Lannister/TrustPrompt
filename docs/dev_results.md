@@ -38,6 +38,8 @@ Mirror pixels (main scope):
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.2005 | 0.4012 | 0.2054 | 0.1690 | 0.2827 | 0.3000 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.1006 | 0.3608 | 0.0904 | 0.1039 | 0.1508 | 0.2831 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0996 | 0.3971 | 0.0892 | 0.1091 | 0.1392 | 0.2942 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.0966 | 0.4030 | 0.0912 | 0.1092 | 0.1192 | 0.2994 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.0986 | 0.3661 | 0.0890 | 0.1042 | 0.1643 | 0.2868 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
 
@@ -73,6 +75,8 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.2015 | 0.0113 | 0.3762 | 0.2121 | 0.7941 | 0 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.1352 | 0.0230 | 0.1824 | 0.1724 | NA | 0 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.1369 | 0.0255 | 0.1745 | 0.1789 | NA | 0 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.1354 | 0.0431 | 0.1176 | 0.2035 | NA | 0 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.1336 | 0.0171 | 0.1986 | 0.1766 | NA | 0 |
 
 ## train: 76 images / 55 scenes
 
@@ -110,6 +114,8 @@ Mirror pixels (main scope):
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.2615 | 0.3492 | 0.2622 | 0.2023 | 0.3733 | 0.4134 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.2467 | 0.3034 | 0.2479 | 0.1966 | 0.3262 | 0.3661 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.2122 | 0.3584 | 0.2124 | 0.1736 | 0.2818 | 0.3524 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.1321 | 0.4606 | 0.1315 | 0.1287 | 0.1267 | 0.2738 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.1340 | 0.4652 | 0.1336 | 0.1288 | 0.1232 | 0.2684 |
 
 Full image (`clean` = deviation from inpainted sensor reference):
 
@@ -145,5 +151,7 @@ Full image (`clean` = deviation from inpainted sensor reference):
 | DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.2490 | 0.0121 | 0.4221 | 0.3158 | 0.8071 | 0 |
 | PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.2360 | 0.0178 | 0.3334 | 0.2694 | NA | 0 |
 | PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.2124 | 0.0189 | 0.3006 | 0.2648 | NA | 0 |
+| PromptDA-L + Gate mask, D_g fill (deployable) | 0.1482 | 0.0256 | 0.1629 | 0.2238 | NA | 0 |
+| PromptDA-L + T v0 mask (deployable; train rows in sample for T) | 0.1485 | 0.0145 | 0.1718 | 0.2019 | NA | 0 |
 
 Paired scene bootstrap on val (reference = RobustAlign global): `results/mirror3d_dev_paired_val_v2/paired_bootstrap.json` (empty-region scenes excluded and listed).
