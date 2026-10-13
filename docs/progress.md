@@ -241,3 +241,5 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 冒烟（Linux 工作区，非正式）：NYU val 19 帧约 1.2 s/帧，HAMMER 约 1.5 s/图。检测器分数的逐图 AUROC 在 NYU 上多为 0.86–0.99，但论文门控在 10/19 帧上关闭了检测；在 HAMMER 上门控全部关闭（γ ≈ 0.98–0.99），关闭门控后约剔除 4% 的提示。
 - 测试：150 passed / 1 skipped。
 - 第一次 Windows 运行：PromptDA 预检时进程被 Intel OpenMP 中止（libiomp5md.dll 重复初始化）。原因是 venv 基于 Anaconda，检测器导入的 scipy.stats 加载了 MKL 自带的 OpenMP，与 torch 自带的那份冲突。已改为用 numpy 计算 Spearman，测试确认与 scipy 一致，并确认检测器模块不再加载 scipy.stats；没有使用不安全的 KMP_DUPLICATE_LIB_OK。中止的预检目录改名为 `_failed_omp_duplicate` 保留。测试 152 passed。
+- 第二次 Windows 运行（2026-10-12）：GPU 阶段完成，4 个检测器缓存均为 `real_dev_verified`。CPU 阶段 45 个评测中 11 个成功，35 个因 D 盘写满失败。原因是我的代码：检测器可信度是连续值，`trust_quality` 的风险-覆盖率曲线每个不同取值记一个点，每张 HAMMER 图约 3.5 MB，8 个运行合计约 11 GB。已改为把检测器可信度量化到 1e-3（最多 1001 个点，测试覆盖）。失败目录只删除过大的行文件（partial_rows / per_image / summary），保留 receipt、配置、命令、日志、源码快照，并改名为 `_failed_disk_full`。D 盘恢复到 12 GB 可用。脚本加了 D 盘空间检查：开始前估算所需空间，空间低于 3 GB 时暂停启动新运行。
+- Windows 上 HAMMER 检测器缓存实际约 10 s/帧（PromptDA 1.2–1.4 s），明显慢于 Linux 工作区，可能与内存紧张导致的换页有关，尚未确认。

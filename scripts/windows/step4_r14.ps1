@@ -97,8 +97,16 @@ foreach ($v in @("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS")) 
 Write-Host "$($todo.Count) of $($jobs.Count) evaluation runs to do, $Parallel at a time, $threads threads each ($(Get-Date -Format HH:mm:ss))"
 New-Item -ItemType Directory -Force results\_logs | Out-Null
 $running = @()
+# Disk guard: about 0.3 GB per HAMMER run (detector rows ~120 KB per image) and 0.1 GB per NYU run; never start a run below 3 GB free on D:.
+$needGB = 0.3 * @($todo | Where-Object { $_.ds -eq "hammer" }).Count + 0.1 * @($todo | Where-Object { $_.ds -eq "nyu" }).Count + 2
+$freeD = (Get-PSDrive D).Free / 1GB
+if ($freeD -lt $needGB) { Write-Host ("D: has {0:N1} GB free; these runs need about {1:N1} GB. Free space and re-run." -f $freeD, $needGB); exit 1 }
 foreach ($j in $todo) {
   while (@($running | Where-Object { -not $_.HasExited }).Count -ge $Parallel) { Start-Sleep -Seconds 5 }
+  while ((Get-PSDrive D).Free / 1GB -lt 3) {
+    Write-Host "D: below 3 GB free; waiting for running jobs to finish before starting more"; Start-Sleep -Seconds 60
+    if (@($running | Where-Object { -not $_.HasExited }).Count -eq 0) { Write-Host "D: still below 3 GB free. Free space and re-run."; exit 1 }
+  }
   $log = "results\_logs\" + (Split-Path $j.out -Leaf) + ".log"
   Write-Host "start $($j.out)  ($(Get-Date -Format HH:mm:ss))"
   $running += Start-Process -FilePath $py -ArgumentList "-m tp.eval.run_eval $($j.args) --output $($j.out) $($j.resume)" `
