@@ -169,6 +169,9 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                         an,score,det_info=detect_for_sample(s,prior_depth,config.get("detector",{}))
                         low=an&pv
                         tw=np.where(pv,np.nan_to_num(trust_from_score(score),nan=1.0),np.nan)  # unscored = kept = trusted
+                        # Quantise to 1e-3: a continuous score gives one risk-coverage point per distinct
+                        # value (~3.5 MB per HAMMER image); <= 1001 tie groups keep rows small (decisions sec. 11).
+                        tw=np.round(tw,3)
                         trust=trust_quality(tw,p,s.gt,pv,s.gt_valid,tau=config["tau"])
                     else:
                         with np.errstate(divide="ignore",invalid="ignore"):

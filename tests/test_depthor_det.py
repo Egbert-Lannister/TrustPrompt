@@ -80,3 +80,14 @@ def test_detector_module_does_not_import_scipy_stats():
     import subprocess, sys
     code = "import sys, tp.models.depthor_det; sys.exit(1 if 'scipy.stats' in sys.modules else 0)"
     assert subprocess.run([sys.executable, "-c", code]).returncode == 0
+
+
+def test_quantised_detector_trust_keeps_risk_coverage_small():
+    from tp.eval.metrics import trust_quality
+    from tp.models.depthor_det import trust_from_score
+    rng = np.random.default_rng(0)
+    gt = rng.uniform(1, 5, (200, 300)); prompt = gt * (1 + rng.normal(0, 0.05, gt.shape))
+    valid = np.ones_like(gt, bool)
+    tw = np.round(trust_from_score(rng.uniform(0, 2, gt.shape)), 3)
+    tq = trust_quality(tw, prompt, gt, valid, valid)
+    assert tq["status"] == "ok" and len(tq["risk_coverage"]) <= 1001
