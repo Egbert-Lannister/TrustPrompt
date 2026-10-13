@@ -26,7 +26,18 @@ Object pixels, GT vs naked GT (main scope):
 | Fill rule v1 (GT contamination mask [oracle]) | 0.0593 | 0.5506 | 0.0602 | 0.0490 | 0.2215 | 0.1289 |
 | Fill best-of-k per region (GT mask [oracle x2]) | 0.0552 | 0.5891 | 0.0566 | 0.0466 | 0.1942 | 0.1230 |
 | Fill rule v1 (GT focus mask [oracle]) | 0.0709 | 0.4555 | 0.0725 | 0.0660 | 0.2715 | 0.1999 |
+| Fill AIC (GT contamination mask [oracle]) | 0.0593 | 0.5505 | 0.0602 | 0.0490 | 0.2216 | 0.1289 |
+| Fill GRIC (GT contamination mask [oracle]) | 0.0602 | 0.5482 | 0.0613 | 0.0496 | 0.2247 | 0.1370 |
+| Fill sector hold-out (GT contamination mask [oracle]) | 0.0596 | 0.5568 | 0.0607 | 0.0492 | 0.2197 | 0.1336 |
+| Fill radial hold-out (GT contamination mask [oracle]) | 0.0617 | 0.5396 | 0.0630 | 0.0505 | 0.2322 | 0.1424 |
 | Gate trust + fill rule v1 (deployable) | 0.0940 | 0.2961 | 0.0965 | 0.0777 | 0.4047 | 0.2611 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | 0.1391 | 0.0129 | 0.1416 | 0.0785 | 0.9590 | 0.3053 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | 0.1378 | 0.0156 | 0.1404 | 0.0768 | 0.9661 | 0.2955 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | 0.1379 | 0.0155 | 0.1404 | 0.0768 | 0.9663 | 0.2953 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | 0.1041 | 0.1427 | 0.1063 | 0.0728 | 0.7141 | 0.2651 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.1092 | 0.0944 | 0.1123 | 0.0708 | 0.7563 | 0.2712 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0391 | 0.7404 | 0.0371 | 0.0320 | 0.1615 | 0.0330 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0362 | 0.7546 | 0.0355 | 0.0313 | 0.1519 | 0.0387 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -50,7 +61,18 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | Fill rule v1 (GT contamination mask [oracle]) | 0.0479 | 0.0130 | 0.1394 | 0.0639 | NA | 0 |
 | Fill best-of-k per region (GT mask [oracle x2]) | 0.0426 | 0.0130 | 0.1153 | 0.0613 | NA | 0 |
 | Fill rule v1 (GT focus mask [oracle]) | 0.0868 | 0.0235 | 0.4915 | 0.1308 | NA | 0 |
+| Fill AIC (GT contamination mask [oracle]) | 0.0479 | 0.0130 | 0.1395 | 0.0639 | NA | 0 |
+| Fill GRIC (GT contamination mask [oracle]) | 0.0482 | 0.0130 | 0.1385 | 0.0669 | NA | 0 |
+| Fill sector hold-out (GT contamination mask [oracle]) | 0.0480 | 0.0130 | 0.1372 | 0.0662 | NA | 0 |
+| Fill radial hold-out (GT contamination mask [oracle]) | 0.0496 | 0.0130 | 0.1440 | 0.0700 | NA | 0 |
 | Gate trust + fill rule v1 (deployable) | 0.0709 | 0.0310 | 0.3889 | 0.1320 | 0.6911 | 0 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | 0.1251 | 0.0138 | 0.9504 | 0.1638 | 0.7295 | 0 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | 0.1250 | 0.0133 | 0.9572 | 0.1600 | 0.7295 | 0 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | 0.1250 | 0.0133 | 0.9576 | 0.1598 | 0.7295 | 0 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | 0.0897 | 0.0154 | 0.7185 | 0.1464 | 0.7295 | 0 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.0935 | 0.0139 | 0.7557 | 0.1466 | 0.7295 | 0 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0552 | 0.0140 | 0.3187 | 0.0394 | NA | 0 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0491 | 0.0146 | 0.2999 | 0.0432 | NA | 0 |
 
 ### val: per sensor, object pixels
 
@@ -110,9 +132,42 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | Fill rule v1 (GT focus mask [oracle]) | d435 | 0.0739 | 0.0751 | 0.3373 | 0.2314 | 2052129 |
 | Fill rule v1 (GT focus mask [oracle]) | helios | 0.0609 | 0.0613 | 0.1724 | 0.1607 | 2019586 |
 | Fill rule v1 (GT focus mask [oracle]) | l515 | 0.0778 | 0.0811 | 0.3048 | 0.2077 | 1860763 |
+| Fill AIC (GT contamination mask [oracle]) | d435 | 0.0512 | 0.0517 | 0.2218 | 0.1033 | 2052129 |
+| Fill AIC (GT contamination mask [oracle]) | helios | 0.0630 | 0.0630 | 0.2009 | 0.1597 | 2019586 |
+| Fill AIC (GT contamination mask [oracle]) | l515 | 0.0637 | 0.0658 | 0.2420 | 0.1237 | 1860763 |
+| Fill GRIC (GT contamination mask [oracle]) | d435 | 0.0533 | 0.0542 | 0.2297 | 0.1234 | 2052129 |
+| Fill GRIC (GT contamination mask [oracle]) | helios | 0.0636 | 0.0639 | 0.2041 | 0.1621 | 2019586 |
+| Fill GRIC (GT contamination mask [oracle]) | l515 | 0.0637 | 0.0658 | 0.2402 | 0.1254 | 1860763 |
+| Fill sector hold-out (GT contamination mask [oracle]) | d435 | 0.0518 | 0.0527 | 0.2178 | 0.1130 | 2052129 |
+| Fill sector hold-out (GT contamination mask [oracle]) | helios | 0.0633 | 0.0636 | 0.2037 | 0.1615 | 2019586 |
+| Fill sector hold-out (GT contamination mask [oracle]) | l515 | 0.0636 | 0.0658 | 0.2375 | 0.1262 | 1860763 |
+| Fill radial hold-out (GT contamination mask [oracle]) | d435 | 0.0560 | 0.0572 | 0.2437 | 0.1337 | 2052129 |
+| Fill radial hold-out (GT contamination mask [oracle]) | helios | 0.0652 | 0.0657 | 0.2113 | 0.1663 | 2019586 |
+| Fill radial hold-out (GT contamination mask [oracle]) | l515 | 0.0639 | 0.0661 | 0.2417 | 0.1271 | 1860763 |
 | Gate trust + fill rule v1 (deployable) | d435 | 0.0926 | 0.0948 | 0.5189 | 0.2730 | 2052129 |
 | Gate trust + fill rule v1 (deployable) | helios | 0.0885 | 0.0900 | 0.3125 | 0.2480 | 2019586 |
 | Gate trust + fill rule v1 (deployable) | l515 | 0.1009 | 0.1046 | 0.3828 | 0.2623 | 1860763 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | d435 | 0.1145 | 0.1157 | 0.9574 | 0.2685 | 2052129 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | helios | 0.1573 | 0.1592 | 0.9345 | 0.3715 | 2019586 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | l515 | 0.1455 | 0.1499 | 0.9851 | 0.2760 | 1860763 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | d435 | 0.1141 | 0.1154 | 0.9695 | 0.2591 | 2052129 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | helios | 0.1562 | 0.1582 | 0.9387 | 0.3574 | 2019586 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | l515 | 0.1432 | 0.1476 | 0.9901 | 0.2701 | 1860763 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | d435 | 0.1139 | 0.1152 | 0.9693 | 0.2584 | 2052129 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | helios | 0.1565 | 0.1582 | 0.9389 | 0.3574 | 2019586 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | l515 | 0.1433 | 0.1477 | 0.9907 | 0.2702 | 1860763 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | d435 | 0.0989 | 0.1013 | 0.8013 | 0.2657 | 2052129 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | helios | 0.1059 | 0.1069 | 0.6499 | 0.2799 | 2019586 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | l515 | 0.1075 | 0.1107 | 0.6910 | 0.2495 | 1860763 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | d435 | 0.0998 | 0.1033 | 0.8454 | 0.2526 | 2052129 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | helios | 0.1198 | 0.1220 | 0.6960 | 0.3185 | 2019586 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | l515 | 0.1079 | 0.1115 | 0.7274 | 0.2425 | 1860763 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | d435 | 0.0497 | 0.0472 | 0.2633 | 0.0410 | 2052129 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | helios | 0.0361 | 0.0336 | 0.1236 | 0.0329 | 2019586 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | l515 | 0.0316 | 0.0306 | 0.0978 | 0.0252 | 1860763 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | d435 | 0.0469 | 0.0468 | 0.2588 | 0.0516 | 2052129 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | helios | 0.0320 | 0.0305 | 0.1062 | 0.0325 | 2019586 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | l515 | 0.0297 | 0.0292 | 0.0905 | 0.0319 | 1860763 |
 
 ## train: 816 images / 9 scenes
 
@@ -128,8 +183,20 @@ Object pixels, GT vs naked GT (main scope):
 | Fill k2 (GT contamination mask [oracle]) | 0.0776 | 0.4894 | 0.0790 | 0.0629 | 0.1904 | 0.1697 |
 | Fill k3 (GT contamination mask [oracle]) | 0.2051 | 0.1946 | 0.2099 | 0.1373 | 0.3814 | 0.4744 |
 | Fill rule v1 (GT contamination mask [oracle]) | 0.0797 | 0.4720 | 0.0812 | 0.0637 | 0.2099 | 0.1755 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0717 | 0.5299 | 0.0732 | 0.0604 | 0.1644 | 0.1584 |
 | Fill rule v1 (GT focus mask [oracle]) | 0.1274 | 0.2870 | 0.1301 | 0.1039 | 0.3425 | 0.3721 |
+| Fill AIC (GT contamination mask [oracle]) | 0.0797 | 0.4719 | 0.0812 | 0.0637 | 0.2100 | 0.1756 |
+| Fill GRIC (GT contamination mask [oracle]) | 0.0864 | 0.4538 | 0.0881 | 0.0668 | 0.2326 | 0.1995 |
+| Fill sector hold-out (GT contamination mask [oracle]) | 0.0837 | 0.4585 | 0.0853 | 0.0658 | 0.2253 | 0.1955 |
+| Fill radial hold-out (GT contamination mask [oracle]) | 0.0890 | 0.4396 | 0.0908 | 0.0685 | 0.2418 | 0.2125 |
 | Gate trust + fill rule v1 (deployable) | 0.1130 | 0.2292 | 0.1149 | 0.0937 | 0.3827 | 0.3060 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | 0.1692 | 0.0473 | 0.1715 | 0.1019 | 0.8289 | 0.3626 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | 0.1786 | 0.0236 | 0.1812 | 0.1049 | 0.8488 | 0.3996 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | 0.1780 | 0.0256 | 0.1807 | 0.1043 | 0.8497 | 0.3935 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | 0.1260 | 0.1246 | 0.1275 | 0.0894 | 0.6359 | 0.3325 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.1418 | 0.0790 | 0.1440 | 0.0931 | 0.6876 | 0.3789 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0377 | 0.7657 | 0.0368 | 0.0324 | 0.0841 | 0.0336 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0392 | 0.7473 | 0.0388 | 0.0342 | 0.0858 | 0.0352 |
 
 Full image (`clean` = accuracy where the sensor is correct; GT is rendered first surface):
 
@@ -143,8 +210,20 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | Fill k2 (GT contamination mask [oracle]) | 0.0538 | 0.0146 | 0.1177 | 0.0735 | NA | 0 |
 | Fill k3 (GT contamination mask [oracle]) | 0.1298 | 0.0146 | 0.2558 | 0.2302 | NA | 0 |
 | Fill rule v1 (GT contamination mask [oracle]) | 0.0556 | 0.0146 | 0.1299 | 0.0772 | NA | 0 |
+| Fill best-of-k per region (GT mask [oracle x2]) | 0.0473 | 0.0146 | 0.0935 | 0.0667 | NA | 0 |
 | Fill rule v1 (GT focus mask [oracle]) | 0.1080 | 0.0258 | 0.5184 | 0.2122 | NA | 0 |
+| Fill AIC (GT contamination mask [oracle]) | 0.0557 | 0.0146 | 0.1300 | 0.0772 | NA | 0 |
+| Fill GRIC (GT contamination mask [oracle]) | 0.0589 | 0.0146 | 0.1438 | 0.0860 | NA | 0 |
+| Fill sector hold-out (GT contamination mask [oracle]) | 0.0578 | 0.0146 | 0.1402 | 0.0844 | NA | 0 |
+| Fill radial hold-out (GT contamination mask [oracle]) | 0.0607 | 0.0146 | 0.1506 | 0.0920 | NA | 0 |
 | Gate trust + fill rule v1 (deployable) | 0.0835 | 0.0293 | 0.3982 | 0.1599 | 0.6990 | 0 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | 0.1329 | 0.0168 | 0.8568 | 0.2151 | 0.6903 | 0 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | 0.1404 | 0.0163 | 0.8747 | 0.2450 | 0.6903 | 0 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | 0.1395 | 0.0162 | 0.8746 | 0.2395 | 0.6903 | 0 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | 0.0999 | 0.0180 | 0.6940 | 0.1897 | 0.6903 | 0 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | 0.1125 | 0.0166 | 0.7404 | 0.2267 | 0.6903 | 0 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | 0.0532 | 0.0165 | 0.2977 | 0.0490 | NA | 0 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | 0.0518 | 0.0172 | 0.2831 | 0.0473 | NA | 0 |
 
 ### train: per sensor, object pixels
 
@@ -174,11 +253,47 @@ Full image (`clean` = accuracy where the sensor is correct; GT is rendered first
 | Fill rule v1 (GT contamination mask [oracle]) | d435 | 0.0667 | 0.0670 | 0.2850 | 0.1389 | 8671677 |
 | Fill rule v1 (GT contamination mask [oracle]) | helios | 0.0836 | 0.0843 | 0.1542 | 0.1953 | 8389450 |
 | Fill rule v1 (GT contamination mask [oracle]) | l515 | 0.0889 | 0.0922 | 0.1904 | 0.1924 | 7402395 |
+| Fill best-of-k per region (GT mask [oracle x2]) | d435 | 0.0587 | 0.0596 | 0.2194 | 0.1302 | 8671677 |
+| Fill best-of-k per region (GT mask [oracle x2]) | helios | 0.0768 | 0.0774 | 0.1221 | 0.1727 | 8389450 |
+| Fill best-of-k per region (GT mask [oracle x2]) | l515 | 0.0796 | 0.0826 | 0.1518 | 0.1723 | 7402395 |
 | Fill rule v1 (GT focus mask [oracle]) | d435 | 0.1121 | 0.1143 | 0.3639 | 0.3375 | 8671677 |
 | Fill rule v1 (GT focus mask [oracle]) | helios | 0.1223 | 0.1235 | 0.2978 | 0.3823 | 8389450 |
 | Fill rule v1 (GT focus mask [oracle]) | l515 | 0.1477 | 0.1526 | 0.3657 | 0.3964 | 7402395 |
+| Fill AIC (GT contamination mask [oracle]) | d435 | 0.0667 | 0.0670 | 0.2852 | 0.1390 | 8671677 |
+| Fill AIC (GT contamination mask [oracle]) | helios | 0.0836 | 0.0843 | 0.1543 | 0.1953 | 8389450 |
+| Fill AIC (GT contamination mask [oracle]) | l515 | 0.0889 | 0.0922 | 0.1904 | 0.1924 | 7402395 |
+| Fill GRIC (GT contamination mask [oracle]) | d435 | 0.0732 | 0.0736 | 0.2804 | 0.1569 | 8671677 |
+| Fill GRIC (GT contamination mask [oracle]) | helios | 0.0892 | 0.0901 | 0.1749 | 0.2132 | 8389450 |
+| Fill GRIC (GT contamination mask [oracle]) | l515 | 0.0970 | 0.1006 | 0.2425 | 0.2283 | 7402395 |
+| Fill sector hold-out (GT contamination mask [oracle]) | d435 | 0.0695 | 0.0699 | 0.2791 | 0.1502 | 8671677 |
+| Fill sector hold-out (GT contamination mask [oracle]) | helios | 0.0874 | 0.0882 | 0.1684 | 0.2136 | 8389450 |
+| Fill sector hold-out (GT contamination mask [oracle]) | l515 | 0.0943 | 0.0979 | 0.2282 | 0.2226 | 7402395 |
+| Fill radial hold-out (GT contamination mask [oracle]) | d435 | 0.0746 | 0.0752 | 0.2846 | 0.1677 | 8671677 |
+| Fill radial hold-out (GT contamination mask [oracle]) | helios | 0.0943 | 0.0953 | 0.1909 | 0.2319 | 8389450 |
+| Fill radial hold-out (GT contamination mask [oracle]) | l515 | 0.0982 | 0.1019 | 0.2499 | 0.2379 | 7402395 |
 | Gate trust + fill rule v1 (deployable) | d435 | 0.1025 | 0.1039 | 0.5581 | 0.2705 | 8671677 |
 | Gate trust + fill rule v1 (deployable) | helios | 0.1255 | 0.1265 | 0.2952 | 0.3641 | 8389450 |
 | Gate trust + fill rule v1 (deployable) | l515 | 0.1110 | 0.1141 | 0.2947 | 0.2832 | 7402395 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | d435 | 0.1186 | 0.1175 | 0.9461 | 0.2502 | 8671677 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | helios | 0.1791 | 0.1810 | 0.7066 | 0.4334 | 8389450 |
+| DEPTHOR++-style detector + D_g (k0) (deployable) | l515 | 0.2098 | 0.2160 | 0.8339 | 0.4042 | 7402395 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | d435 | 0.1171 | 0.1164 | 0.9627 | 0.2400 | 8671677 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | helios | 0.1956 | 0.1979 | 0.7420 | 0.4967 | 8389450 |
+| DEPTHOR++-style detector + fill rule v1 (deployable) | l515 | 0.2229 | 0.2294 | 0.8418 | 0.4620 | 7402395 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | d435 | 0.1170 | 0.1163 | 0.9627 | 0.2398 | 8671677 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | helios | 0.1959 | 0.1981 | 0.7426 | 0.4936 | 8389450 |
+| DEPTHOR++-style detector + sector hold-out (deployable) | l515 | 0.2212 | 0.2277 | 0.8437 | 0.4471 | 7402395 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | d435 | 0.1047 | 0.1053 | 0.7870 | 0.2633 | 8671677 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | helios | 0.1412 | 0.1423 | 0.5478 | 0.3997 | 8389450 |
+| DEPTHOR++-style detector, gate off + D_g (k0) (deployable) | l515 | 0.1320 | 0.1349 | 0.5729 | 0.3346 | 7402395 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | d435 | 0.1026 | 0.1035 | 0.8351 | 0.2418 | 8671677 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | helios | 0.1654 | 0.1670 | 0.6085 | 0.4744 | 8389450 |
+| DEPTHOR++-style detector, gate off + fill rule v1 (deployable) | l515 | 0.1575 | 0.1616 | 0.6193 | 0.4206 | 7402395 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | d435 | 0.0410 | 0.0393 | 0.1450 | 0.0202 | 8671677 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | helios | 0.0446 | 0.0443 | 0.0715 | 0.0613 | 8389450 |
+| PromptDA-L + DEPTHOR++-style detector, D_g fill (deployable) | l515 | 0.0275 | 0.0268 | 0.0357 | 0.0192 | 7402395 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | d435 | 0.0421 | 0.0413 | 0.1508 | 0.0236 | 8671677 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | helios | 0.0442 | 0.0441 | 0.0722 | 0.0616 | 8389450 |
+| PromptDA-L + DEPTHOR++-style detector, gate off (deployable) | l515 | 0.0312 | 0.0309 | 0.0344 | 0.0204 | 7402395 |
 
 Statistics: val is a single scene (scene 11), so scene-level paired bootstrap is descriptive only (`results/hammer_dev_paired_val_v1`); confirmatory statistics need the 3 test scenes or LOSO folds.
