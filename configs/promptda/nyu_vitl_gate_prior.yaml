@@ -1,0 +1,21 @@
+model: PromptDA-L
+encoder: vitl
+variant: gate_prior
+source: E:/TrustPrompt_data/external/PromptDA
+ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+seed: 20261011
+tau: 0.05
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+processed: data/processed/mirror3d_dev_v1
+prior_cache: cache/unidepth_dev_v1
+splits:
+- train
+- val
+output: cache/promptda_vitl_gate_prior_nyu_dev_v1
+tau_gate: 0.05
+note: 'DEPLOYABLE BASELINE (R14): prompt pixels with |P-D_g|/D_g > tau_gate removed,
+  filled with D_g'

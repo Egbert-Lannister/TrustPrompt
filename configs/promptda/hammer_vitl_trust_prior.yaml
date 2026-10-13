@@ -1,0 +1,22 @@
+model: PromptDA-L
+encoder: vitl
+variant: trust_prior
+source: E:/TrustPrompt_data/external/PromptDA
+ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+seed: 20261011
+tau: 0.05
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+processed: data/processed/hammer_dev_v1
+prior_cache: cache/unidepth_hammer_dev_v1
+splits:
+- train
+- val
+output: E:/TrustPrompt_data/cache/promptda_vitl_trust_prior_hammer_dev_v1
+storage: uint16_0p2mm
+trust_cache: null
+note: 'DEPLOYABLE (T v0): prompt pixels with T trust < threshold removed, filled with
+  D_g; trust_cache set per run'

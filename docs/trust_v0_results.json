@@ -1,0 +1,417 @@
+{
+  "stage": "development_diagnostic",
+  "results": {
+    "mirror3d_nyu/val (out of sample)": {
+      "robust_global": {
+        "run": "mirror3d_dev_robust_global_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.13517444964976463,
+        "ir": 0.1285468664800008,
+        "dor": 0.31332559419352,
+        "c_full": 0.15475819251233436,
+        "trust_auroc": null
+      },
+      "promptda_vitl_raw": {
+        "run": "mirror3d_dev_promptda_vitl_raw_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.4669142654135518,
+        "ir": 0.4716447204117932,
+        "dor": 0.583126836077388,
+        "c_full": 0.43475214243624616,
+        "trust_auroc": null
+      },
+      "trustfill_gate_global_v1": {
+        "run": "mirror3d_dev_trustfill_gate_global_v1_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.15220464418066096,
+        "ir": 0.16497587694731983,
+        "dor": 0.3067413778199612,
+        "c_full": 0.16981521591239465,
+        "trust_auroc": 0.8111742723585748
+      },
+      "trustfill_depthor_nogate_v1": {
+        "run": "mirror3d_dev_trustfill_depthor_nogate_v1_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.20045476860622016,
+        "ir": 0.2826667971439045,
+        "dor": 0.29997540105797277,
+        "c_full": 0.20151025777904677,
+        "trust_auroc": 0.7940509809531018
+      },
+      "promptda_vitl_detector_nogate_prior": {
+        "run": "mirror3d_dev_promptda_vitl_detector_nogate_prior_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09963822947089938,
+        "ir": 0.13924264861441776,
+        "dor": 0.2942355355734756,
+        "c_full": 0.13692549663563325,
+        "trust_auroc": null
+      },
+      "trustfill_oracle_c_v1": {
+        "run": "mirror3d_dev_trustfill_oracle_c_v1_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09003000118335563,
+        "ir": 0.0905073416439066,
+        "dor": 0.18184105768894315,
+        "c_full": 0.11309737070009256,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09577502041182194,
+        "ir": 0.11432411067500897,
+        "dor": 0.27442884047725674,
+        "c_full": 0.13557548857821208,
+        "trust_auroc": null
+      }
+    },
+    "mirror3d_nyu/train holdout scenes (out of fit)": {
+      "robust_global": {
+        "run": "mirror3d_dev_robust_global_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.16269173690033278,
+        "ir": 0.05050727714907723,
+        "dor": 0.39383495482432396,
+        "c_full": 0.17786630434431625,
+        "trust_auroc": null
+      },
+      "promptda_vitl_raw": {
+        "run": "mirror3d_dev_promptda_vitl_raw_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.7919672895816235,
+        "ir": 0.686785625206234,
+        "dor": 0.6773855992399792,
+        "c_full": 0.6952583321029783,
+        "trust_auroc": null
+      },
+      "trustfill_gate_global_v1": {
+        "run": "mirror3d_dev_trustfill_gate_global_v1_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.16068918799834378,
+        "ir": 0.061504514269110376,
+        "dor": 0.343082601110379,
+        "c_full": 0.17713372043566053,
+        "trust_auroc": 0.8636904351434361
+      },
+      "trustfill_depthor_nogate_v1": {
+        "run": "mirror3d_dev_trustfill_depthor_nogate_v1_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.33295309300300197,
+        "ir": 0.4008800939377457,
+        "dor": 0.470096033640801,
+        "c_full": 0.31338159864568976,
+        "trust_auroc": 0.7940827628001224
+      },
+      "promptda_vitl_detector_nogate_prior": {
+        "run": "mirror3d_dev_promptda_vitl_detector_nogate_prior_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.2894724456640209,
+        "ir": 0.2709106620358186,
+        "dor": 0.5325460970485156,
+        "c_full": 0.27402783458972124,
+        "trust_auroc": null
+      },
+      "trustfill_oracle_c_v1": {
+        "run": "mirror3d_dev_trustfill_oracle_c_v1_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.06424313783974975,
+        "ir": 0.01315858747682574,
+        "dor": 0.20980199021538137,
+        "c_full": 0.10161478577590148,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.16559791480175645,
+        "ir": 0.05301081447131132,
+        "dor": 0.410717500870058,
+        "c_full": 0.17787666672584873,
+        "trust_auroc": null
+      }
+    },
+    "mirror3d_nyu/train all (in sample for T)": {
+      "robust_global": {
+        "run": "mirror3d_dev_robust_global_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.12783478890784525,
+        "ir": 0.10631619102679686,
+        "dor": 0.2579634843148484,
+        "c_full": 0.14118112880611508,
+        "trust_auroc": null
+      },
+      "promptda_vitl_raw": {
+        "run": "mirror3d_dev_promptda_vitl_raw_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.61690659848028,
+        "ir": 0.6690686374160748,
+        "dor": 0.7368965829580568,
+        "c_full": 0.546520068863322,
+        "trust_auroc": null
+      },
+      "trustfill_gate_global_v1": {
+        "run": "mirror3d_dev_trustfill_gate_global_v1_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.12375616368989578,
+        "ir": 0.13017133133661843,
+        "dor": 0.2634221119660507,
+        "c_full": 0.13766247224762382,
+        "trust_auroc": 0.8375688828304579
+      },
+      "trustfill_depthor_nogate_v1": {
+        "run": "mirror3d_dev_trustfill_depthor_nogate_v1_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.26147188188609227,
+        "ir": 0.3732587180673559,
+        "dor": 0.4134392609066552,
+        "c_full": 0.24903111791822607,
+        "trust_auroc": 0.8071405045895664
+      },
+      "promptda_vitl_detector_nogate_prior": {
+        "run": "mirror3d_dev_promptda_vitl_detector_nogate_prior_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.21215973804042348,
+        "ir": 0.28178838278965607,
+        "dor": 0.35236744942018955,
+        "c_full": 0.2124123501212546,
+        "trust_auroc": null
+      },
+      "trustfill_oracle_c_v1": {
+        "run": "mirror3d_dev_trustfill_oracle_c_v1_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.09947477639715067,
+        "ir": 0.07991394497469177,
+        "dor": 0.21386443039650568,
+        "c_full": 0.11794448287228955,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.13066140868087556,
+        "ir": 0.11567902504580864,
+        "dor": 0.26670731863144964,
+        "c_full": 0.1466662595190489,
+        "trust_auroc": null
+      }
+    },
+    "hammer/val (out of sample)": {
+      "robust_global": {
+        "run": "hammer_dev_robust_global_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.09229978895436193,
+        "ir": 0.2973947490386055,
+        "dor": 0.2699973981941141,
+        "c_full": 0.06772132732548755,
+        "trust_auroc": null
+      },
+      "promptda_vitl_raw": {
+        "run": "hammer_dev_promptda_vitl_raw_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.043448426018097265,
+        "ir": 0.15456095760876598,
+        "dor": 0.026044977078833974,
+        "c_full": 0.06601401781208337,
+        "trust_auroc": null
+      },
+      "trustfill_gate_global_v1": {
+        "run": "hammer_dev_trustfill_gate_global_v1_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.09399786834931562,
+        "ir": 0.40474157534503447,
+        "dor": 0.2610775033610794,
+        "c_full": 0.07086209735281036,
+        "trust_auroc": 0.6910849051309854
+      },
+      "trustfill_depthor_nogate_v1": {
+        "run": "hammer_dev_trustfill_depthor_nogate_v1_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.10917903075569668,
+        "ir": 0.7562637245227287,
+        "dor": 0.27120529415288486,
+        "c_full": 0.09346052139736599,
+        "trust_auroc": 0.7295461070133388
+      },
+      "promptda_vitl_detector_nogate_prior": {
+        "run": "hammer_dev_promptda_vitl_detector_nogate_prior_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03620122838537918,
+        "ir": 0.15185104175398098,
+        "dor": 0.038676290638004734,
+        "c_full": 0.04908880157998869,
+        "trust_auroc": null
+      },
+      "trustfill_oracle_c_v1": {
+        "run": "hammer_dev_trustfill_oracle_c_v1_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.05928917519532279,
+        "ir": 0.22147097518794057,
+        "dor": 0.1288989981162193,
+        "c_full": 0.047872614980942044,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03208154588028456,
+        "ir": 0.11453674363534651,
+        "dor": 0.03418783999441207,
+        "c_full": 0.040943999141298995,
+        "trust_auroc": null
+      }
+    },
+    "hammer/train holdout scenes (out of fit)": {
+      "robust_global": {
+        "run": "hammer_dev_robust_global_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.10275860880879832,
+        "ir": 0.3328257425715476,
+        "dor": 0.4007980276890097,
+        "c_full": 0.072356912401904,
+        "trust_auroc": null
+      },
+      "promptda_vitl_raw": {
+        "run": "hammer_dev_promptda_vitl_raw_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.03757288762765595,
+        "ir": 0.07621276235076663,
+        "dor": 0.038284319479906,
+        "c_full": 0.07623329130102717,
+        "trust_auroc": null
+      },
+      "trustfill_gate_global_v1": {
+        "run": "hammer_dev_trustfill_gate_global_v1_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.10408327653891135,
+        "ir": 0.4385115801767206,
+        "dor": 0.3805305312378768,
+        "c_full": 0.0766519083788923,
+        "trust_auroc": 0.6817527823922857
+      },
+      "trustfill_depthor_nogate_v1": {
+        "run": "hammer_dev_trustfill_depthor_nogate_v1_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.13662442737070807,
+        "ir": 0.7440940271948311,
+        "dor": 0.37585182210259194,
+        "c_full": 0.12104251718219178,
+        "trust_auroc": 0.6881233149795384
+      },
+      "promptda_vitl_detector_nogate_prior": {
+        "run": "hammer_dev_promptda_vitl_detector_nogate_prior_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.03647489092197621,
+        "ir": 0.12000532690935357,
+        "dor": 0.030092846626639122,
+        "c_full": 0.05765831270988213,
+        "trust_auroc": null
+      },
+      "trustfill_oracle_c_v1": {
+        "run": "hammer_dev_trustfill_oracle_c_v1_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.061986869458680996,
+        "ir": 0.16402722335196013,
+        "dor": 0.13086339889064463,
+        "c_full": 0.0379165214015385,
+        "trust_auroc": null
+      }
+    },
+    "hammer/train all (in sample for T)": {
+      "robust_global": {
+        "run": "hammer_dev_robust_global_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.10949497890947883,
+        "ir": 0.26884600730270325,
+        "dor": 0.31764613875942,
+        "c_full": 0.07886613689519627,
+        "trust_auroc": null
+      },
+      "promptda_vitl_raw": {
+        "run": "hammer_dev_promptda_vitl_raw_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.042640195921288905,
+        "ir": 0.08849888595918323,
+        "dor": 0.05527796537425262,
+        "c_full": 0.06698521585265546,
+        "trust_auroc": null
+      },
+      "trustfill_gate_global_v1": {
+        "run": "hammer_dev_trustfill_gate_global_v1_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.11299492743328265,
+        "ir": 0.382654482947878,
+        "dor": 0.3059632180656864,
+        "c_full": 0.08353916510422493,
+        "trust_auroc": 0.6990176643376161
+      },
+      "trustfill_depthor_nogate_v1": {
+        "run": "hammer_dev_trustfill_depthor_nogate_v1_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.14183109269597954,
+        "ir": 0.6876345934050453,
+        "dor": 0.3789330647386706,
+        "c_full": 0.11249072910474249,
+        "trust_auroc": 0.6903364751156119
+      },
+      "promptda_vitl_detector_nogate_prior": {
+        "run": "hammer_dev_promptda_vitl_detector_nogate_prior_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.039204577969965335,
+        "ir": 0.0857880274357277,
+        "dor": 0.03516716702012342,
+        "c_full": 0.05180613491218876,
+        "trust_auroc": null
+      },
+      "trustfill_oracle_c_v1": {
+        "run": "hammer_dev_trustfill_oracle_c_v1_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.07971049933350197,
+        "ir": 0.20986190262411888,
+        "dor": 0.17550591173252575,
+        "c_full": 0.05564819935980209,
+        "trust_auroc": null
+      }
+    }
+  }
+}
