@@ -1,0 +1,30 @@
+model: PromptDA-L
+encoder: vitl
+variant: repair_prior
+source: E:/TrustPrompt_data/external/PromptDA
+ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+seed: 20261011
+tau: 0.05
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+processed: data/processed/hammer_dev_v1
+prior_cache: cache/unidepth_hammer_dev_v1
+splits:
+- train
+- val
+output: E:/TrustPrompt_data/cache/promptda_vitl_repair_prior_hammer_dev_v1
+storage: uint16_0p2mm
+mask_source: null
+trust_cache: null
+trust_threshold: null
+fill_rule: v1
+fill:
+  grow: 3
+  ring: 10
+  min_ring: 50
+  min_area: 20
+note: 'R15: masked prompt pixels refilled by module C (rule v1) before PromptDA-L;
+  mask_source/trust_cache/threshold/output set per run'
