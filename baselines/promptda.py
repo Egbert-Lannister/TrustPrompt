@@ -23,6 +23,8 @@ masks and are labelled oracle analyses):
                no GT) removed and filled with D_g: deployable baseline (revision R14)
   gate_prior   pixels with |P - D_g| / D_g > tau_gate removed and filled with D_g (deployable)
   trust_prior  pixels with T v0 trust < threshold removed and filled with D_g (deployable; T cache)
+  repair_prior masked pixels (mask_source: oracle_c = GT contamination [oracle], or trust = T cache)
+               refilled by module C (ring fits k0-k3 on D_g / prior, rule v1) instead of plain D_g (R15)
 """
 from __future__ import annotations
 
@@ -35,8 +37,8 @@ from tp.geom.camera import nearest_fill, resize_nearest
 
 PROMPT_HW = (192, 256)
 MAX_SIZE = 1008
-VARIANTS = ("raw", "focus_prior", "oracle_prior", "detector_prior", "gate_prior", "trust_prior")
-DEPLOYABLE = ("raw", "detector_prior", "gate_prior", "trust_prior")
+VARIANTS = ("raw", "focus_prior", "oracle_prior", "detector_prior", "gate_prior", "trust_prior", "repair_prior")
+DEPLOYABLE = ("raw", "detector_prior", "gate_prior", "trust_prior", "repair_prior")   # repair_prior: oracle iff mask_source=oracle_c
 
 
 def model_input_size(h, w, max_size=MAX_SIZE, multiple=14):

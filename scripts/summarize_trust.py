@@ -24,6 +24,10 @@ METHODS = [("RobustAlign global", "robust_global"), ("PromptDA-L", "promptda_vit
            *[(f"T v1 [{r}] + fill v1", f"trustfill_t_v1_{r}_v1") for r in REGIMES],
            ("PromptDA-L + T v1 mask [selected regime]", "promptda_vitl_trust_v1_prior"),
            ("T v1 mask + fill v1 on PromptDA-L base", "trustfill_t_v1_pdabase_v1"),
+           ("PromptDA-L + T v1 mask, high-recall threshold (NYU)", "promptda_vitl_trust_v1_hr_prior"),
+           ("PromptDA-L + T v1 mask, prompt repaired by fill v1", "promptda_vitl_repair_t_v1_prior"),
+           ("PromptDA-L + T v1 mask (high recall), prompt repaired (NYU)", "promptda_vitl_repair_t_v1_hr_prior"),
+           ("PromptDA-L + GT mask, prompt repaired by fill v1 [oracle]", "promptda_vitl_repair_oracle_prior"),
            ("GT mask + fill v1 [oracle]", "trustfill_oracle_c_v1"),
            ("GT mask + fill v1 on PromptDA-L(GT mask) base [oracle]", "trustfill_oracle_c_pdabase_v1"),
            ("PromptDA-L + GT mask [oracle]", "promptda_vitl_oracle_prior")]

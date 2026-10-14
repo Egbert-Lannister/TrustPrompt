@@ -60,7 +60,7 @@ def run(config_path, limit=None, output=None, overrides=()):
         source, ckpt = Path(config["source"]), Path(config["ckpt"])
         receipt["model_version"] = dict(
             name=config["model"], encoder=config["encoder"], variant=config["variant"],
-            oracle=config["variant"] not in DEPLOYABLE, checkpoint=str(ckpt), checkpoint_sha256=sha256(ckpt),
+            oracle=config["variant"] not in DEPLOYABLE or config.get("mask_source") == "oracle_c", checkpoint=str(ckpt), checkpoint_sha256=sha256(ckpt),
             model_card=config.get("model_card"), source=str(source), source_commit=git_source(source, "rev-parse", "HEAD"),
             source_status=git_source(source, "status", "--porcelain=v1"),
             source_hashes={str(p.relative_to(source)): sha256(p) for p in sorted((source / "promptda").rglob("*.py"))},
@@ -105,6 +105,28 @@ def run(config_path, limit=None, output=None, overrides=()):
                     thr = float(config.get("trust_threshold", tcache.threshold))
                     remove = s.prompt_valid & (tcache.trust(s, sample_hash, s.prompt.shape) < thr)
                     det_info = dict(threshold=thr, flagged=int(remove.sum()))
+                elif config["variant"] == "repair_prior":
+                    from tp.models.fill import fill_regions
+                    if config["mask_source"] == "oracle_c":
+                        remove = regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=float(config["tau"]), band=5)["C"]
+                    elif config["mask_source"] == "trust":
+                        if tcache is None:
+                            from tp.trust.cache import TrustCache
+                            tcache = TrustCache(config["trust_cache"])
+                            receipt["trust_cache_receipt_sha256"] = sha256(tcache.root / "receipt.json")
+                        thr = float(config.get("trust_threshold") or tcache.threshold)
+                        remove = s.prompt_valid & (tcache.trust(s, sample_hash, s.prompt.shape) < thr)
+                    else:
+                        raise ValueError("mask_source must be oracle_c or trust")
+                    remove = remove & s.prompt_valid
+                    pd = prior.predict(s, sample_hash)
+                    with np.errstate(divide="ignore", invalid="ignore"):
+                        pinv = np.where(np.isfinite(pd) & (pd > 0), 1.0 / pd, np.nan)
+                    filled, recs = fill_regions(fill, pinv, s.prompt, s.prompt_valid & ~remove, remove,
+                                                rule=config.get("fill_rule", "v1"), seed=int(config["seed"]), **config.get("fill", {}))
+                    fill = filled
+                    det_info = dict(mask_source=config["mask_source"], flagged=int(remove.sum()), regions=len(recs),
+                                    choice_area={k: sum(x["area"] for x in recs if x["choice"] == k) for k in ("k0", "k1", "k2", "k3")})
                 elif config["variant"] == "detector_prior":
                     from tp.geom import resize_nearest
                     from tp.models.depthor_det import detect_for_sample
