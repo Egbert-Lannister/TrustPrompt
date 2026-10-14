@@ -66,6 +66,9 @@ function Invoke-Parallel($JobList, [string[]]$OkStages, [string]$What) {
   if ($bad.Count -gt 0) { Write-Host "$($bad.Count) $What runs FAILED; rename failed folders (append _failed) and re-run."; exit 1 }
 }
 
+# ---------------- check: torch + numpy LAPACK in one process (OMP Error #15 seen 2026-10-14) ----------------
+Invoke-Step "OpenMP check (torch + numpy.linalg, sequential MKL)" { & $py -c "import os; os.environ.setdefault('MKL_THREADING_LAYER','SEQUENTIAL'); import numpy as np, torch; torch.zeros(2).cuda(); a=np.random.rand(500,3); print('lstsq ok', np.linalg.lstsq(a, a@np.ones(3), rcond=None)[0].round(6))" }
+
 # ---------------- GPU: PromptDA-L caches ----------------
 $hrFile = "results\trust_t_v1_highrecall_threshold.json"
 if (-not (Test-Path $hrFile)) { Write-Host "$hrFile missing (made by scripts.select_recall_threshold)."; exit 1 }
