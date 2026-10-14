@@ -1,9 +1,9 @@
 # R15 (after T v1): (1) repair the masked prompt with module C (ring fits, rule v1) before PromptDA-L instead of
 # filling it with D_g; (2) high-recall threshold for T v1 on NYU (train-holdout rule: recall >= 0.95 with <= 10%
 # false flags; HAMMER cannot meet it and keeps the model threshold). Train/val only; test never read.
-#   powershell -ExecutionPolicy Bypass -File scripts\windows\step7_repair.ps1 [-Parallel 6]
+#   powershell -ExecutionPolicy Bypass -File scripts\windows\step7_repair.ps1 [-Parallel 6] [-HfMirror https://hf-mirror.com]
 # Finished steps are skipped on re-run; success is judged from receipt stages only.
-param([int]$Parallel = 6)
+param([int]$Parallel = 6, [string]$HfMirror = "")
 $ErrorActionPreference = "Stop"
 Set-Location D:\Python_Script\TrustPrompt
 $py = (Resolve-Path ".\.venv\Scripts\python.exe").Path
@@ -68,6 +68,18 @@ function Invoke-Parallel($JobList, [string[]]$OkStages, [string]$What) {
 
 # ---------------- check: torch + numpy LAPACK in one process (OMP Error #15 seen 2026-10-14) ----------------
 Invoke-Step "OpenMP check (torch + numpy.linalg, sequential MKL)" { & $py -c "import os; os.environ.setdefault('MKL_THREADING_LAYER','SEQUENTIAL'); import numpy as np, torch; torch.zeros(2).cuda(); a=np.random.rand(500,3); print('lstsq ok', np.linalg.lstsq(a, a@np.ones(3), rcond=None)[0].round(6))" }
+
+# ---------------- PromptDA-L checkpoint: re-download if missing, verify the hash recorded by earlier runs ----------------
+$ckptDir = "E:\TrustPrompt_data\weights\promptda\prompt-depth-anything-vitl"
+$ckptSha = "4b3a3e0a60ea68e719cad3b2e22da8c95ce78f9559ee04824c064a2a06b0f10f"   # cache/promptda_vitl_raw_nyu_dev_v1 receipt
+if (-not (Test-Path "$ckptDir\model.ckpt")) {
+  Assert-FreeGB "E" 2
+  if ($HfMirror -ne "") { $env:HF_ENDPOINT = $HfMirror }
+  Invoke-Step "download PromptDA-L checkpoint" { & $py -c "from huggingface_hub import hf_hub_download as d; [d('depth-anything/prompt-depth-anything-vitl', f, local_dir=r'$ckptDir') for f in ('README.md','model.ckpt')]" }
+}
+$gotSha = (Get-FileHash "$ckptDir\model.ckpt" -Algorithm SHA256).Hash.ToLower()
+if ($gotSha -ne $ckptSha) { Write-Host "PromptDA-L checkpoint hash $gotSha differs from the audited $ckptSha. Stop."; exit 1 }
+Write-Host "PromptDA-L checkpoint hash OK"
 
 # ---------------- GPU: PromptDA-L caches ----------------
 $hrFile = "results\trust_t_v1_highrecall_threshold.json"
