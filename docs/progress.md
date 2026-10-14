@@ -288,3 +288,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 镜面的瓶颈转到补全：PromptDA 即使拿到 GT 掩码也补不好平面。
   - 以 PromptDA 为底图的填充对漏检敏感，结果不稳定。
 - 下一步建议：提示修复（先补平面再交给 PromptDA）的 GT 上界；高召回阈值；镜面数据。
+- R15 第一次 Windows 运行：修复路径的 PromptDA 预检被 OMP Error #15 中止。原因是模块 C 的 np.linalg 加载了 Anaconda MKL 自带的 OpenMP，与 torch 自带的那份冲突。cache_promptda 现在把 MKL 设为顺序模式（MKL_THREADING_LAYER=SEQUENTIAL），没有使用 KMP_DUPLICATE_LIB_OK；step7 脚本开头先做一次 torch + np.linalg 的同进程检查。中止的预检目录改名为 `_failed_omp` 保留。

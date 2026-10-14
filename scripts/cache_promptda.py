@@ -11,6 +11,11 @@ the verified UniDepth cache + global robust alignment (same code/seed as the
 RobustAlign baseline). Outputs are immutable; the run records the checkpoint
 SHA256, the source commit and hashes, and per-sample input/output hashes.
 """
+import os
+# Anaconda numpy uses MKL; its threaded layer loads Intel OpenMP (libiomp5md) on the first LAPACK call
+# (np.linalg in module C), next to the copy torch already loaded -> OMP Error #15. The sequential MKL
+# layer loads no OpenMP runtime. Must be set before numpy initialises MKL. (KMP_DUPLICATE_LIB_OK is not used.)
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
 import argparse
 from datetime import datetime, timezone
 import hashlib
