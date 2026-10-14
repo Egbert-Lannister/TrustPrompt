@@ -278,3 +278,13 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - `scripts/trust_mask_diagnostics.py`：在 val 和 train 留出场景上，对比 Gate 与 T v0/v1 各版本的主范围召回、全图召回和误标率。
 - `scripts/windows/step6_t_v1.ps1`：重建数据 → 训练 4 种版本 → 推理 → 按留出场景替换误差选版本 → PromptDA-L + T v1 → 20 个评测 → 汇总表和掩码诊断。
 - 测试：本地 numpy 部分通过；torch 部分（含 v1 全流程）在云端 CPU torch 上 13 passed。
+
+## 2026-10-14 T v1 完成（小规模验证通过，非正式结果）
+
+- `step6_t_v1.ps1` 全部成功（24 分钟）；选中的版本是 real_sim_nofeat。另在本地工作区补跑 NYU“PromptDA 底图 + 填充”（`fill_base=cached_prediction`），T v1 掩码和 GT 掩码各 2 个运行。
+- 结论见 `docs/t_v1_analysis.md`：
+  - 代理选择没有提高召回，我的预测方向错了，decisions §13 已更正。
+  - PromptDA-L + T v1 掩码在 NYU 和 HAMMER 上都达到 GT 掩码的水平，是最好的可部署组合（NYU val 全图配对差相对 Gate −0.010 [−0.019, −0.003]）。
+  - 镜面的瓶颈转到补全：PromptDA 即使拿到 GT 掩码也补不好平面。
+  - 以 PromptDA 为底图的填充对漏检敏感，结果不稳定。
+- 下一步建议：提示修复（先补平面再交给 PromptDA）的 GT 上界；高召回阈值；镜面数据。

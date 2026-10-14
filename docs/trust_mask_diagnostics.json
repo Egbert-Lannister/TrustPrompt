@@ -1,0 +1,221 @@
+{
+  "stage": "development_diagnostic",
+  "results": {
+    "mirror3d_nyu/val/Gate": {
+      "recall_scope": 0.8619838009693135,
+      "recall_all": 0.8413520488148954,
+      "false_flag": 0.21396802951148786,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v0_real": {
+      "recall_scope": 0.6123793709173092,
+      "recall_all": 0.5244599561700387,
+      "false_flag": 0.014799091118781044,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v0_sim": {
+      "recall_scope": 0.705703228714797,
+      "recall_all": 0.5568721201979399,
+      "false_flag": 0.04796729432293654,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v0_real_sim": {
+      "recall_scope": 0.7627967259716302,
+      "recall_all": 0.5873719667130427,
+      "false_flag": 0.04348146119122824,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v0_real_sim_nofeat": {
+      "recall_scope": 0.7886059353121729,
+      "recall_all": 0.672160758310726,
+      "false_flag": 0.07199225467461613,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v1_real": {
+      "recall_scope": 0.6725348390775499,
+      "recall_all": 0.5725856848000614,
+      "false_flag": 0.008475154435588994,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v1_sim": {
+      "recall_scope": 0.7851118499614104,
+      "recall_all": 0.5816164296163027,
+      "false_flag": 0.05310395057212001,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v1_real_sim": {
+      "recall_scope": 0.6939957821016649,
+      "recall_all": 0.574102399603062,
+      "false_flag": 0.04071043794402379,
+      "images": 19
+    },
+    "mirror3d_nyu/val/v1_real_sim_nofeat": {
+      "recall_scope": 0.7516024212998543,
+      "recall_all": 0.6192866359381877,
+      "false_flag": 0.040540320328806646,
+      "images": 19
+    },
+    "mirror3d_nyu/train holdout/Gate": {
+      "recall_scope": 0.9261459236247105,
+      "recall_all": 0.8473103073512306,
+      "false_flag": 0.16269496029615532,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v0_real": {
+      "recall_scope": 0.8295338579076696,
+      "recall_all": 0.5857643520350915,
+      "false_flag": 0.009449994779107344,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v0_sim": {
+      "recall_scope": 0.8092547663988842,
+      "recall_all": 0.5535404419733548,
+      "false_flag": 0.01451058752886865,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v0_real_sim": {
+      "recall_scope": 0.7818493237512278,
+      "recall_all": 0.5238446606924877,
+      "false_flag": 0.03460824128244663,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v0_real_sim_nofeat": {
+      "recall_scope": 0.899507863351793,
+      "recall_all": 0.6610859683279823,
+      "false_flag": 0.034261659265890504,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v1_real": {
+      "recall_scope": 0.7935957188897558,
+      "recall_all": 0.5366545198925964,
+      "false_flag": 0.01296903954181919,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v1_sim": {
+      "recall_scope": 0.8963099360767678,
+      "recall_all": 0.6124636090219118,
+      "false_flag": 0.04387115191795881,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v1_real_sim": {
+      "recall_scope": 0.7912605900432906,
+      "recall_all": 0.5285530248833473,
+      "false_flag": 0.01599161944067288,
+      "images": 11
+    },
+    "mirror3d_nyu/train holdout/v1_real_sim_nofeat": {
+      "recall_scope": 0.8520276531301547,
+      "recall_all": 0.5762739855006496,
+      "false_flag": 0.01764990963480283,
+      "images": 11
+    },
+    "hammer/val/Gate": {
+      "recall_scope": 0.5860984769517584,
+      "recall_all": 0.6002281302724578,
+      "false_flag": 0.21760512623117367,
+      "images": 327
+    },
+    "hammer/val/v0_real": {
+      "recall_scope": 0.6917107782007651,
+      "recall_all": 0.6580435149102017,
+      "false_flag": 0.04864770825131962,
+      "images": 327
+    },
+    "hammer/val/v0_sim": {
+      "recall_scope": 0.49690432286730396,
+      "recall_all": 0.3236409640573536,
+      "false_flag": 0.03126907819627887,
+      "images": 327
+    },
+    "hammer/val/v0_real_sim": {
+      "recall_scope": 0.5317229474765818,
+      "recall_all": 0.3933538677104692,
+      "false_flag": 0.024276828322813134,
+      "images": 327
+    },
+    "hammer/val/v0_real_sim_nofeat": {
+      "recall_scope": 0.5483435186076914,
+      "recall_all": 0.44927824580251,
+      "false_flag": 0.05019426684739301,
+      "images": 327
+    },
+    "hammer/val/v1_real": {
+      "recall_scope": 0.4158152930778625,
+      "recall_all": 0.3016707478948224,
+      "false_flag": 0.011087122753147032,
+      "images": 327
+    },
+    "hammer/val/v1_sim": {
+      "recall_scope": 0.3263267688420039,
+      "recall_all": 0.23955642597245208,
+      "false_flag": 0.01806363125828775,
+      "images": 327
+    },
+    "hammer/val/v1_real_sim": {
+      "recall_scope": 0.45004394829015765,
+      "recall_all": 0.346433106357737,
+      "false_flag": 0.023644817660277467,
+      "images": 327
+    },
+    "hammer/val/v1_real_sim_nofeat": {
+      "recall_scope": 0.36033711076919495,
+      "recall_all": 0.2957875194062622,
+      "false_flag": 0.019137008571288836,
+      "images": 327
+    },
+    "hammer/train holdout/Gate": {
+      "recall_scope": 0.5811636761195281,
+      "recall_all": 0.6132963795650306,
+      "false_flag": 0.2494506907016397,
+      "images": 93
+    },
+    "hammer/train holdout/v0_real": {
+      "recall_scope": 0.7192069338206027,
+      "recall_all": 0.7588593844251724,
+      "false_flag": 0.047143207977693335,
+      "images": 93
+    },
+    "hammer/train holdout/v0_sim": {
+      "recall_scope": 0.5723314543535223,
+      "recall_all": 0.4846330696430876,
+      "false_flag": 0.0344247367284139,
+      "images": 93
+    },
+    "hammer/train holdout/v0_real_sim": {
+      "recall_scope": 0.6283002243479405,
+      "recall_all": 0.6020731685242732,
+      "false_flag": 0.039822609557851475,
+      "images": 93
+    },
+    "hammer/train holdout/v0_real_sim_nofeat": {
+      "recall_scope": 0.6183843305496403,
+      "recall_all": 0.578366752324065,
+      "false_flag": 0.032671066311554586,
+      "images": 93
+    },
+    "hammer/train holdout/v1_real": {
+      "recall_scope": 0.5643065523868047,
+      "recall_all": 0.5185055841734731,
+      "false_flag": 0.018302743452391326,
+      "images": 93
+    },
+    "hammer/train holdout/v1_sim": {
+      "recall_scope": 0.4716136145490976,
+      "recall_all": 0.31705698572307617,
+      "false_flag": 0.0192828701983391,
+      "images": 93
+    },
+    "hammer/train holdout/v1_real_sim": {
+      "recall_scope": 0.5478547032794782,
+      "recall_all": 0.5330736383576913,
+      "false_flag": 0.02164382548721646,
+      "images": 93
+    },
+    "hammer/train holdout/v1_real_sim_nofeat": {
+      "recall_scope": 0.48381897332956036,
+      "recall_all": 0.41207376699460385,
+      "false_flag": 0.012456228346507007,
+      "images": 93
+    }
+  }
+}
