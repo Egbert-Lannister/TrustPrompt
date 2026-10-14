@@ -23,7 +23,9 @@ METHODS = [("RobustAlign global", "robust_global"), ("PromptDA-L", "promptda_vit
            ("PromptDA-L + T v0 mask [selected regime]", "promptda_vitl_trust_prior"),
            *[(f"T v1 [{r}] + fill v1", f"trustfill_t_v1_{r}_v1") for r in REGIMES],
            ("PromptDA-L + T v1 mask [selected regime]", "promptda_vitl_trust_v1_prior"),
+           ("T v1 mask + fill v1 on PromptDA-L base", "trustfill_t_v1_pdabase_v1"),
            ("GT mask + fill v1 [oracle]", "trustfill_oracle_c_v1"),
+           ("GT mask + fill v1 on PromptDA-L(GT mask) base [oracle]", "trustfill_oracle_c_pdabase_v1"),
            ("PromptDA-L + GT mask [oracle]", "promptda_vitl_oracle_prior")]
 DATA = {"mirror3d_nyu": ("mirror3d_dev", "mirror_only", "NYU mirrors"), "hammer": ("hammer_dev", "objects_only", "HAMMER objects")}
 fmt = lambda v, d=4: "NA" if v is None else f"{v:.{d}f}"
