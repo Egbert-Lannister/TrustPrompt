@@ -124,7 +124,7 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             for line in partial_path.read_text(encoding="utf-8").splitlines():
                 pair=json.loads(line);rows.append(pair["row"]);mirror_rows.append(pair["mirror_row"])
         done={(x["scene"],x["frame"]) for x in rows}
-        tcache=None
+        tcache=None;base_cache=None
         for i,r in enumerate(selected):
             if (r["scene"],r["frame"]) in done:continue
             if time_budget_s is not None and time.perf_counter()-started>time_budget_s:
@@ -160,6 +160,15 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                     if src not in TRUST_SOURCES:raise ValueError(f"unknown trust_source {src}")
                     aligned=align_depth(prior_depth,p,pv,seed=seed,compute_local=False,**config.get("robust",{}))
                     base=aligned["global_depth"]
+                    if config.get("fill_base","aligned_prior")=="cached_prediction":
+                        # k0 = a cached completion (e.g. PromptDA-L with the same low-trust mask) instead of D_g;
+                        # k1-k3 still fit the prior's inverse depth on the trusted ring.
+                        if base_cache is None:
+                            from baselines.cached_prior import CachedPrior as _CP
+                            bc=Path(config["base_cache"]); bc=bc if bc.is_absolute() else ROOT/bc
+                            base_cache=_CP(bc,expected_model=config.get("base_expected_model","PromptDA-L"))
+                            receipt["base_cache_receipt_sha256"]=sha256(bc/"receipt.json")
+                        base=base_cache.predict(s,r["sha256"]).astype(np.float64)
                     with np.errstate(divide="ignore",invalid="ignore"):
                         prior_inv=np.where(np.isfinite(prior_depth)&(prior_depth>0),1.0/prior_depth,np.nan)
                     det_info=None
