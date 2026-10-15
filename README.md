@@ -52,6 +52,18 @@ GPU基线另外需要与机器匹配的torch、torchvision、timm、safetensors�
 
 输入cache/NPZ已存在时跳过获取/转换。所有输出目录和样本拒绝覆盖；复跑请用新的输出名。提供完整MAT时在paths配置设置 `mirror3d.mat`。读取E盘可能需要应用的只读权限，但任何新文件仍写TrustPrompt。
 
+自 2026-10-14 起，项目不再读取 E 盘，所有数据都在本目录内（均不进 git）：
+
+| 内容 | 位置 |
+|---|---|
+| HAMMER 原始子集 | `data/source_cache/hammer_subset_v1` |
+| Mirror3D 元数据与标注（从 GLARE 数据只读复制） | `data/source_cache/mirror3d` |
+| 预测缓存（NYU 与 HAMMER） | `cache/` |
+| PromptDA 检查点 | `checkpoints/promptda` |
+| PromptDA 官方源码（提交 9161547） | `external/PromptDA` |
+
+迁移和校验用 `scripts/windows/migrate_e_to_d.ps1`；源码和检查点缺失时，用 `scripts/windows/restore_promptda.ps1` 重新获取并核对哈希。旧运行记录里的 E 盘路径是历史记录；缓存读取只使用文件夹内的相对文件名，所以移动后仍然有效。
+
 纯合成工程测试（不可引用为真实结果）：
 
 ```powershell

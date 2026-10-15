@@ -10,3 +10,4 @@ results/*
 !.gitkeep
 configs/paths.local.yaml
 data/claude_xfer/
+external/

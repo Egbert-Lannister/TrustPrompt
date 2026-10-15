@@ -1,9 +1,9 @@
 model: PromptDA-L
 encoder: vitl
 variant: focus_prior
-source: E:/TrustPrompt_data/external/PromptDA
-ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
-model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+source: D:/Python_Script/TrustPrompt/external/PromptDA
+ckpt: D:/Python_Script/TrustPrompt/checkpoints/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: D:/Python_Script/TrustPrompt/checkpoints/promptda/prompt-depth-anything-vitl/README.md
 seed: 20261011
 tau: 0.05
 robust:
@@ -14,6 +14,6 @@ processed: data/processed/hammer_dev_v1
 prior_cache: cache/unidepth_hammer_dev_v1
 splits:
 - val
-output: E:/TrustPrompt_data/cache/promptda_vitl_focus_prior_hammer_dev_v1
+output: cache/promptda_vitl_focus_prior_hammer_dev_v1
 note: 'ORACLE ANALYSIS: prompt built from a GT-derived mask; not a deployable method'
 storage: uint16_0p2mm

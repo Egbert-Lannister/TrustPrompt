@@ -1,4 +1,4 @@
-# Restore the PromptDA source and checkpoints on E: (deleted during disk clean-up, found 2026-10-14) and verify
+# Restore the PromptDA source and checkpoints in the project (moved from E: on 2026-10-14; deleted there once during clean-up) and verify
 # them against what every earlier PromptDA run recorded: source commit 9161547 with the audited file hashes
 # (docs/decisions.md sec. 8) and each checkpoint's SHA256 from the run receipts. Anything that differs stops.
 #   powershell -ExecutionPolicy Bypass -File scripts\windows\restore_promptda.ps1 [-HfMirror https://hf-mirror.com]
@@ -6,7 +6,7 @@ param([string]$HfMirror = "")
 $ErrorActionPreference = "Stop"
 Set-Location D:\Python_Script\TrustPrompt
 $py = (Resolve-Path ".\.venv\Scripts\python.exe").Path
-$Src = "E:\TrustPrompt_data\external\PromptDA"; $W = "E:\TrustPrompt_data\weights\promptda"
+$Src = "D:\Python_Script\TrustPrompt\external\PromptDA"; $W = "D:\Python_Script\TrustPrompt\checkpoints\promptda"
 $Commit = "9161547ca7151e14fcc8f490ad3cc02fa9437483"
 $Ckpts = [ordered]@{
   "prompt-depth-anything-vitl"             = "4b3a3e0a60ea68e719cad3b2e22da8c95ce78f9559ee04824c064a2a06b0f10f"
@@ -18,7 +18,7 @@ function Invoke-Step([string]$Label, [scriptblock]$Body) {
   & $Body
   if ($LASTEXITCODE -ne 0) { Write-Host "FAILED: $Label (exit $LASTEXITCODE)"; exit $LASTEXITCODE }
 }
-if ((Get-PSDrive E).Free / 1GB -lt 3) { Write-Host "E: needs about 3 GB free for the checkpoints."; exit 1 }
+if ((Get-PSDrive D).Free / 1GB -lt 3) { Write-Host "D: needs about 3 GB free for the checkpoints."; exit 1 }
 
 # 1. Source at the audited commit
 if ((Test-Path $Src) -and -not (Test-Path "$Src\.git")) { Write-Host "$Src exists but is not a git checkout; rename it and re-run."; exit 1 }

@@ -11,7 +11,7 @@ $EvalOk = @("small_scale_validation_passed", "completed_with_invalid_predictions
 $startTime = Get-Date
 $Sets = @{
   nyu    = @{ eval = "configs/mirror3d_dev_eval.yaml"; prefix = "mirror3d_dev"; pdaCache = "cache";                     tag = "nyu" }
-  hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   pdaCache = "E:\TrustPrompt_data\cache"; tag = "hammer" }
+  hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   pdaCache = "cache"; tag = "hammer" }
 }
 function Get-Stage([string]$Dir) {
   $r = Join-Path $Dir "receipt.json"

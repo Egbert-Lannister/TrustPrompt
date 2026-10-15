@@ -22,7 +22,7 @@ function Invoke-Step([string]$Name, [scriptblock]$Body) {
 }
 $Sets = @{
   nyu    = @{ eval = "configs/mirror3d_dev_eval.yaml"; prefix = "mirror3d_dev"; cache = "cache";                     tag = "nyu" }
-  hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   cache = "E:\TrustPrompt_data\cache"; tag = "hammer" }
+  hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   cache = "cache"; tag = "hammer" }
 }
 $Det = @{ detector = "detector={seed: 0}"; detector_nogate = "detector={seed: 0, hi: 1.01}" }   # must equal the PromptDA configs
 $fill = "fill={grow: 3, ring: 10, min_ring: 50, min_area: 20}"
@@ -42,8 +42,8 @@ if ($Phase -ne "cpu") {
         if ($st -eq "real_dev_verified") { continue }
         if ($st -ne "missing") { Write-Host "$($p.dir) has stage '$st'. Rename that folder (append _failed) and re-run."; exit 1 }
         if ($ds -eq "hammer") {
-          $free = (Get-PSDrive E).Free / 1GB
-          if ($free -lt 4) { Write-Host ("E: has only {0:N1} GB free; a HAMMER cache needs about 2 GB. Free space and re-run." -f $free); exit 1 }
+          $free = (Get-PSDrive D).Free / 1GB
+          if ($free -lt 4) { Write-Host ("D: has only {0:N1} GB free; a HAMMER cache needs about 2 GB. Free space and re-run." -f $free); exit 1 }
         }
         $extra = $p.extra
         Invoke-Step "cache $cfg -> $($p.dir)" { & $py -m scripts.cache_promptda --config $cfg @extra }
