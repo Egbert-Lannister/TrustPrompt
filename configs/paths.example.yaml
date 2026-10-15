@@ -1,7 +1,7 @@
 # Paths are inputs only; every generated file stays under TrustPrompt.
 mirror3d:
-  metadata_csv: E:/GLARE_Data/first_surface/mirror3d/nyu.csv
-  annotation_zip: E:/GLARE_Data/first_surface/mirror3d/nyu.zip
+  metadata_csv: D:/Python_Script/TrustPrompt/data/source_cache/mirror3d/nyu.csv
+  annotation_zip: D:/Python_Script/TrustPrompt/data/source_cache/mirror3d/nyu.zip
   # Set mat to an official complete file when available. Current local .part is incomplete.
   mat: null
   subset_h5: data/source_cache/nyu_smoke_v1.h5

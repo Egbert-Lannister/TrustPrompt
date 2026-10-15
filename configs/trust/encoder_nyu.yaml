@@ -2,9 +2,9 @@
 model: PromptDA-S
 encoder: vits
 variant: raw
-source: E:/TrustPrompt_data/external/PromptDA
-ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vits/model.ckpt
-model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vits/README.md
+source: D:/Python_Script/TrustPrompt/external/PromptDA
+ckpt: D:/Python_Script/TrustPrompt/checkpoints/promptda/prompt-depth-anything-vits/model.ckpt
+model_card: D:/Python_Script/TrustPrompt/checkpoints/promptda/prompt-depth-anything-vits/README.md
 seed: 20261011
 tau: 0.05
 robust:

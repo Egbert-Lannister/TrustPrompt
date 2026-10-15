@@ -1,6 +1,6 @@
 """Contact sheets + CSV template for manual HAMMER instance->material labelling.
 
-  python -m scripts.hammer_instance_sheets --root E:/TrustPrompt_data/hammer_subset_v1 \
+  python -m scripts.hammer_instance_sheets --root D:/Python_Script/TrustPrompt/data/source_cache/hammer_subset_v1 \
       --output results/hammer_instance_sheets_v1
 
 HAMMER ships instance IDs but no material labels (docs/hammer_audit.md). For each

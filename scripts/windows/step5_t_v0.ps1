@@ -15,7 +15,7 @@ $startTime = Get-Date
 $Regimes = @("real", "sim", "real_sim", "real_sim_nofeat")
 $Sets = @{
   nyu    = @{ eval = "configs/mirror3d_dev_eval.yaml"; prefix = "mirror3d_dev"; pdaCache = "cache";                     tag = "nyu";    shards = 2 }
-  hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   pdaCache = "E:\TrustPrompt_data\cache"; tag = "hammer"; shards = 6 }
+  hammer = @{ eval = "configs/hammer_dev_eval.yaml";   prefix = "hammer_dev";   pdaCache = "cache"; tag = "hammer"; shards = 6 }
 }
 function Get-Stage([string]$Dir) {
   $r = Join-Path $Dir "receipt.json"

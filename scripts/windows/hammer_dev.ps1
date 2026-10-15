@@ -2,7 +2,7 @@
 #   powershell -ExecutionPolicy Bypass -File scripts\windows\hammer_dev.ps1
 # Needs ~4 GB free on D: (about 1,100 samples x 3 MB). Test scenes 12-14 are never read.
 # Each step stops on failure; finished steps are skipped on re-run.
-param([string]$Root = "E:\TrustPrompt_data\hammer_subset_v1")
+param([string]$Root = "D:\Python_Script\TrustPrompt\data\source_cache\hammer_subset_v1")
 $ErrorActionPreference = "Stop"
 Set-Location D:\Python_Script\TrustPrompt
 $py = ".\.venv\Scripts\python.exe"

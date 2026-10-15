@@ -1,6 +1,6 @@
 """Materialize a strided HAMMER development subset as Sample NPZ (train/val only).
 
-  python -m scripts.prepare_hammer --root E:/TrustPrompt_data/hammer_subset_v1 \
+  python -m scripts.prepare_hammer --root D:/Python_Script/TrustPrompt/data/source_cache/hammer_subset_v1 \
       --output data/processed/hammer_dev_v1 --stride-train 20 --stride-val 5
 
 Frames are taken where index % stride == 0 within each object sequence; all three

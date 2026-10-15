@@ -2,15 +2,15 @@
 # plus two ORACLE analyses (GT focus mask, GT contamination mask; prompt refilled from the aligned prior).
 #   powershell -ExecutionPolicy Bypass -File scripts\windows\step2_promptda.ps1
 #   add  -HfMirror https://hf-mirror.com  if huggingface.co is slow or blocked
-# Downloads: official code pinned to the audited commit (E:\TrustPrompt_data\external\PromptDA) and three
-# checkpoints with their model cards (E:\TrustPrompt_data\weights\promptda, ~1.6 GB). HAMMER prediction caches
-# go to E:\TrustPrompt_data\cache; NYU caches and all evaluation results stay in TrustPrompt (small).
+# Downloads: official code pinned to the audited commit (D:\Python_Script\TrustPrompt\external\PromptDA) and three
+# checkpoints with their model cards (D:\Python_Script\TrustPrompt\checkpoints\promptda, ~1.6 GB). HAMMER prediction caches
+# went to E:\TrustPrompt_data\cache until 2026-10-14; all caches now live in TrustPrompt\cache.
 # Every step stops on failure; finished steps are skipped on re-run. Test splits are never read.
 param([string]$HfMirror = "")
 $ErrorActionPreference = "Stop"
 Set-Location D:\Python_Script\TrustPrompt
 $py = ".\.venv\Scripts\python.exe"
-$Src = "E:\TrustPrompt_data\external\PromptDA"; $W = "E:\TrustPrompt_data\weights\promptda"
+$Src = "D:\Python_Script\TrustPrompt\external\PromptDA"; $W = "D:\Python_Script\TrustPrompt\checkpoints\promptda"
 $Commit = "9161547ca7151e14fcc8f490ad3cc02fa9437483"
 function Invoke-Step([string]$Name, [scriptblock]$Body) {
   Write-Host "=== $Name  ($(Get-Date -Format HH:mm:ss))"
@@ -26,7 +26,7 @@ function Test-Stage([string]$Receipt, [string[]]$Good) {
 
 # 0. HAMMER instance contact sheets + CSV template for manual material labelling (train/val scenes only).
 if (-not (Test-Path results\hammer_instance_sheets_v1\receipt.json)) {
-  Invoke-Step "HAMMER instance sheets" { & $py -m scripts.hammer_instance_sheets --root E:/TrustPrompt_data/hammer_subset_v1 --output results/hammer_instance_sheets_v1 }
+  Invoke-Step "HAMMER instance sheets" { & $py -m scripts.hammer_instance_sheets --root D:/Python_Script/TrustPrompt/data/source_cache/hammer_subset_v1 --output results/hammer_instance_sheets_v1 }
 }
 
 # 1. Official source at the audited commit; file hashes must equal docs/decisions.md section 8.
@@ -72,7 +72,7 @@ $runs = @(
 )
 foreach ($r in $runs) {
   $cfgPath = "configs/promptda/$($r.cfg).yaml"
-  $out = if ($r.ds -eq "nyu") { "cache\$($r.label)_nyu_dev_v1" } else { "E:\TrustPrompt_data\cache\$($r.label)_hammer_dev_v1" }
+  $out = if ($r.ds -eq "nyu") { "cache\$($r.label)_nyu_dev_v1" } else { "cache\$($r.label)_hammer_dev_v1" }
   if (-not (Test-Stage "${out}_preflight\receipt.json" @("real_dev_verified"))) {
     Invoke-Step "preflight $($r.cfg)" { & $py -m scripts.cache_promptda --config $cfgPath --limit 3 --output "${out}_preflight" }
   }

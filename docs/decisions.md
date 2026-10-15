@@ -127,3 +127,10 @@
 
 - **提示修复**（PromptDA 变体 repair_prior）：被屏蔽的提示像素不再用 D_g 填，而是用模块 C 的填充：以 D_g 为底图，在可信环带上拟合 k0–k3，按 v1 选择。然后照常交给 PromptDA-L。掩码来源有两种：GT 污染掩码（oracle，用来测上界）或 T 缓存。提示层面的检查（NYU val 17 帧镜面像素）：修复后误差 0.089，D_g 填充为 0.140。
 - **高召回阈值**：在 train 留出场景上，选主范围召回 ≥ 0.95 且误标最少的阈值；如果达到 0.95 召回要误标 10% 以上的干净像素，就保留模型阈值。NYU 为 0.67（召回 0.952，误标 5.8%）；HAMMER 达到 0.95 召回需要误标 60%，因此保留 0.25。结果见 `results/trust_t_v1_highrecall_threshold.json`，由 `scripts/select_recall_threshold.py` 生成，val 未参与。
+
+## 15. 数据从 E 盘迁回项目目录（2026-10-14，用户要求）
+
+- 新位置：`cache/`（HAMMER PromptDA 缓存，与 NYU 缓存并列，没有重名）、`checkpoints/promptda`、`external/PromptDA`（已加入 .gitignore）、`data/source_cache/hammer_subset_v1`、`data/source_cache/mirror3d`（nyu.csv / nyu.zip，从 GLARE 的数据目录只读复制，GLARE 不改动）。
+- 方式：robocopy 复制，不移动、不删除 E 盘上的任何东西。校验三项：每个文件的大小一致；每个缓存预测文件的 SHA256 与写入时 images.json 记录的一致；三个检查点的 SHA256 与之前运行记录的一致。最后由 restore_promptda.ps1 确认源码在审计过的提交上。
+- 配置和脚本里的路径全部改为项目内路径。旧运行记录（receipt）里的 E 盘路径保持原样，作为历史。缓存读取只用 predictions/ 下的文件名，所以移动后旧缓存仍可直接使用，receipt 的哈希也不变。
+- `fetch_nyu_subset.py` 里可选的 GLARE 旧 h5 默认路径仍指向 E 盘；该文件不存在时会自动跳过，不影响运行。

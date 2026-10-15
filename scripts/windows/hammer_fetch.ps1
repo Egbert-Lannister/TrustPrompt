@@ -1,5 +1,5 @@
 # HAMMER step B: download only the selected subset (see configs/hammer_subset_v1*.yaml).
-#   powershell -ExecutionPolicy Bypass -File scripts\windows\hammer_fetch.ps1 -Dest E:\TrustPrompt_data\hammer_subset_v1
+#   powershell -ExecutionPolicy Bypass -File scripts\windows\hammer_fetch.ps1 -Dest D:\Python_Script\TrustPrompt\data\source_cache\hammer_subset_v1
 #   add  -Stride2  to take every second frame (7.9 GiB download / 9.6 GiB on disk instead of 15.8 / 19.1 GiB)
 # Parallel: -Workers N Range connections (default 8), like aria2's multi-connection mode, but only the
 # selected ZIP members are transferred (aria2 cannot fetch sub-ranges of one file).
@@ -8,7 +8,7 @@ param([string]$Dest = "", [switch]$Stride2, [int]$Workers = 8)
 $ErrorActionPreference = "Stop"
 Set-Location D:\Python_Script\TrustPrompt
 $py = ".\.venv\Scripts\python.exe"
-if ($Dest -eq "") { Write-Host "Give -Dest <folder on a drive with enough space>, e.g. -Dest E:\TrustPrompt_data\hammer_subset_v1"; exit 1 }
+if ($Dest -eq "") { Write-Host "Give -Dest <folder on a drive with enough space>, e.g. -Dest D:\Python_Script\TrustPrompt\data\source_cache\hammer_subset_v1"; exit 1 }
 $cfg = if ($Stride2) { "configs/hammer_subset_v1_stride2.yaml" } else { "configs/hammer_subset_v1.yaml" }
 $needGB = if ($Stride2) { 11 } else { 21 }
 $drive = (Split-Path -Qualifier $Dest).TrimEnd(":")

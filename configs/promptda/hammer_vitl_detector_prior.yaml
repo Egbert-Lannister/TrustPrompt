@@ -2,9 +2,9 @@
 model: PromptDA-L
 encoder: vitl
 variant: detector_prior
-source: E:/TrustPrompt_data/external/PromptDA
-ckpt: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/model.ckpt
-model_card: E:/TrustPrompt_data/weights/promptda/prompt-depth-anything-vitl/README.md
+source: D:/Python_Script/TrustPrompt/external/PromptDA
+ckpt: D:/Python_Script/TrustPrompt/checkpoints/promptda/prompt-depth-anything-vitl/model.ckpt
+model_card: D:/Python_Script/TrustPrompt/checkpoints/promptda/prompt-depth-anything-vitl/README.md
 seed: 20261011
 tau: 0.05
 robust:
@@ -16,7 +16,7 @@ prior_cache: cache/unidepth_hammer_dev_v1
 splits:
 - train
 - val
-output: E:/TrustPrompt_data/cache/promptda_vitl_detector_prior_hammer_dev_v1
+output: cache/promptda_vitl_detector_prior_hammer_dev_v1
 storage: uint16_0p2mm
 detector:
   seed: 0
