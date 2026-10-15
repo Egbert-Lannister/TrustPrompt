@@ -295,3 +295,8 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 ## 2026-10-14 数据迁回 D 盘（脚本已写好，待在 Windows 上运行）
 
 - `scripts/windows/migrate_e_to_d.ps1`：robocopy 复制 E 盘数据到项目内，再用 `scripts/verify_migration.py` 校验（文件大小、每个缓存预测的 SHA256、检查点哈希），最后运行 restore_promptda 确认源码和权重；E 盘不做任何改动。配置和 Windows 脚本已全部改为项目内路径，见 decisions §15。
+
+## 2026-10-15 R15 完成（小规模验证通过，非正式结果）；数据迁移结果
+
+- `migrate_e_to_d.ps1`：权重和源码已复制到项目内并通过校验（`results/migration_e_to_d_20261014_233334`，stage migration_verified）。但迁移运行时 E 盘上已经没有 `TrustPrompt_data\cache`、`TrustPrompt_data\hammer_subset_v1` 和 GLARE 的 Mirror3D 文件，这三项被跳过，没有复制（详见下次向用户确认的结果）。
+- `step7_repair.ps1` 全部成功（4 小时 23 分）。结论见 `docs/r15_analysis.md`：GT 掩码下“提示修复 + PromptDA”在两个数据集上都明显更好；T v1 + 高召回 + 修复在 NYU 留出场景上从 0.162 降到 0.087，但 val 被一帧贴边的大镜面拖垮；覆盖率保护规则试过后放弃。镜面数据量是决定性瓶颈。
