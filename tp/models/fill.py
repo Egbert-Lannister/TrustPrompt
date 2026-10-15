@@ -29,6 +29,9 @@ k3 interior-planarity admissibility check; only the scoring differs):
                   median relative inverse-depth error on the held-out sector
   holdout_radial  fit on the outer half of the ring, score on the inner half
                   (Chebyshev distance to Omega <= ring // 2): radial extrapolation
+`min_ring_coverage` (R15 guard, default off): fraction of the 8 angular sectors around the region
+that hold >= 5 ring points; below it the region is not extrapolated by k2/k3 (only k0/k1 remain),
+because a one-sided ring (e.g. a mirror touching the image border) makes the fits ill-conditioned.
 `diag_gt` (optional) only adds per-candidate GT errors to the records for
 analysis of selection regret; no rule except oracle_best reads ground truth.
 
@@ -105,7 +108,7 @@ def _heldout_error(kind, train, val, k0_val):
 
 def fill_regions(base_depth, prior_inv, prompt, trusted, low_trust, *, grow=3, ring=10, min_ring=50,
                  min_area=20, planar_tol=0.02, rule="v1", gt=None, max_ring_points=4096, seed=0,
-                 sectors=8, min_fold_points=10, diag_gt=None):
+                 sectors=8, min_fold_points=10, diag_gt=None, min_ring_coverage=0.0):
     """Return (filled_depth, region_records).
 
     base_depth: D_a (float32, NaN where invalid). prior_inv: m. prompt/trusted: sensor
@@ -176,6 +179,15 @@ def fill_regions(base_depth, prior_inv, prompt, trusted, low_trust, *, grow=3, r
                 cand[k] = 1.0 / np.where(inv_field > 0, inv_field, np.nan)
                 rss = np.sum(((ring_pred - y) / y) ** 2)
                 bic[k] = n_r * np.log(max(rss, 1e-30) / n_r) + N_PARAMS[k] * np.log(n_r)
+            cy0, cx0 = ndimage.center_of_mass(omega)
+            ang0 = np.arctan2(v - (y0 + cy0), u - (x0 + cx0))
+            sec = np.floor((ang0 + np.pi) / (2 * np.pi) * 8).astype(int) % 8
+            coverage = float(np.mean(np.bincount(sec, minlength=8) >= 5))
+            rec["ring_coverage"] = coverage
+            if coverage < min_ring_coverage:
+                for k in ("k2", "k3"):
+                    if k in bic:
+                        bic.pop(k); rec["candidates"][k] = "rejected_ring_coverage"
             if "k3" in bic and "k2" in cand:
                 inside = target
                 k2_inv = 1.0 / cand["k2"][inside]
