@@ -314,3 +314,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 下游 PromptDA 采用 1.2 定义、α = 0.1 的阈值，这是在看到下游结果之前确定的。
 - `run_eval` 的 cached_prediction 新增 `bound_cap` 选项：对被标记的提示像素，把预测截断到不超过测量值。NYU val 冒烟：GT 掩码 PromptDA 0.0958 → 0.0927。
 - `scripts/windows/step8_bounds.ps1`：在 HAMMER 上重新生成 T v1 的 PromptDA 缓存（顺带检查能否逐位复现已删除的缓存）、HAMMER train + val 的 GT 掩码缓存、两个数据集 conformal 阈值下的缓存，以及 20 个评测（截断与不截断各一组）；汇总见 `scripts/summarize_bounds.py` → `docs/bound_results.md`。
+
+## 2026-10-16 R16 第 1、2 项完成（小规模验证通过，非正式结果）
+
+- `step8_bounds.ps1` 全部成功（3 小时 8 分）。结论见 `docs/r16_results.md`：
+  - HAMMER 的 T v1 缓存重新生成后，与已删除的缓存逐位一致。
+  - 盲目截断不满足预设判据；只截断真实类型为“测远了”的像素时有效。因此 T 需要输出误差方向。
+  - conformal 阈值在不损失精度的前提下给出风险保证，IR 下降。
