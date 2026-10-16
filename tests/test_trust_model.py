@@ -152,3 +152,36 @@ def test_v1_error_selection_post_processing_and_mask_diagnostics(tmp_path):
     assert r.returncode == 0, r.stderr[-2000:]
     res = json.loads(Path(f"{out}.json").read_text())["results"]
     assert res["hammer/train holdout/v1"]["recall_scope"] > 0.9 and res["hammer/train holdout/Gate"]["images"] == 1
+
+
+def test_v2_three_class_training_writes_direction_maps(tmp_path):
+    rng = np.random.default_rng(2)
+    data = tmp_path / "data_hammer"
+    _fake_shard(data, "hammer", ["scene2", "scene10"], "train", rng)
+    root = Path(__file__).resolve().parents[1]
+    model = tmp_path / "model"
+    r = subprocess.run([sys.executable, "-m", "scripts.train_trust", "--data", str(data), "--regime", "real_sim",
+                        "--output", str(model), "--steps", "60", "--batch", "2", "--eval-every", "30", "--device", "cpu",
+                        "--no-features", "--classes", "3", "--selection", "error"], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    rec = json.loads((model / "receipt.json").read_text())
+    assert len(rec["class_weight"]) == 3 and rec["config"]["classes"] == 3
+    cache = tmp_path / "cache_hammer"
+    r = subprocess.run([sys.executable, "-m", "scripts.infer_trust", "--model", str(model), "--data", str(data),
+                        "--output", str(cache), "--device", "cpu"], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]
+    from tp.trust.cache import TrustCache
+    c = TrustCache(cache)
+
+    class S:
+        sensor, scene, frame = "d435", "scene10", "f0"
+        gt = np.zeros((96, 128), np.float32)
+    far = c.direction_far(S(), "s_scene10")
+    assert far.shape == (96, 128) and far.dtype == bool
+    block = np.zeros((192, 256), bool); block[60:120, 80:160] = True       # the fake shard's far block
+    from tp.geom import resize_nearest
+    assert far[resize_nearest(block, (96, 128))].mean() > 0.5
+    out = tmp_path / "diag"
+    r = subprocess.run([sys.executable, "-m", "scripts.trust_direction_diagnostics", "--data", str(data),
+                        "--caches", f"v2={tmp_path / 'cache_{tag}'}", "--output", str(out)], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-2000:]

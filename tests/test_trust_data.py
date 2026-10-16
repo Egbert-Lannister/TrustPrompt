@@ -85,3 +85,11 @@ def test_replacement_error_rewards_flagging_exactly_the_bad_pixels():
     keep_all, flag_all = np.ones_like(gt), np.zeros_like(gt)
     sp, fp = replacement_error(perfect, 0.5, a); sk, fk = replacement_error(keep_all, 0.5, a); sa, fa = replacement_error(flag_all, 0.5, a)
     assert sp < sa < sk and fp < fa < fk and abs(sa - 0.1) < 1e-3
+
+
+def test_labels3_sign_and_ignore():
+    from tp.trust.data import labels3_from_arrays
+    gt = np.full((2, 3), 2.0, np.float16); p = np.array([[2.0, 2.5, 1.5], [2.05, 0, 2.0]], np.float16)
+    valid = p > 0; gv = np.ones_like(valid); gv[1, 2] = False
+    lab = labels3_from_arrays(dict(prompt=p, gt=gt, valid=valid, gt_valid=gv))
+    assert lab.tolist() == [[0, 1, 2], [0, 255, 255]]

@@ -61,18 +61,22 @@ def load_features(feat_dirs):
     return feats, receipts
 
 
-def batch_arrays(entries, feats, use_features):
+def batch_arrays(entries, feats, use_features, classes=2):
     from tp.trust.model import make_inputs
+    from tp.trust.data import labels3_from_arrays
     xs, ys, fs = [], [], []
     for e in entries:
         a = np.load(e["file"])
-        xs.append(make_inputs(a["prompt"], a["valid"], a["dg"], a["rgb"])); ys.append(a["label"])
+        xs.append(make_inputs(a["prompt"], a["valid"], a["dg"], a["rgb"]))
+        ys.append(a["label"] if classes == 2 else labels3_from_arrays({k: a[k] for k in a.files}))
         if use_features:
             fs.append(np.load(feats[e["rgb_sha256"]]).astype(np.float32))
     return np.stack(xs), np.stack(ys), (np.stack(fs) if use_features else None)
 
 
-def predict_trust(model, entries, feats, use_features, device, bs=8):
+def predict_trust(model, entries, feats, use_features, device, bs=8, return_probs=False):
+    """[(trust, 2-class label)] per entry; trust = 1 - sigmoid (1 output) or softmax[clean] (3 outputs).
+    With return_probs, 3-output models also return (p_clean, p_far, p_near) as a third element."""
     import torch
     out = []
     model.eval()
@@ -80,7 +84,13 @@ def predict_trust(model, entries, feats, use_features, device, bs=8):
         for i in range(0, len(entries), bs):
             x, y, f = batch_arrays(entries[i:i + bs], feats, use_features)
             logit = model(torch.from_numpy(x).to(device), torch.from_numpy(f).to(device) if f is not None else None)
-            out += [(1 - torch.sigmoid(l[0]).cpu().numpy(), yy) for l, yy in zip(logit, y)]
+            for l, yy in zip(logit, y):
+                if l.shape[0] == 1:
+                    item = (1 - torch.sigmoid(l[0]).cpu().numpy(), yy)
+                    out.append(item + ((None,) if return_probs else ()))
+                else:
+                    pr = torch.softmax(l, 0).cpu().numpy()
+                    out.append((pr[0], yy, pr) if return_probs else (pr[0], yy))
     model.train()
     return out
 
@@ -169,16 +179,29 @@ def run(a):
                        device=a.device, torch=torch.__version__,
                        gpu=torch.cuda.get_device_name() if a.device.startswith("cuda") else None)
         write_json(out / "receipt.json", receipt)
-        model = TrustNetV0(use_features=not a.no_features, feat_dropout=a.feat_dropout).to(a.device)
+        model = TrustNetV0(use_features=not a.no_features, feat_dropout=a.feat_dropout,
+                           out_ch=1 if a.classes == 2 else 3).to(a.device)
+        class_weight = None
+        if a.classes == 3:     # inverse-frequency weights (clipped) from a fixed sample of fit items
+            from tp.trust.data import labels3_from_arrays
+            cnt = np.zeros(3)
+            for e in [fit[i] for i in rng.choice(len(fit), min(300, len(fit)), replace=False)]:
+                z = np.load(e["file"]); lab = labels3_from_arrays({k: z[k] for k in z.files})
+                cnt += np.bincount(lab[lab != 255], minlength=3)[:3]
+            class_weight = np.clip(cnt.sum() / np.maximum(cnt, 1) / 3.0, 0.2, 20.0)
+            class_weight = class_weight / class_weight[0]
+            receipt["class_pixel_counts_sample"] = cnt.tolist(); receipt["class_weight"] = class_weight.tolist()
         opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
         sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, a.steps)
         lossf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=a.device), reduction="none")
+        cef = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weight, dtype=torch.float32, device=a.device),
+                                        ignore_index=255, reduction="mean") if a.classes == 3 else None
         names = sorted(by_ds)
         history, best = [], None
         t0 = time.time()
         for step in range(1, a.steps + 1):
             batch = [by_ds[names[i]][rng.integers(len(by_ds[names[i]]))] for i in rng.integers(len(names), size=a.batch)]
-            x, y, f = batch_arrays(batch, feats, not a.no_features)
+            x, y, f = batch_arrays(batch, feats, not a.no_features, a.classes)
             if rng.random() < 0.5:                       # horizontal flip of inputs, labels and the feature grid
                 x, y = x[..., ::-1].copy(), y[..., ::-1].copy()
                 f = f[..., ::-1].copy() if f is not None else None
@@ -186,9 +209,12 @@ def run(a):
             if f is not None and a.feat_drop_sample > 0:      # v1: drop whole feature maps for some samples
                 f = f * (rng.random(len(f)) >= a.feat_drop_sample)[:, None, None, None].astype(np.float32)
             ft = torch.from_numpy(f).to(a.device) if f is not None else None
-            logit = model(x, ft)[:, 0]
-            mask = (yt != 255).float()
-            loss = (lossf(logit, (yt == 1).float()) * mask).sum() / mask.sum().clamp(min=1)
+            if a.classes == 3:
+                loss = cef(model(x, ft), yt)
+            else:
+                logit = model(x, ft)[:, 0]
+                mask = (yt != 255).float()
+                loss = (lossf(logit, (yt == 1).float()) * mask).sum() / mask.sum().clamp(min=1)
             opt.zero_grad(); loss.backward(); opt.step(); sched.step()
             if step % 50 == 0:
                 say(f"step {step} loss {loss.item():.4f} lr {sched.get_last_lr()[0]:.2e} {time.time() - t0:.0f}s")
@@ -236,4 +262,5 @@ if __name__ == "__main__":
     ap.add_argument("--device", default="cuda"); ap.add_argument("--no-features", action="store_true")
     ap.add_argument("--selection", choices=["f1", "error"], default="f1")
     ap.add_argument("--feat-dropout", type=float, default=0.0); ap.add_argument("--feat-drop-sample", type=float, default=0.0)
+    ap.add_argument("--classes", type=int, choices=[2, 3], default=2, help="3 = T v2: clean / measured too far / too near")
     run(ap.parse_args())

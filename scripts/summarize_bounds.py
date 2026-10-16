@@ -22,6 +22,11 @@ st.METHODS = [
     ("PromptDA-L + GT mask [oracle], train+val cache", "promptda_vitl_oracle_prior_v2"),
     ("  + upper-bound cap [oracle]", "promptda_vitl_oracle_prior_cap"),
     ("  + upper-bound cap [oracle], train+val cache", "promptda_vitl_oracle_prior_v2_cap"),
+    ("PromptDA-L + GT mask, cap far-type only (GT sign) [oracle]", "promptda_vitl_oracle_prior_capfar_oracle"),
+    ("PromptDA-L + GT mask, cap far-type only (T v2 real_sim_nofeat sign) [oracle mask]", "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat"),
+    ("PromptDA-L + GT mask, cap far-type only (T v2 real_sim sign) [oracle mask]", "promptda_vitl_oracle_prior_capfar_t_v2_real_sim"),
+    ("PromptDA-L + T v1 mask, cap far-type only (T v2 real_sim_nofeat sign)", "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat"),
+    ("PromptDA-L + T v1 mask, cap far-type only (T v2 real_sim sign)", "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim"),
 ]
 
 

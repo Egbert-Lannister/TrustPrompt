@@ -124,7 +124,7 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             for line in partial_path.read_text(encoding="utf-8").splitlines():
                 pair=json.loads(line);rows.append(pair["row"]);mirror_rows.append(pair["mirror_row"])
         done={(x["scene"],x["frame"]) for x in rows}
-        tcache=None;base_cache=None
+        tcache=None;base_cache=None;dcache=None
         for i,r in enumerate(selected):
             if (r["scene"],r["frame"]) in done:continue
             if time_budget_s is not None and time.perf_counter()-started>time_budget_s:
@@ -166,9 +166,23 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                         flag=pv&(tcache.trust(s,r["sha256"],s.gt.shape)<thr)
                     else:
                         raise ValueError("bound_cap.mask must be oracle_c or trust")
-                    over=flag&np.isfinite(pred)&(p>0)&(pred>p)
+                    direction=bc.get("direction","all")
+                    if direction=="oracle":          # GT sign: only prompts that measured too far (oracle analysis)
+                        far=(p>0)&(s.gt>0)&s.gt_valid&(p>s.gt*(1+config["tau"]))
+                    elif direction=="trust_far":     # T v2 predicted sign (deployable)
+                        if dcache is None:
+                            from tp.trust.cache import TrustCache
+                            dcache=TrustCache(bc["direction_cache"])
+                            receipt["direction_cache_receipt_sha256"]=sha256(dcache.root/"receipt.json")
+                        far=dcache.direction_far(s,r["sha256"],s.gt.shape)
+                    elif direction=="all":
+                        far=np.ones_like(flag)
+                    else:
+                        raise ValueError("bound_cap.direction must be all, oracle or trust_far")
+                    over=flag&far&np.isfinite(pred)&(p>0)&(pred>p)
                     pred=np.where(over,p,pred).astype(np.float32)
-                    cap_info=dict(mask=bc["mask"],flagged=int(flag.sum()),capped=int(over.sum()))
+                    cap_info=dict(mask=bc["mask"],direction=direction,flagged=int(flag.sum()),capped=int(over.sum()),
+                                  oracle=bc["mask"]=="oracle_c" or direction=="oracle")
             else:
                 prior_depth=prior.predict(s,r["sha256"])
                 if method=="unidepth_v2_s":pred=prior_depth
