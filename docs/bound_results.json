@@ -1,0 +1,547 @@
+{
+  "stage": "development_diagnostic",
+  "results": {
+    "mirror3d_nyu/val (out of sample)": {
+      "promptda_vitl_raw": {
+        "run": "mirror3d_dev_promptda_vitl_raw_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.46691426541355174,
+        "ir": 0.47164472041179323,
+        "dor": 0.583126836077388,
+        "c_full": 0.43475214243624616,
+        "trust_auroc": null
+      },
+      "promptda_vitl_gate_prior": {
+        "run": "mirror3d_dev_promptda_vitl_gate_prior_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09659023109196034,
+        "ir": 0.11923190854862402,
+        "dor": 0.2993914055702503,
+        "c_full": 0.13539908521428223,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09419453750906898,
+        "ir": 0.1275405566179983,
+        "dor": 0.2575365047114047,
+        "c_full": 0.1252781492694192,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_cap_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09420747245070049,
+        "ir": 0.12805802452024612,
+        "dor": 0.25747354388693816,
+        "c_full": 0.12467147805673008,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09591777542193795,
+        "ir": 0.11871058396849571,
+        "dor": 0.28411930141629016,
+        "c_full": 0.1289496130573137,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_cap_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09470970893678811,
+        "ir": 0.13195797416309343,
+        "dor": 0.2771745370967498,
+        "c_full": 0.1091425962561116,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09577502041182194,
+        "ir": 0.11432411067500897,
+        "dor": 0.27442884047725674,
+        "c_full": 0.13557548857821208,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_cap_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09272855107068906,
+        "ir": 0.18766722886093168,
+        "dor": 0.27022348371262717,
+        "c_full": 0.0997787593418054,
+        "trust_auroc": null
+      }
+    },
+    "mirror3d_nyu/train holdout scenes (out of fit)": {
+      "promptda_vitl_raw": {
+        "run": "mirror3d_dev_promptda_vitl_raw_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.7919672895816235,
+        "ir": 0.686785625206234,
+        "dor": 0.6773855992399792,
+        "c_full": 0.6952583321029785,
+        "trust_auroc": null
+      },
+      "promptda_vitl_gate_prior": {
+        "run": "mirror3d_dev_promptda_vitl_gate_prior_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.16616832610706128,
+        "ir": 0.05940951509204372,
+        "dor": 0.4152724946512451,
+        "c_full": 0.17954655521451415,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.16165299555087542,
+        "ir": 0.08237177829358912,
+        "dor": 0.41071981039766114,
+        "c_full": 0.17244263114334904,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_cap_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15945471212551474,
+        "ir": 0.08731637780671642,
+        "dor": 0.41027035232665565,
+        "c_full": 0.17066445000396588,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.1650343071108338,
+        "ir": 0.06122793690620875,
+        "dor": 0.409929724618415,
+        "c_full": 0.17732135743226735,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_cap_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15116304517258441,
+        "ir": 0.08854863193517766,
+        "dor": 0.4049704771262923,
+        "c_full": 0.15491440554075034,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.16559791480175645,
+        "ir": 0.05301081447131132,
+        "dor": 0.4107175008700579,
+        "c_full": 0.17787666672584873,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_cap_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15110198368091046,
+        "ir": 0.0913103832321797,
+        "dor": 0.40928922829463615,
+        "c_full": 0.14412439212127026,
+        "trust_auroc": null
+      }
+    },
+    "mirror3d_nyu/train all (in sample for T)": {
+      "promptda_vitl_raw": {
+        "run": "mirror3d_dev_promptda_vitl_raw_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.6169065984802798,
+        "ir": 0.6690686374160749,
+        "dor": 0.7368965829580564,
+        "c_full": 0.546520068863322,
+        "trust_auroc": null
+      },
+      "promptda_vitl_gate_prior": {
+        "run": "mirror3d_dev_promptda_vitl_gate_prior_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.1320659598695548,
+        "ir": 0.1267032864815172,
+        "dor": 0.2737684125639267,
+        "c_full": 0.14824772659646812,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.13475581456605618,
+        "ir": 0.16478944175592364,
+        "dor": 0.2738868598818055,
+        "c_full": 0.1493135350151886,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_cap_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.13446921117757993,
+        "ir": 0.1655372959884583,
+        "dor": 0.2737354059202812,
+        "c_full": 0.14857642622775966,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.1303534603090682,
+        "ir": 0.12762098388065937,
+        "dor": 0.26638051324498013,
+        "c_full": 0.14563563041827338,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_cap_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.12847152405498827,
+        "ir": 0.13285866511152855,
+        "dor": 0.26477810593999873,
+        "c_full": 0.1365873989922589,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.13066140868087553,
+        "ir": 0.11567902504580861,
+        "dor": 0.26670731863144964,
+        "c_full": 0.1466662595190489,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_cap": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_cap_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.1261270023139135,
+        "ir": 0.13799215740717813,
+        "dor": 0.25887601349749284,
+        "c_full": 0.12816972308494146,
+        "trust_auroc": null
+      }
+    },
+    "hammer/val (out of sample)": {
+      "promptda_vitl_raw": {
+        "run": "hammer_dev_promptda_vitl_raw_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.04344842601809726,
+        "ir": 0.1545609576087659,
+        "dor": 0.026044977078833947,
+        "c_full": 0.06601401781208338,
+        "trust_auroc": null
+      },
+      "promptda_vitl_gate_prior": {
+        "run": "hammer_dev_promptda_vitl_gate_prior_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.05115601892083348,
+        "ir": 0.15450605906831252,
+        "dor": 0.1375639718261986,
+        "c_full": 0.05057825088402347,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.034439488984959014,
+        "ir": 0.1373819069999333,
+        "dor": 0.019845007791261315,
+        "c_full": 0.05188838255101437,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_regen": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_regen_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.034439488984959014,
+        "ir": 0.1373819069999333,
+        "dor": 0.019845007791261315,
+        "c_full": 0.05188838255101437,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_cap": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_cap_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03446966297780811,
+        "ir": 0.1384104968687259,
+        "dor": 0.0193803257011948,
+        "c_full": 0.052192733573759593,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03398056686914932,
+        "ir": 0.12885662812146836,
+        "dor": 0.02275711901581979,
+        "c_full": 0.048765521926495276,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior_cap": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_cap_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03417022389784524,
+        "ir": 0.13330761325924542,
+        "dor": 0.02011561315951322,
+        "c_full": 0.050227117190265645,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.032081545880284563,
+        "ir": 0.11453674363534651,
+        "dor": 0.03418783999441211,
+        "c_full": 0.040943999141298974,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_v2": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_v2_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.032081545880284563,
+        "ir": 0.11453674363534651,
+        "dor": 0.03418783999441211,
+        "c_full": 0.040943999141298974,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_v2_cap": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_v2_cap_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03641493238130123,
+        "ir": 0.18555128662732706,
+        "dor": 0.026068620733998793,
+        "c_full": 0.054632744876173055,
+        "trust_auroc": null
+      }
+    },
+    "hammer/train holdout scenes (out of fit)": {
+      "promptda_vitl_raw": {
+        "run": "hammer_dev_promptda_vitl_raw_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.03757288762765593,
+        "ir": 0.07621276235076663,
+        "dor": 0.038284319479906,
+        "c_full": 0.07623329130102716,
+        "trust_auroc": null
+      },
+      "promptda_vitl_gate_prior": {
+        "run": "hammer_dev_promptda_vitl_gate_prior_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.050547933451743514,
+        "ir": 0.17053780753122655,
+        "dor": 0.13220131311302874,
+        "c_full": 0.0563688900578064,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.02926350300521556,
+        "ir": 0.062253360949489335,
+        "dor": 0.01725814902273879,
+        "c_full": 0.04933337789940009,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_regen": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_regen_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.02926350300521556,
+        "ir": 0.062253360949489335,
+        "dor": 0.01725814902273879,
+        "c_full": 0.04933337789940009,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_cap": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_cap_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.029297746527332854,
+        "ir": 0.06272280425031136,
+        "dor": 0.017063660862679717,
+        "c_full": 0.049589529915769884,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.029166354043218892,
+        "ir": 0.05899693644924476,
+        "dor": 0.017000295213471503,
+        "c_full": 0.047169852403834304,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior_cap": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_cap_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.0292521697230674,
+        "ir": 0.06049005826622044,
+        "dor": 0.01649684102571062,
+        "c_full": 0.04781277562025261,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_v2": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_v2_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.031046482168797837,
+        "ir": 0.0720652604963769,
+        "dor": 0.024870199316340637,
+        "c_full": 0.04643991846229106,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_v2_cap": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_v2_cap_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.03242654759966895,
+        "ir": 0.10513468542875917,
+        "dor": 0.0210912218323309,
+        "c_full": 0.05124437974063881,
+        "trust_auroc": null
+      }
+    },
+    "hammer/train all (in sample for T)": {
+      "promptda_vitl_raw": {
+        "run": "hammer_dev_promptda_vitl_raw_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.042640195921288905,
+        "ir": 0.08849888595918322,
+        "dor": 0.05527796537425262,
+        "c_full": 0.06698521585265546,
+        "trust_auroc": null
+      },
+      "promptda_vitl_gate_prior": {
+        "run": "hammer_dev_promptda_vitl_gate_prior_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.05569610891421311,
+        "ir": 0.10270107271144858,
+        "dor": 0.09435402121203866,
+        "c_full": 0.058508346356177715,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.03963341896955058,
+        "ir": 0.06199586660994175,
+        "dor": 0.023095111714276532,
+        "c_full": 0.05089999714744019,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_regen": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_regen_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.03963341896955058,
+        "ir": 0.06199586660994175,
+        "dor": 0.023095111714276532,
+        "c_full": 0.05089999714744019,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_cap": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_cap_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.03973252641530614,
+        "ir": 0.06344114395469226,
+        "dor": 0.02268287486706664,
+        "c_full": 0.05141437105731486,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.040159419555456904,
+        "ir": 0.05691790593817482,
+        "dor": 0.024176177666543824,
+        "c_full": 0.049587772731334225,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_crc10_prior_cap": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_cap_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.040503349313449954,
+        "ir": 0.06217517185167027,
+        "dor": 0.022370393294518436,
+        "c_full": 0.05108380784792149,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_v2": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_v2_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.037860420063156416,
+        "ir": 0.0590489124409462,
+        "dor": 0.0325162224279494,
+        "c_full": 0.046433058287415264,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_v2_cap": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_v2_cap_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.040685905805912616,
+        "ir": 0.10540306111353505,
+        "dor": 0.0278981574399233,
+        "c_full": 0.053268453886646853,
+        "trust_auroc": null
+      }
+    },
+    "reproduction": {
+      "val": {
+        "images": 327,
+        "identical_prediction_hashes": 327
+      },
+      "train": {
+        "images": 816,
+        "identical_prediction_hashes": 816
+      }
+    }
+  }
+}
