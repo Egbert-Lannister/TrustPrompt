@@ -1,0 +1,69 @@
+{
+  "stage": "development_diagnostic",
+  "results": {
+    "mirror3d_nyu/val/v2_real_sim_nofeat": {
+      "far_recall": 0.9806473713945063,
+      "near_recall": 0.4467657224179994,
+      "sign_acc": 0.9189351829203747,
+      "far_recall_flagged": 0.959349593495935,
+      "sign_acc_flagged": 0.8928008158340186,
+      "near_share": 0.1307548846051453
+    },
+    "mirror3d_nyu/val/v2_real_sim": {
+      "far_recall": 0.9914706495994563,
+      "near_recall": 0.47568415929421626,
+      "sign_acc": 0.9285231168467708,
+      "far_recall_flagged": 0.9977973568281938,
+      "sign_acc_flagged": 0.93118545200834,
+      "near_share": 0.1307548846051453
+    },
+    "mirror3d_nyu/train holdout/v2_real_sim_nofeat": {
+      "far_recall": 0.9921169530610383,
+      "near_recall": 0.5921395955642532,
+      "sign_acc": 0.9841949165406529,
+      "far_recall_flagged": 0.9999206349206349,
+      "sign_acc_flagged": 0.9998842307867681,
+      "near_share": 0.010237536595903029
+    },
+    "mirror3d_nyu/train holdout/v2_real_sim": {
+      "far_recall": 0.9954098161871688,
+      "near_recall": 0.6079038921504675,
+      "sign_acc": 0.9884486963951362,
+      "far_recall_flagged": 0.9991467576791808,
+      "sign_acc_flagged": 0.9991467576791808,
+      "near_share": 0.010237536595903029
+    },
+    "hammer/val/v2_real_sim_nofeat": {
+      "far_recall": 0.8943440250161244,
+      "near_recall": 0.8883924076441109,
+      "sign_acc": 0.8931673570709631,
+      "far_recall_flagged": 0.9893610371640146,
+      "sign_acc_flagged": 0.9887945563723637,
+      "near_share": 0.07306097759511375
+    },
+    "hammer/val/v2_real_sim": {
+      "far_recall": 0.9173684115433994,
+      "near_recall": 0.9046548971166861,
+      "sign_acc": 0.9191759048491984,
+      "far_recall_flagged": 0.9992283294679588,
+      "sign_acc_flagged": 0.9990736185662138,
+      "near_share": 0.07306097759511375
+    },
+    "hammer/train holdout/v2_real_sim_nofeat": {
+      "far_recall": 0.8935602816928732,
+      "near_recall": 0.8572052181842789,
+      "sign_acc": 0.894060889610314,
+      "far_recall_flagged": 0.9742564773020942,
+      "sign_acc_flagged": 0.9827320881369535,
+      "near_share": 0.03236275069876484
+    },
+    "hammer/train holdout/v2_real_sim": {
+      "far_recall": 0.9303610620072351,
+      "near_recall": 0.8684492129934988,
+      "sign_acc": 0.9276177806557179,
+      "far_recall_flagged": 0.9981075930754714,
+      "sign_acc_flagged": 0.9982127214249136,
+      "near_share": 0.03236275069876484
+    }
+  }
+}
