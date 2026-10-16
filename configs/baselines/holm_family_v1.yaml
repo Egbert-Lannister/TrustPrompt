@@ -1,0 +1,26 @@
+# Pre-registered comparison families (written 2026-10-16, before any baseline result exists; decisions sec. 18).
+# Question: does putting T v1 (conformal alpha 0.1 threshold, method v1) in front of a prompt-based depth model
+# lower the main-scope C AbsRel? reference = raw sensor prompt, candidate = + T v1 mask, same model.
+# Primary family: val (out of sample), Holm over models x datasets at alpha 0.05.
+# Secondary family: train-holdout scenes (out of fit for T, used for T's selection), separate Holm.
+# oracle_mask vs raw is reported descriptively only. Marigold-DC (optional, slow) is not in these families.
+family: plugin_v1
+alpha: 0.05
+region: C
+metric: absrel
+n_resamples: 10000
+seed: 20261016
+block_length: 8               # HAMMER single-scene populations: circular blocks of 8 consecutive frames
+models:
+  promptda_l: {label: PromptDA-L, reference: promptda_vitl_raw, candidate: promptda_vitl_trust_v1_crc10_prior}
+  priorda:    {label: PriorDA-B v1.1, reference: bl_priorda_raw, candidate: bl_priorda_tmask}
+  omnidc:     {label: OMNI-DC v1.1, reference: bl_omnidc_raw, candidate: bl_omnidc_tmask}
+  cdm:        {label: CDM, reference: bl_cdm_raw, candidate: bl_cdm_tmask}
+  lingbot:    {label: LingBot-Depth v0.5, reference: bl_lingbot_raw, candidate: bl_lingbot_tmask}
+  any2full:   {label: Any2Full-L, reference: bl_any2full_raw, candidate: bl_any2full_tmask}
+datasets:
+  mirror3d_nyu: {prefix: mirror3d_dev, scope: mirror_only}
+  hammer: {prefix: hammer_dev, scope: objects_only}
+families:
+  primary: {population: val}
+  secondary: {population: train_holdout}

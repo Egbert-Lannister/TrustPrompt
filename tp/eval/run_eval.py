@@ -104,6 +104,13 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
         data=json.loads(manifest.read_text(encoding="utf-8"))
         records=data["records"];validate_scene_splits(records)
         selected=[r for r in records if r["split"]==config["split"]]
+        # Baseline caches cover val + the train-holdout scenes only (out of fit for T); `train_scope: holdout`
+        # restricts the train split to those scenes so no record is missing from the cache.
+        if config.get("train_scope","all")=="holdout" and config["split"]=="train":
+            from tp.trust.data import scene_inner_holdout
+            selected=[r for r in selected if scene_inner_holdout(r["dataset"],r["scene"])]
+        elif config.get("train_scope","all")!="all" and config["split"]=="train":
+            raise ValueError("train_scope must be all or holdout")
         if not selected:raise ValueError("empty requested split")
         receipt.update(manifest_path=str(manifest),manifest_sha256=sha256(manifest),synthetic=data["synthetic"])
         if resuming:
@@ -123,10 +130,10 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
         if resuming and partial_path.is_file():
             for line in partial_path.read_text(encoding="utf-8").splitlines():
                 pair=json.loads(line);rows.append(pair["row"]);mirror_rows.append(pair["mirror_row"])
-        done={(x["scene"],x["frame"]) for x in rows}
+        done={(x.get("sensor"),x["scene"],x["frame"]) for x in rows}   # HAMMER: 3 sensors share scene/frame
         tcache=None;base_cache=None;dcache=None
         for i,r in enumerate(selected):
-            if (r["scene"],r["frame"]) in done:continue
+            if (r.get("sensor"),r["scene"],r["frame"]) in done:continue
             if time_budget_s is not None and time.perf_counter()-started>time_budget_s:
                 receipt.update(stage="partial_time_budget",frames_done=len(rows),frames_total=len(selected))
                 log(f"PARTIAL: {len(rows)}/{len(selected)} frames; rerun with --resume")

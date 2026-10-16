@@ -89,3 +89,21 @@ def test_storage_policy_keeps_first_n_and_hashes_all(tmp_path):
     saved = np.load(next((tmp_path / "r" / "predictions").glob("*.npy")))
     first = [r for r in rows if r["prediction_saved"]]
     assert hashlib.sha256(np.ascontiguousarray(saved, dtype=np.float32).tobytes()).hexdigest() in {r["prediction_array_sha256"] for r in first}
+
+
+def test_train_scope_holdout_keeps_only_holdout_scenes(tmp_path):
+    from tp.trust.data import scene_inner_holdout
+    rows=[]
+    for scene in ("sa","sb"):                      # synthetic dataset: sb is a holdout scene, sa is not
+        s=make_sample(); s.scene=scene
+        path=tmp_path/f"{scene}.npz";save_sample(s,path)
+        rows.append(dict(path=path.name,sha256=sha256(path),dataset=s.dataset,scene=scene,frame=s.frame,split="train",sensor=s.sensor))
+    assert [scene_inner_holdout(rows[0]["dataset"],r["scene"]) for r in rows]==[False,True]
+    manifest=tmp_path/"manifest.json";write_json(manifest,dict(synthetic=True,records=rows))
+    config=dict(seed=0,manifest=str(manifest),method="raw_prompt",split="train",tau=.05,band=1,alignment="none",
+                visualizations=0,experiment_role="synthetic_engineering_only",train_scope="holdout")
+    evaluate_manifest(config,tmp_path/"run",["test"])
+    got=json.loads((tmp_path/"run/per_image.json").read_text())
+    assert [r["scene"] for r in got]==["sb"]
+    with pytest.raises(ValueError):
+        evaluate_manifest(dict(config,train_scope="some"),tmp_path/"run2",["test"])

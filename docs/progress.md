@@ -339,3 +339,22 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 可部署组合（T v1 掩码 + T v2 截断）几乎不变，因为 PromptDA 输出很少超过 P。
 - 新增 `scripts/cap_decomposition.py`（只依赖 numpy，可以续跑）→ `docs/cap_decomposition.md`。网格分解显示，收益的约 40% 在 T 漏判的约 10% 测远像素上。事后补救的 q\* 阈值规则也不成立。
 - 决定：按预设规则不租 GPU 训练约束通道模型；主线回到测量 + 检测 + conformal 保证（decisions §17）。
+
+## 2026-10-16 对比方法、Holm 校正与拍摄方案（代码已实现；小规模验证通过；Windows 待运行）
+
+- 对比方法见 `docs/baselines.md`：
+  - 代码：`baselines/completion.py`（6 个模型，统一接口）、`scripts/cache_completion.py`（raw / tmask / oracle_mask 三种输入）、`configs/baselines/registry.json`（源码 commit、HF revision、大小、SHA256、许可）、`scripts/setup_baselines.py`。
+  - Windows 脚本：`scripts/windows/setup_baselines.ps1`、`step10_baselines.ps1`。
+  - 汇总：`scripts/summarize_baselines.py` → `docs/baseline_results.md`。
+- Holm 校正：`tp/eval/family.py`（场景 bootstrap；单场景时用帧块 bootstrap；NA 按 p = 1 计入）、`scripts/holm_family.py`，预注册检验族为 `configs/baselines/holm_family_v1.yaml`（decisions §18）。
+- `run_eval` 新增 `train_scope: holdout`；修正续跑时 HAMMER 记录的识别方式。
+- 测试（云端）：新增 18 项（k-NN 与暴力搜索逐元素一致、shim 的输出格式、注册表完整性、三种输入不读 GT、帧块 bootstrap、Holm 的 NA 处理、train_scope），与相关旧测试合计 72 passed。CPU 随机权重冒烟：CDM 和 Any2Full 跑通；OMNI-DC 跑到前向（内部写死 cuda）。
+- 先用现有 PromptDA-L 缓存跑了一次检验族（interim，其余 10 个比较为 NA，按 p = 1 计入）：
+  - 加 T v1 掩码后，NYU val 0.467 → 0.096（Holm p = 0.011），HAMMER val 0.0434 → 0.0340（帧块，Holm p = 0.0012）；留出场景同向。
+  - 代价是 NYU 主范围内的干净像素误差上升：val 0.057 → 0.084，留出 0.026 → 0.146。这是过度屏蔽，论文里必须报告。
+- 拍摄方案 `docs/capture_plan.md` v1：
+  - 用覆盖法得到逐像素实测的第一表面真值，不做平面拟合；
+  - 主动双目和 ToF 两类传感器；
+  - 48 个场景，按 24/8/16 划分，test 封存；
+  - 先试拍 3 个场景。
+  - 待你确认设备、场地和规模。
