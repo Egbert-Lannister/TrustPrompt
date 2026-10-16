@@ -1,0 +1,22 @@
+# Depth-completion baseline caches (scripts/cache_completion.py; docs/baselines.md).
+# Populations: val + the train-split holdout scenes (out of fit for T); the rest of train is not run.
+seed: 20261016
+tau: 0.05                       # contamination region C, same as the evaluation
+storage: uint16_0p2mm
+splits: [train, val]
+train_scope: holdout
+crc: {file: results/trust_t_v1_crc_d20.json, alpha: "0.1"}   # method v1 threshold (decisions sec. 18)
+datasets:
+  nyu:
+    processed: data/processed/mirror3d_dev_v1
+    trust_cache: cache/trust_t_v1_real_sim_nofeat_nyu_dev_v1
+    crc_dataset: mirror3d_nyu
+  hammer:
+    processed: data/processed/hammer_dev_v1
+    trust_cache: cache/trust_t_v1_real_sim_nofeat_hammer_dev_v1
+    crc_dataset: hammer
+variants:
+  raw: deployable; sensor prompt as is, holes = 0
+  tmask: deployable; prompt pixels with T v1 trust < conformal threshold set to 0 (the model completes them)
+  oracle_mask: "[oracle]; every contaminated prompt pixel (|P - GT| / GT > tau) set to 0"
+output: cache/bl_{model}_{variant}_{dataset}_dev_v1

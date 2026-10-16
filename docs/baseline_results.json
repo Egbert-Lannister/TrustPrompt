@@ -1,0 +1,137 @@
+{
+  "stage": "development_diagnostic",
+  "results": {
+    "mirror3d_nyu/val (out of sample)/mirror3d_dev_promptda_vitl_raw_val_v1": {
+      "run": "mirror3d_dev_promptda_vitl_raw_val_v1",
+      "images": 19,
+      "scenes": 18,
+      "c": 0.4669142654135518,
+      "c_full": 0.43475214243624616,
+      "clean": 0.05744473475855149,
+      "ir": 0.4716447204117932,
+      "dor": 0.583126836077388,
+      "images_with_invalid": 0
+    },
+    "mirror3d_nyu/val (out of sample)/mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_val_v1": {
+      "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_val_v1",
+      "images": 19,
+      "scenes": 18,
+      "c": 0.09591777542193797,
+      "c_full": 0.1289496130573137,
+      "clean": 0.08378452155418023,
+      "ir": 0.11871058396849571,
+      "dor": 0.28411930141629016,
+      "images_with_invalid": 0
+    },
+    "mirror3d_nyu/val (out of sample)/mirror3d_dev_promptda_vitl_oracle_prior_val_v1": {
+      "run": "mirror3d_dev_promptda_vitl_oracle_prior_val_v1",
+      "images": 19,
+      "scenes": 18,
+      "c": 0.09577502041182194,
+      "c_full": 0.13557548857821208,
+      "clean": 0.03908597686526293,
+      "ir": 0.11432411067500897,
+      "dor": 0.27442884047725674,
+      "images_with_invalid": 0
+    },
+    "mirror3d_nyu/train holdout scenes (out of fit)/mirror3d_dev_promptda_vitl_raw_train_v1": {
+      "run": "mirror3d_dev_promptda_vitl_raw_train_v1",
+      "images": 11,
+      "scenes": 7,
+      "c": 0.7919672895816235,
+      "c_full": 0.6952583321029783,
+      "clean": 0.026080121769183503,
+      "ir": 0.686785625206234,
+      "dor": 0.6773855992399792,
+      "images_with_invalid": 0
+    },
+    "mirror3d_nyu/train holdout scenes (out of fit)/mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_train_v1": {
+      "run": "mirror3d_dev_promptda_vitl_trust_v1_crc10_prior_train_v1",
+      "images": 11,
+      "scenes": 7,
+      "c": 0.1650343071108338,
+      "c_full": 0.17732135743226735,
+      "clean": 0.14545088202253575,
+      "ir": 0.06122793690620875,
+      "dor": 0.409929724618415,
+      "images_with_invalid": 0
+    },
+    "mirror3d_nyu/train holdout scenes (out of fit)/mirror3d_dev_promptda_vitl_oracle_prior_train_v1": {
+      "run": "mirror3d_dev_promptda_vitl_oracle_prior_train_v1",
+      "images": 11,
+      "scenes": 7,
+      "c": 0.16559791480175645,
+      "c_full": 0.17787666672584873,
+      "clean": 0.07879137446850422,
+      "ir": 0.05301081447131132,
+      "dor": 0.410717500870058,
+      "images_with_invalid": 0
+    },
+    "hammer/val (out of sample)/hammer_dev_promptda_vitl_raw_val_v1": {
+      "run": "hammer_dev_promptda_vitl_raw_val_v1",
+      "images": 327,
+      "scenes": 1,
+      "c": 0.043448426018097265,
+      "c_full": 0.06601401781208337,
+      "clean": 0.0193861328435682,
+      "ir": 0.15456095760876598,
+      "dor": 0.026044977078833974,
+      "images_with_invalid": 0
+    },
+    "hammer/val (out of sample)/hammer_dev_promptda_vitl_trust_v1_crc10_prior_val_v1": {
+      "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_val_v1",
+      "images": 327,
+      "scenes": 1,
+      "c": 0.033980566869149346,
+      "c_full": 0.048765521926495255,
+      "clean": 0.015339128147060675,
+      "ir": 0.12885662812146834,
+      "dor": 0.02275711901581979,
+      "images_with_invalid": 0
+    },
+    "hammer/val (out of sample)/hammer_dev_promptda_vitl_oracle_prior_val_v1": {
+      "run": "hammer_dev_promptda_vitl_oracle_prior_val_v1",
+      "images": 327,
+      "scenes": 1,
+      "c": 0.03208154588028456,
+      "c_full": 0.040943999141298995,
+      "clean": 0.011712715644485797,
+      "ir": 0.11453674363534651,
+      "dor": 0.03418783999441207,
+      "images_with_invalid": 0
+    },
+    "hammer/train holdout scenes (out of fit)/hammer_dev_promptda_vitl_raw_train_v1": {
+      "run": "hammer_dev_promptda_vitl_raw_train_v1",
+      "images": 93,
+      "scenes": 1,
+      "c": 0.03757288762765595,
+      "c_full": 0.07623329130102717,
+      "clean": 0.011482372779775138,
+      "ir": 0.07621276235076663,
+      "dor": 0.038284319479906,
+      "images_with_invalid": 0
+    },
+    "hammer/train holdout scenes (out of fit)/hammer_dev_promptda_vitl_trust_v1_crc10_prior_train_v1": {
+      "run": "hammer_dev_promptda_vitl_trust_v1_crc10_prior_train_v1",
+      "images": 93,
+      "scenes": 1,
+      "c": 0.029166354043218892,
+      "c_full": 0.04716985240383431,
+      "clean": 0.012139028826651284,
+      "ir": 0.05899693644924478,
+      "dor": 0.01700029521347151,
+      "images_with_invalid": 0
+    },
+    "hammer/train holdout scenes (out of fit)/hammer_dev_promptda_vitl_oracle_prior_v2_train_v1": {
+      "run": "hammer_dev_promptda_vitl_oracle_prior_v2_train_v1",
+      "images": 93,
+      "scenes": 1,
+      "c": 0.03104648216879784,
+      "c_full": 0.04643991846229107,
+      "clean": 0.011352075842542159,
+      "ir": 0.07206526049637692,
+      "dor": 0.02487019931634064,
+      "images_with_invalid": 0
+    }
+  }
+}

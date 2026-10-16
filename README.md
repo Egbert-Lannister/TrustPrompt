@@ -105,7 +105,7 @@ python -m scripts.summarize_step1
 
 ## 文档和状态
 
-当前方向见 `docs/plan_revision_v2.md` §3.7（R16）：方法 v1（对齐 → T → 屏蔽 → PromptDA-L）只冻结结构和规则；新的核心是把错误提示当作单侧约束，并用 conformal 方法控制危险提示的比例。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
+当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
 
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
@@ -116,4 +116,4 @@ python -m scripts.summarize_step1
 - `docs/reuse_provenance.json`：选择性迁入的旧代码文件hash。
 - `configs/splits/mirror3d_nyu_v1.json`：可版本控制的完整场景划分。
 
-尚无可信度网络训练、PromptDA改造正式实验、HAMMER三传感器留一测试或论文主结果。按数据→指标→少量基线→模拟器/训练的依赖顺序扩展。
+T v0 / v1 / v2 都已训练，但只有开发集诊断。目前没有正式实验，也没有论文主结果：测试集未读取，HAMMER 三传感器留一测试也还没做。

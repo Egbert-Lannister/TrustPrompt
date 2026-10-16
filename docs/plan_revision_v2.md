@@ -181,11 +181,17 @@
   - NYU 划分：我们沿用 GLARE 审计得到的场景级划分（55/18/23 个场景，76/19/30 帧），不是 Mirror3D 官方划分（train 73 / test 52）。开发帧必然包含官方测试图像。要按官方协议对比，需要在排除官方测试帧后重训 T（官方划分文件需从 Mirror3D 仓库重新获取）。
   - T 的编码器特征来自普通 PromptDA-S，不是在 HAMMER 上微调过的 Transparent 版本，因此不存在 HAMMER 泄漏。
 
+- **2026-10-16 实施情况（见 `docs/baselines.md`）**：
+  - 代码已实现：PriorDA-B v1.1、OMNI-DC v1.1、CDM（按相机）、LingBot-Depth v0.5、Any2Full-L、Marigold-DC（可选）。每个模型都跑 raw / T v1 掩码 / GT 掩码三种输入，源码、权重和哈希都已固定。
+  - Holm 检验族已预注册（`configs/baselines/holm_family_v1.yaml`）。HAMMER 单场景人群改用场景内帧块 bootstrap，结论只覆盖该场景的帧。
+  - 暂缺：LingBot-Depth 2.0（未找到公开权重）、Mirror3DNet、GlassRecon 式对齐。
+  - 等待 Windows 运行 `setup_baselines.ps1` 和 `step10_baselines.ps1`。
+
 ### 3.7.6 步骤与判据
 1. 在 HAMMER 上重新生成 T v1 掩码和 GT 掩码下的 PromptDA-L 缓存，做上界截断检查（免训练），NYU 同步。
    - 判据：截断在 HAMMER 物体上使 C AbsRel 下降，且 val / 留出两个场景方向一致。成立的话，支持“约束有信息量”；不成立的话，约束只能通过训练来利用。
 2. conformal 阈值（α = 0.05 / 0.1 / 0.2），在训练留出场景上校准，在 val 上检验经验风险是否 ≤ α；用 α = 0.1 的阈值重新跑 PromptDA-L，报告最终的 DOR 和误差。
-3. 拍摄方案（另写）。
+3. 拍摄方案：`docs/capture_plan.md`（v1 草稿，2026-10-16；待你确认设备和场地）。
 4. 训练带约束通道的补全模型（需要租用 GPU）。
 
 ## 4. 新增检查点
