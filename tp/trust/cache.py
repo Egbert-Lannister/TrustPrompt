@@ -31,3 +31,16 @@ class TrustCache:
             raise ValueError("trust cache was built from a different sample file")
         lr = np.load(self.root / e["path"])["trust"].astype(np.float32)
         return upsample_prob(lr, shape or sample.gt.shape)
+
+    def direction_far(self, sample, sample_sha256, shape=None):
+        """T v2: full-resolution boolean map 'predicted measured-too-far' (p_far >= p_near)."""
+        key = f"{sample.sensor}__{sample.scene}__{sample.frame}"
+        e = self.index.get(key)
+        if e is None or e["sample_sha256"] != sample_sha256:
+            raise ValueError(f"{key}: not in trust cache or different sample")
+        z = np.load(self.root / e["path"])
+        if "p_far" not in z.files:
+            raise ValueError("trust cache has no direction (needs a 3-class T v2 model)")
+        far = upsample_prob(z["p_far"].astype(np.float32), shape or sample.gt.shape)
+        near = upsample_prob(z["p_near"].astype(np.float32), shape or sample.gt.shape)
+        return far >= near

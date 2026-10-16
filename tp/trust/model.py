@@ -3,6 +3,7 @@
 Inputs (9 channels, per image, scale-free): prompt valid, prior valid, log P - m, log D_g - m,
 clip(log P - log D_g, +-1), its absolute value, RGB - 0.5 (m = median log D_g). Output: one
 logit per pixel for "prompt pixel is contaminated" (|P - GT| / GT > tau); trust = 1 - sigmoid.
+T v2 (out_ch=3): logits for clean / measured too far / measured too near; trust = softmax[clean].
 """
 from __future__ import annotations
 
@@ -39,7 +40,7 @@ class Block(nn.Module):
 
 
 class TrustNetV0(nn.Module):
-    def __init__(self, in_ch=IN_CH, feat_ch=384, width=32, use_features=True, feat_proj=64, feat_dropout=0.0):
+    def __init__(self, in_ch=IN_CH, feat_ch=384, width=32, use_features=True, feat_proj=64, feat_dropout=0.0, out_ch=1):
         super().__init__()
         w = width; self.use_features = use_features; fp = feat_proj if use_features else 0
         # T v1: optional Dropout2d on the projected encoder features (no parameters; v0 checkpoints still load)
@@ -47,7 +48,7 @@ class TrustNetV0(nn.Module):
         self.e1 = Block(in_ch, w); self.e2 = Block(w, 2 * w)
         self.e3 = Block(2 * w + fp, 4 * w); self.e4 = Block(4 * w + fp, 4 * w)
         self.d3 = Block(8 * w, 2 * w); self.d2 = Block(4 * w, w); self.d1 = Block(2 * w, w)
-        self.head = nn.Conv2d(w, 1, 1)
+        self.head = nn.Conv2d(w, out_ch, 1)   # 1: contamination logit (v0/v1); 3: clean / far / near logits (v2)
 
     def forward(self, x, feat=None):
         e1 = self.e1(x)

@@ -321,3 +321,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - HAMMER 的 T v1 缓存重新生成后，与已删除的缓存逐位一致。
   - 盲目截断不满足预设判据；只截断真实类型为“测远了”的像素时有效。因此 T 需要输出误差方向。
   - conformal 阈值在不损失精度的前提下给出风险保证，IR 下降。
+
+## 2026-10-16 T v2：三类可信度（代码已实现；测试通过；待 Windows 运行）
+
+- T v2 输出三类：可信、测远了（P > 1.05·GT，上界）、测近了（P < 0.95·GT）。标签直接从 v1 训练数据里的 P 和 GT 计算，不需要重建数据。改动包括：`tp/trust/data.labels3_from_arrays`、模型输出层改为 3 类、`train_trust --classes 3`（带类别权重的交叉熵）、`infer_trust` 额外保存 p_far 和 p_near、`TrustCache.direction_far`。
+- `run_eval` 的 `bound_cap` 新增 `direction` 参数：all（之前的盲目截断）、oracle（用 GT 判断方向）、trust_far（用 T v2 预测的方向）。NYU val 冒烟（GT 掩码）：不截断 0.0958，全部截断 0.0927，只截断测远了的 0.0945。
+- `scripts/trust_direction_diagnostics.py`：方向召回和符号准确率。`scripts/windows/step9_t_v2.ps1`：训练 2 种 T v2 → 推理 → 方向诊断 → 20 个只截断测远像素的评测（复用已有的 PromptDA 缓存，不需要新的 PromptDA 推理）。
+- 测试：本地 numpy 部分通过；torch 部分（含 T v2 端到端）在云端 18 passed。

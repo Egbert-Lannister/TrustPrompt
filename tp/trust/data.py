@@ -88,3 +88,15 @@ def scene_inner_holdout(dataset, scene):
     if dataset == "hammer":
         return scene in ("scene10", "10")
     return zlib.crc32(scene.encode("utf-8")) % 5 == 0
+
+
+def labels3_from_arrays(a, tau=0.05):
+    """T v2 labels from v1 arrays: 0 clean, 1 measured too far (P > (1+tau) GT; true surface is in front,
+    so P is an upper bound), 2 measured too near (P < (1-tau) GT), 255 ignore."""
+    p = a["prompt"].astype(np.float32); gt = a["gt"].astype(np.float32)
+    ok = a["valid"] & a["gt_valid"] & (p > 0) & (gt > 0)
+    lab = np.full(p.shape, 255, np.uint8)
+    lab[ok & (np.abs(p - gt) <= tau * gt)] = 0
+    lab[ok & (p > (1 + tau) * gt)] = 1
+    lab[ok & (p < (1 - tau) * gt)] = 2
+    return lab
