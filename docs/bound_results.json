@@ -81,6 +81,56 @@
         "dor": 0.27022348371262717,
         "c_full": 0.0997787593418054,
         "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_oracle": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_oracle_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09445657970531704,
+        "ir": 0.11722023174485495,
+        "dor": 0.2742618181973383,
+        "c_full": 0.1303299975577804,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09521368079784052,
+        "ir": 0.13191452261864733,
+        "dor": 0.2741496779363636,
+        "c_full": 0.1274558693107465,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09516725804471646,
+        "ir": 0.13371590924168555,
+        "dor": 0.2738400542441164,
+        "c_full": 0.12907613432650955,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09420747245070049,
+        "ir": 0.12805802452024612,
+        "dor": 0.25747354388693816,
+        "c_full": 0.12465884916650019,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_val_v1",
+        "images": 19,
+        "scenes": 18,
+        "c": 0.09420733570948583,
+        "ir": 0.12805317843200853,
+        "dor": 0.25747354388693816,
+        "c_full": 0.12513241813870896,
+        "trust_auroc": null
       }
     },
     "mirror3d_nyu/train holdout scenes (out of fit)": {
@@ -163,6 +213,56 @@
         "dor": 0.40928922829463615,
         "c_full": 0.14412439212127026,
         "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_oracle": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_oracle_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15095341565014622,
+        "ir": 0.08378457341846417,
+        "dor": 0.4102291710807879,
+        "c_full": 0.16494639027246558,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.1518991988567351,
+        "ir": 0.08539721546126056,
+        "dor": 0.41019619836372817,
+        "c_full": 0.16464314979962258,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15238494114360193,
+        "ir": 0.08713573558014076,
+        "dor": 0.41028350012672204,
+        "c_full": 0.16631567307050546,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15946253041843533,
+        "ir": 0.08724477993454693,
+        "dor": 0.41032002352388075,
+        "c_full": 0.17067067225886892,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 11,
+        "scenes": 7,
+        "c": 0.15947590324894925,
+        "ir": 0.08724933003583724,
+        "dor": 0.41036241983633986,
+        "c_full": 0.17063880186649105,
+        "trust_auroc": null
       }
     },
     "mirror3d_nyu/train all (in sample for T)": {
@@ -244,6 +344,56 @@
         "ir": 0.13799215740717813,
         "dor": 0.25887601349749284,
         "c_full": 0.12816972308494146,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_oracle": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_oracle_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.12647895135512122,
+        "ir": 0.12644330489314143,
+        "dor": 0.26224239297033275,
+        "c_full": 0.1424133857573718,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.12713407511827168,
+        "ir": 0.1256310465235061,
+        "dor": 0.2630838859252436,
+        "c_full": 0.14159558136419317,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim": {
+        "run": "mirror3d_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.12707227176764505,
+        "ir": 0.1263190477885756,
+        "dor": 0.2628410256984512,
+        "c_full": 0.14278930999571413,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.13447483660963183,
+        "ir": 0.16550412007462154,
+        "dor": 0.2737660057453482,
+        "c_full": 0.14901237034755593,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim": {
+        "run": "mirror3d_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 76,
+        "scenes": 55,
+        "c": 0.13447350166211167,
+        "ir": 0.16551092360696332,
+        "dor": 0.27376412456657373,
+        "c_full": 0.14901933896329533,
         "trust_auroc": null
       }
     },
@@ -347,6 +497,56 @@
         "dor": 0.026068620733998793,
         "c_full": 0.054632744876173055,
         "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_oracle": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_oracle_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.030572558471441125,
+        "ir": 0.12245607943455919,
+        "dor": 0.026890121558573274,
+        "c_full": 0.03833975119785574,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03169150652106358,
+        "ir": 0.12472399353706892,
+        "dor": 0.02971039304707966,
+        "c_full": 0.0405567610816079,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03160644502376671,
+        "ir": 0.12442617434347682,
+        "dor": 0.029213395104981943,
+        "c_full": 0.04003952874088171,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.03442072993193094,
+        "ir": 0.13808425563718185,
+        "dor": 0.019441493402375776,
+        "c_full": 0.05193950536726989,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_val_v1",
+        "images": 327,
+        "scenes": 1,
+        "c": 0.0344264854069171,
+        "ir": 0.1381303663591972,
+        "dor": 0.019427130402636713,
+        "c_full": 0.0519582100659134,
+        "trust_auroc": null
       }
     },
     "hammer/train holdout scenes (out of fit)": {
@@ -439,6 +639,56 @@
         "dor": 0.0210912218323309,
         "c_full": 0.05124437974063881,
         "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_oracle": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_oracle_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.030457673638675457,
+        "ir": 0.0742409481104001,
+        "dor": 0.022206309955032668,
+        "c_full": 0.04511480941378761,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.03082595118899984,
+        "ir": 0.07520986722822769,
+        "dor": 0.023514409329314024,
+        "c_full": 0.04602908548635537,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.0309336972277448,
+        "ir": 0.0775774861711563,
+        "dor": 0.023057031538636634,
+        "c_full": 0.045825994774407436,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.029259533222454438,
+        "ir": 0.06239975195379332,
+        "dor": 0.017130175915791704,
+        "c_full": 0.04936241973902758,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 93,
+        "scenes": 1,
+        "c": 0.02925999856765866,
+        "ir": 0.06246499674057431,
+        "dor": 0.017090668903320075,
+        "c_full": 0.049371529857428625,
+        "trust_auroc": null
       }
     },
     "hammer/train all (in sample for T)": {
@@ -530,6 +780,56 @@
         "ir": 0.10540306111353505,
         "dor": 0.0278981574399233,
         "c_full": 0.053268453886646853,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_oracle": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_oracle_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.036870955404457534,
+        "ir": 0.06445037817965783,
+        "dor": 0.028527785972659352,
+        "c_full": 0.04370085420840365,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.03766116301151519,
+        "ir": 0.06552295621591127,
+        "dor": 0.03045694296961884,
+        "c_full": 0.04541218695950941,
+        "trust_auroc": null
+      },
+      "promptda_vitl_oracle_prior_capfar_t_v2_real_sim": {
+        "run": "hammer_dev_promptda_vitl_oracle_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.037524120350797864,
+        "ir": 0.06551594253219578,
+        "dor": 0.029971762863735152,
+        "c_full": 0.04484263827790749,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_nofeat_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.03966386546127321,
+        "ir": 0.0628110100560153,
+        "dor": 0.02284567071284914,
+        "c_full": 0.05105732807157399,
+        "trust_auroc": null
+      },
+      "promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim": {
+        "run": "hammer_dev_promptda_vitl_trust_v1_prior_capfar_t_v2_real_sim_train_v1",
+        "images": 816,
+        "scenes": 9,
+        "c": 0.039652043284010924,
+        "ir": 0.06271560327683727,
+        "dor": 0.022810158295264893,
+        "c_full": 0.05098717869738223,
         "trust_auroc": null
       }
     },
