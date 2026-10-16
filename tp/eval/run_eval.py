@@ -151,6 +151,24 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                 pred=predict(s)
             elif method=="cached_prediction":
                 pred=cached.predict(s,r["sha256"])
+                bc=config.get("bound_cap")
+                if bc:
+                    # R16: a flagged prompt that measured too far is an upper bound (reflection / transmission
+                    # paths are longer than the first surface): cap the prediction at the measured value there.
+                    if bc["mask"]=="oracle_c":
+                        flag=masks["C"]&pv
+                    elif bc["mask"]=="trust":
+                        if tcache is None:
+                            from tp.trust.cache import TrustCache
+                            tcache=TrustCache(bc["trust_cache"])
+                            receipt["trust_cache_receipt_sha256"]=sha256(tcache.root/"receipt.json")
+                        thr=float(bc.get("trust_threshold") or tcache.threshold)
+                        flag=pv&(tcache.trust(s,r["sha256"],s.gt.shape)<thr)
+                    else:
+                        raise ValueError("bound_cap.mask must be oracle_c or trust")
+                    over=flag&np.isfinite(pred)&(p>0)&(pred>p)
+                    pred=np.where(over,p,pred).astype(np.float32)
+                    cap_info=dict(mask=bc["mask"],flagged=int(flag.sum()),capped=int(over.sum()))
             else:
                 prior_depth=prior.predict(s,r["sha256"])
                 if method=="unidepth_v2_s":pred=prior_depth
@@ -233,6 +251,7 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
                                             **{k:v for k,v in aligned.items() if isinstance(v,np.ndarray)})
             elapsed=time.perf_counter()-t
             if method=="trustfill":row_extra=dict(fill_summary=fill_summary)
+            elif method=="cached_prediction" and config.get("bound_cap"):row_extra=dict(bound_cap=cap_info)
             else:row_extra={}
             if pred.shape!=s.gt.shape:raise ValueError("prediction shape mismatch")
             key=f"{s.dataset}__{s.sensor}__{s.scene}__{s.frame}"
