@@ -134,3 +134,9 @@
 - 方式：robocopy 复制，不移动、不删除 E 盘上的任何东西。校验三项：每个文件的大小一致；每个缓存预测文件的 SHA256 与写入时 images.json 记录的一致；三个检查点的 SHA256 与之前运行记录的一致。最后由 restore_promptda.ps1 确认源码在审计过的提交上。
 - 配置和脚本里的路径全部改为项目内路径。旧运行记录（receipt）里的 E 盘路径保持原样，作为历史。缓存读取只用 predictions/ 下的文件名，所以移动后旧缓存仍可直接使用，receipt 的哈希也不变。
 - `fetch_nyu_subset.py` 里可选的 GLARE 旧 h5 默认路径仍指向 E 盘；该文件不存在时会自动跳过，不影响运行。
+
+## 16. R16 中的协议核查与定义（2026-10-15）
+
+- **NYU 划分**：`configs/splits/mirror3d_nyu_v1.json` 来自 GLARE 的源索引审计（全部 125 张图重新核验），把历史上用过的场景都放在测试之外，按场景划分为 55/18/23（76/19/30 帧）。它不是 Mirror3D 官方划分（73/52 张图）。因此开发集与官方测试集有重叠，我们的 NYU 结果不能和按官方协议报告的数字直接比较。如需官方协议对比，必须排除官方测试帧后重训 T，并在官方 52 张图上评测。
+- **编码器权重**：`configs/trust/encoder_{nyu,hammer}.yaml` 使用的是 `prompt-depth-anything-vits`（普通 PromptDA-S），不是在 HAMMER 上微调过 10K 步的 `vits-transparent`。T 的特征不含 HAMMER 信息。
+- **conformal 风险的定义**（R16 第 2 项）：对每张图，loss = 主范围内“测得更远”的污染提示像素（P > GT·(1+τ)，τ = 0.05）中，没有被标记（trust ≥ λ）的比例；没有这类像素时 loss = 0。loss ∈ [0, 1]，随 λ 增大单调不增。按 conformal risk control（Angelopoulos 等，2022）取 λ̂ = 满足 (n/(n+1))·R̂(λ) + 1/(n+1) ≤ α 的最小 λ。在图像可交换的前提下，保证测试图像的期望 loss ≤ α。HAMMER 的校准集只有 scene10，与 val 的 scene11 是否可交换存疑，报告时要注明。在 192×256 网格上计算。

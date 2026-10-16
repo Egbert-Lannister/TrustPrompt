@@ -301,3 +301,16 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - `migrate_e_to_d.ps1`：权重和源码已复制到项目内并通过校验（`results/migration_e_to_d_20261014_233334`，stage migration_verified）。但迁移运行时 E 盘上已经没有 `TrustPrompt_data\cache`、`TrustPrompt_data\hammer_subset_v1` 和 GLARE 的 Mirror3D 文件，这三项被跳过，没有复制（详见下次向用户确认的结果）。
 - `step7_repair.ps1` 全部成功（4 小时 23 分）。结论见 `docs/r15_analysis.md`：GT 掩码下“提示修复 + PromptDA”在两个数据集上都明显更好；T v1 + 高召回 + 修复在 NYU 留出场景上从 0.162 降到 0.087，但 val 被一帧贴边的大镜面拖垮；覆盖率保护规则试过后放弃。镜面数据量是决定性瓶颈。
 - 用户确认：E 盘上的 HAMMER PromptDA 缓存、HAMMER 原始子集，以及 GLARE 目录下的 Mirror3D 元数据和标注，都已在清理时删除。影响和重新获取方式见 `docs/data_inventory.md`。开发集的处理后数据和全部评测结果都在项目内，不受影响。
+
+## 2026-10-15 方向修订 R16（用户已同意）
+
+- 文献审计见 `docs/related_work_audit.md`：屏蔽 + D_g 填充 + PromptDA 的流程已有先例，只作基线；可以守住的新意是 IR / DOR 诊断，以及用物理模拟器训练、可插拔的 T。
+- 新方向（plan_revision_v2 §3.7）：把错误提示当作单侧约束。被污染的像素中，测得更远的比例为 NYU 镜面 99.0%、HAMMER 物体 95.7%；测量值 / 真实深度的中位数为 HAMMER 1.13、NYU 1.92。在 NYU 上做的免训练事后截断几乎无效（val 0.0999 → 0.0999，留出 0.189 → 0.186；GT 掩码时 0.196 → 0.174）。
+- 协议核查（decisions §16）：NYU 划分不是 Mirror3D 官方划分，需要单独做官方协议对比；T 的编码器来自普通 PromptDA-S，不存在 HAMMER 泄漏。
+- 开始 R16 的第 1 项（HAMMER 上的上界截断检查）和第 2 项（conformal 阈值）。
+- R16 第 2 项 conformal 阈值（`tp/trust/conformal.py`、`scripts/conformal_threshold.py`，结果见 `docs/conformal_results.md`（危险定义 P > 1.05·GT）和 `docs/conformal_results_d20.md`（P > 1.2·GT））：
+  - 1.05 定义：NYU α = 0.1 得 λ̂ = 0.74，val 风险 0.086 ≤ 0.1，误标 14.8%；α = 0.05 时校准集只有 11 张，无法达到（下限 1/12）；α = 0.2 时 val 风险 0.234，超过 α。HAMMER 三个 α 在 val 上都满足，但误标率 34–68%。
+  - 1.2 定义：NYU α = 0.1 得 λ̂ = 0.72，val 风险 0.051，误标 14.4%；HAMMER α = 0.1 得 λ̂ = 0.46，val 风险 0.096，误标 9.3%。
+  - 下游 PromptDA 采用 1.2 定义、α = 0.1 的阈值，这是在看到下游结果之前确定的。
+- `run_eval` 的 cached_prediction 新增 `bound_cap` 选项：对被标记的提示像素，把预测截断到不超过测量值。NYU val 冒烟：GT 掩码 PromptDA 0.0958 → 0.0927。
+- `scripts/windows/step8_bounds.ps1`：在 HAMMER 上重新生成 T v1 的 PromptDA 缓存（顺带检查能否逐位复现已删除的缓存）、HAMMER train + val 的 GT 掩码缓存、两个数据集 conformal 阈值下的缓存，以及 20 个评测（截断与不截断各一组）；汇总见 `scripts/summarize_bounds.py` → `docs/bound_results.md`。

@@ -105,6 +105,8 @@ python -m scripts.summarize_step1
 
 ## 文档和状态
 
+当前方向见 `docs/plan_revision_v2.md` §3.7（R16）：方法 v1（对齐 → T → 屏蔽 → PromptDA-L）只冻结结构和规则；新的核心是把错误提示当作单侧约束，并用 conformal 方法控制危险提示的比例。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
+
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
 - `docs/decisions.md`：定义冲突、采用解释、计划修订。
