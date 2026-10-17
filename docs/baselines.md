@@ -57,7 +57,7 @@
   - **相机不匹配**：CDM 只有 D405/D435/L515/ZED 2i/Azure Kinect 的模型。HAMMER 的 Helios（ToF）和 NYU 的 Kinect v1（结构光）都用 Azure Kinect 模型，属于相机不匹配，表中要注明。
 - **LingBot-Depth**：
   - 内参按官方方式归一化（fx/W 等）。
-  - 官方代码在把每个样本的 token 序列以列表形式送进 DINOv2 块时依赖 xFormers，而 torch 2.11 没有可用的 xFormers wheel（2026-10-17 第一次 preflight 因此失败）。改为把每个序列单独送进标准块：推理时这与 xFormers 的块对角注意力完全等价，只是注意力由 torch SDPA 计算，而不是 memory_efficient_attention。等价性由 `tests/test_lingbot_nested.py` 检验。
+  - 官方代码在把每个样本的 token 序列以列表形式送进 DINOv2 块时依赖 xFormers，而 `.venvs/baselines` 里没有装 xFormers（2026-10-17 第一次 preflight 因此失败）。**更正**：我当时说“torch 2.11 没有可用的 xFormers wheel”，这一点没有核实，而且是错的。PyPI 上的 xFormers 0.0.35 有 Windows wheel，要求 torch ≥ 2.10（2026-10-17 查）。它对应的 CUDA 版本是否与本机的 cu126 兼容，还没有验证。已生成的 6 个 LingBot 缓存，receipt 里记录的仍是旧的理由。改为把每个序列单独送进标准块：推理时这与 xFormers 的块对角注意力完全等价，只是注意力由 torch SDPA 计算，而不是 memory_efficient_attention。等价性由 `tests/test_lingbot_nested.py` 检验。
   - 官方默认 `apply_mask=True`，会把低置信像素设成 inf。我们设为 False，保留稠密输出，让所有方法在同一组像素上评分；mask 的占比记录在每张图的 report 里。
 - **Any2Full**：与 `run_any2full.py` 一致（init_scailing、max_depth 1000、不开 denoise）。
 - **Marigold-DC**：与 `python -m marigold_dc` 默认一致（bf16、DDIM trailing、50 步、集成 1 次、768 px、seed 2024）。
