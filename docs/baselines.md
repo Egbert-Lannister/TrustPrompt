@@ -1,7 +1,6 @@
 # 对比方法（depth completion baselines）与 Holm 校正（2026-10-16）
 
 状态：**小规模验证通过（开发集诊断，非正式结果）**。step10 于 2026-10-17 跑完，结果见第 5b 节、`docs/baseline_results.md` 和 `docs/holm_plugin_v1.md`（results/holm_plugin_v1_20261017_081356）。测试集未读。
-目前只有 PromptDA-L 一行有结果，来自已有缓存，见第 5 节。
 
 ## 1. 目的
 
@@ -77,7 +76,7 @@
   - HAMMER 的 val 和留出各只有 1 个场景，场景 bootstrap 无法给出 p 值。这里改用场景内按轨迹的循环块 bootstrap：块长 8 帧，同一帧的三个传感器一起抽。
   - **它推断的只是这个场景里的帧，不能外推到新场景。**要做场景级推断，需要对 HAMMER 做留场景交叉拟合：T 按场景分折重训，让每个场景都在样本外。见第 7 节。
 
-## 5. 已有结果：只有 PromptDA-L 一行（interim）
+## 5. 第一轮 interim：只有 PromptDA-L 一行（已被第 5b 节取代）
 
 `python -m scripts.holm_family` 已用现有的 PromptDA-L 缓存跑过一次（`results/holm_plugin_v1_*`，`docs/holm_plugin_v1.md`）。其余 10 个比较还没有结果，按规则以 p = 1 计入族内。
 
