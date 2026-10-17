@@ -371,3 +371,11 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
     - 留出：0.665 → 0.099，1.147 → 0.140，0.834 → 0.267。
   - 干净像素：OMNI-DC 在 val 上明显变差（0.013 → 0.071，CI 下界 > 0），PriorDA 在 val 上变差但 CI 跨 0，CDM 没有变差。
   - 用 GT 掩码时，PriorDA 在 NYU val 上的 C AbsRel 为 0.057，低于 PromptDA-L 的 0.096。
+
+## 2026-10-17 step10 完成；LingBot xFormers 核对（小规模验证通过，非正式结果）
+
+- step10 全部成功（第二轮 57 分钟）。共 30 个缓存和 60 个评测，没有无效预测。
+- **预注册判据成立**：主族（val）12/12 在 Holm 校正后显著。除 PromptDA-L 外的 10 个组合中，9 个的干净区域没有明显变差（例外：OMNI-DC NYU）。次族 12/12 显著。详见 `docs/baselines.md` §5b。
+- 方法 v1（PromptDA-L + T v1）仍是最好的可部署组合：NYU val 0.096，HAMMER val 0.034。Any2Full 配 GT 掩码在 NYU 上达到 0.039。
+- LingBot：装上 xFormers 0.0.35（--no-deps，torch 未变）后，与缓存比较 60 张图，差异处于噪声底（像素 p99 1.2e-7），现有缓存保留。
+- 之前对 xFormers 的错误说法已在 `docs/baselines.md` 中更正。
