@@ -413,7 +413,7 @@ class LingBot(Baseline):
             from mdm.model.dinov2_rgbd.layers import block as lb
         if not lb.XFORMERS_AVAILABLE:
             patch_nested_blocks(lb)
-            self.deviations.append("xFormers absent (no wheel for torch 2.11): nested-tensor blocks run each sample's token "
+            self.deviations.append("xFormers not installed in .venvs/baselines: nested-tensor blocks run each sample's token "
                                    "sequence through the standard block, which equals xFormers' block-diagonal attention "
                                    "at inference (torch SDPA instead of memory_efficient_attention)")
         self.load_info["xformers"] = bool(lb.XFORMERS_AVAILABLE)
