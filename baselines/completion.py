@@ -173,6 +173,26 @@ def torch_cluster_shim():
     return mod
 
 
+def patch_nested_blocks(lb):
+    """LingBot's DINOv2 blocks receive a list of per-sample token sequences (variable length after depth-token
+    masking) and, with xFormers, run them as one concatenated sequence under a BlockDiagonalMask: attention
+    never crosses sequences, and norms / MLP are per token. At inference that is exactly the standard block
+    applied to each sequence separately, which is what this patch does when xFormers is missing."""
+    if getattr(lb.NestedTensorBlock, "_trustprompt_patched", False):
+        return
+    orig = lb.NestedTensorBlock.forward
+
+    def forward(self, x_or_x_list):
+        if isinstance(x_or_x_list, list):
+            if self.training:
+                raise RuntimeError("nested-block fallback is for inference only")
+            return [lb.Block.forward(self, x) for x in x_or_x_list]
+        return orig(self, x_or_x_list)
+
+    lb.NestedTensorBlock.forward = forward
+    lb.NestedTensorBlock._trustprompt_patched = True
+
+
 # ----------------------------------------------------------------------------------------------- wrappers
 class Baseline:
     key = None
@@ -390,6 +410,13 @@ class LingBot(Baseline):
         self.torch = torch
         with _sys_path(source_dir(self.key)):
             from mdm.model.v2 import MDMModel
+            from mdm.model.dinov2_rgbd.layers import block as lb
+        if not lb.XFORMERS_AVAILABLE:
+            patch_nested_blocks(lb)
+            self.deviations.append("xFormers absent (no wheel for torch 2.11): nested-tensor blocks run each sample's token "
+                                   "sequence through the standard block, which equals xFormers' block-diagonal attention "
+                                   "at inference (torch SDPA instead of memory_efficient_attention)")
+        self.load_info["xformers"] = bool(lb.XFORMERS_AVAILABLE)
         self.deviations.append("apply_mask=False: dense depth kept (official default masks low-confidence pixels to inf)")
         if load_weights:
             ck = torch.load(str(weight_dir("robbyant/lingbot-depth-pretrain-vitl-14-v0.5") / "model.pt"),
