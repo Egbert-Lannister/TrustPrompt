@@ -358,3 +358,16 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 48 个场景，按 24/8/16 划分，test 封存；
   - 先试拍 3 个场景。
   - 待你确认设备、场地和规模。
+
+## 2026-10-17 step10 第一轮（进行中）
+
+- PriorDA、OMNI-DC、CDM 的 18 个缓存全部完成（`real_dev_verified`；HAMMER 每组 420 张，NYU 每组 30 张），没有无效预测。
+  - 每张耗时中位数：PriorDA 0.6–4.4 s，OMNI-DC 1.3–2.7 s，CDM 约 0.75 s（每次切换相机模型约 35 s）。显存峰值 ≤ 3.8 GB。
+  - CDM 在 NYU 上有超过 13.1 m 的预测被截断（tmask 共 26238 个像素），属于该模型在不匹配相机上的错误，照实保留。
+- LingBot 的 preflight 失败：官方 DINOv2 块对按样本列出的 token 序列依赖 xFormers。已改为等价实现（`baselines/completion.py` 中的 `patch_nested_blocks`），云端等价性测试通过。
+- 在 `results/_peek_20261017/` 提前看了 NYU 的评测（非正式；工作区有未提交改动，正式数字以 step10 为准）：
+  - 加 T v1 后三个模型的 C AbsRel 都大幅下降：
+    - val：PriorDA 0.407 → 0.125，OMNI-DC 0.750 → 0.137，CDM 0.575 → 0.137；
+    - 留出：0.665 → 0.099，1.147 → 0.140，0.834 → 0.267。
+  - 干净像素：OMNI-DC 在 val 上明显变差（0.013 → 0.071，CI 下界 > 0），PriorDA 在 val 上变差但 CI 跨 0，CDM 没有变差。
+  - 用 GT 掩码时，PriorDA 在 NYU val 上的 C AbsRel 为 0.057，低于 PromptDA-L 的 0.096。
