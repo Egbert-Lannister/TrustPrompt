@@ -107,7 +107,8 @@ def run(config_path, limit=None, output=None, overrides=()):
                         from tp.trust.cache import TrustCache
                         tcache = TrustCache(config["trust_cache"])
                         receipt["trust_cache_receipt_sha256"] = sha256(tcache.root / "receipt.json")
-                    thr = float(config.get("trust_threshold", tcache.threshold))
+                    tt = config.get("trust_threshold")
+                    thr = tcache.threshold_for(s) if tt == "per_item" else float(tt if tt is not None else tcache.threshold)
                     remove = s.prompt_valid & (tcache.trust(s, sample_hash, s.prompt.shape) < thr)
                     det_info = dict(threshold=thr, flagged=int(remove.sum()))
                 elif config["variant"] == "repair_prior":

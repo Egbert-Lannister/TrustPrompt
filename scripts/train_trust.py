@@ -6,7 +6,8 @@
 
 Training uses the train split only. Model selection (checkpoint and the binary threshold) uses
 train-split scenes held out by tp.trust.data.scene_inner_holdout (real prompts only); the val
-split is never read here, so val stays a clean development report.
+split is never read here, so val stays a clean development report. Exception: --hammer-fold (cross-fitting),
+where HAMMER train and val scenes are re-split into fit / selection / test scenes of one fold.
   --selection f1     (v0) checkpoint by mean per-image AUROC, threshold by pooled pixel F1
   --selection error  (v1) checkpoint, threshold and post-processing jointly by the replacement
                      error (tp.trust.data.replacement_error; needs v1 data with gt/focus):
@@ -145,6 +146,14 @@ def error_selection(preds, entries, thresholds=np.round(np.arange(0.05, 0.96, 0.
     return best, table
 
 
+def parse_fold(spec):
+    """'test=scene2,scene3;hold=scene4' -> ({'scene2','scene3'}, {'scene4'})."""
+    parts = dict(kv.split("=", 1) for kv in spec.split(";"))
+    if set(parts) != {"test", "hold"}:
+        raise ValueError(f"fold spec needs test=...;hold=..., got {spec}")
+    return set(parts["test"].split(",")), set(parts["hold"].split(","))
+
+
 def run(a):
     import torch
     from tp.trust.model import TrustNetV0
@@ -161,6 +170,15 @@ def run(a):
         train_items = [e for e in items if e["split"] == "train"]
         hold = [e for e in train_items if scene_inner_holdout(e["dataset"], e["scene"])]
         fit = [e for e in train_items if not scene_inner_holdout(e["dataset"], e["scene"])]
+        if a.hammer_fold:          # leave-scene-out cross-fitting on HAMMER (dev scenes, train + val splits)
+            test_sc, hold_sc = parse_fold(a.hammer_fold)
+            hm = [e for e in items if e["dataset"] == "hammer" and e["split"] in ("train", "val")]
+            if not test_sc <= {e["scene"] for e in hm} or not hold_sc <= {e["scene"] for e in hm} or test_sc & hold_sc:
+                raise ValueError(f"bad fold {a.hammer_fold}")
+            hold = [e for e in hold if e["dataset"] != "hammer"] + [e for e in hm if e["scene"] in hold_sc]
+            fit = [e for e in fit if e["dataset"] != "hammer"] + [e for e in hm if e["scene"] not in test_sc | hold_sc]
+            receipt["hammer_fold"] = dict(spec=a.hammer_fold, test_scenes=sorted(test_sc), selection_scenes=sorted(hold_sc),
+                                          fit_scenes=sorted({e["scene"] for e in fit if e["dataset"] == "hammer"}))
         sel = [e for e in hold if e["variant"] == "real"]
         keep = {"real": lambda e: e["variant"] == "real", "sim": lambda e: e["variant"].startswith("sim"),
                 "real_sim": lambda e: True}[a.regime]
@@ -263,4 +281,6 @@ if __name__ == "__main__":
     ap.add_argument("--selection", choices=["f1", "error"], default="f1")
     ap.add_argument("--feat-dropout", type=float, default=0.0); ap.add_argument("--feat-drop-sample", type=float, default=0.0)
     ap.add_argument("--classes", type=int, choices=[2, 3], default=2, help="3 = T v2: clean / measured too far / too near")
+    ap.add_argument("--hammer-fold", default=None, help="cross-fitting: 'test=sceneA,sceneB;hold=sceneC' (HAMMER train+val "
+                    "scenes; test scenes are never read, hold = selection; NYU unchanged)")
     run(ap.parse_args())

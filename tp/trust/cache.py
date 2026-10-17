@@ -19,7 +19,24 @@ class TrustCache:
         if sha256(self.root / "index.json") != self.receipt["index_sha256"]:
             raise ValueError("trust cache index hash mismatch")
         self.index = {e["key"]: e for e in json.loads((self.root / "index.json").read_text(encoding="utf-8"))}
-        self.threshold = float(self.receipt["threshold"])
+        self.per_item = bool(self.receipt.get("per_item_threshold"))
+        if self.per_item:
+            if any("threshold" not in e for e in self.index.values()):
+                raise ValueError("per-item-threshold cache without a threshold in every index entry")
+        else:
+            self._threshold = float(self.receipt["threshold"])
+
+    @property
+    def threshold(self):
+        """Global threshold; a cross-fitted cache has one per item (threshold_for) and refuses this."""
+        if self.per_item:
+            raise ValueError(f"{self.root} has per-item thresholds (cross-fitted); use threshold_for(sample)")
+        return self._threshold
+
+    def threshold_for(self, sample):
+        if not self.per_item:
+            return self._threshold
+        return float(self.index[f"{sample.sensor}__{sample.scene}__{sample.frame}"]["threshold"])
 
     def trust(self, sample, sample_sha256, shape=None):
         """Full-resolution trust map (probability the prompt pixel is clean)."""

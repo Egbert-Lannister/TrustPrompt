@@ -100,7 +100,7 @@ def store(path, depth, storage):
         return 0
 
 
-def run(model_key, dataset, variant, limit=None, output=None, device="cuda"):
+def run(model_key, dataset, variant, limit=None, output=None, device="cuda", trust_cache=None, train_scope=None, tag=""):
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     if variant not in VARIANTS:
         raise ValueError(f"variant must be one of {VARIANTS}")
@@ -108,13 +108,15 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda"):
     ds = cfg["datasets"][dataset]
     processed = ROOT / ds["processed"]
     manifest = json.loads((processed / "manifest.json").read_text(encoding="utf8"))
-    records = select_records(manifest["records"], set(cfg["splits"]), cfg["train_scope"])
+    train_scope = train_scope or cfg["train_scope"]
+    records = select_records(manifest["records"], set(cfg["splits"]), train_scope)
     if model_key == "cdm":           # one camera model on the GPU at a time
         records = sorted(records, key=lambda r: r.get("sensor", ""))
     records = records[:limit] if limit else records
-    output = Path(output or cfg["output"].format(model=model_key, variant=variant, dataset=dataset))
+    output = Path(output or cfg["output"].format(model=model_key, variant=variant + tag, dataset=dataset))
     output = output if output.is_absolute() else ROOT / output
     config = dict(cfg, model=model_key, dataset=dataset, variant=variant, limit=limit, device=device,
+                  train_scope=train_scope, trust_cache_override=trust_cache, tag=tag,
                   oracle=variant == "oracle_mask", registry_entry=reg)
     receipt = start_run(output, config, [sys.executable, "-m", "scripts.cache_completion", *sys.argv[1:]],
                         int(cfg["seed"]))
@@ -141,9 +143,12 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda"):
         tcache = thr = None
         if variant == "tmask":
             from tp.trust.cache import TrustCache
-            tcache = TrustCache(ds["trust_cache"])
-            thr, crc_hash = crc_threshold(cfg, ds["crc_dataset"])
-            receipt.update(trust_cache_receipt_sha256=sha256(tcache.root / "receipt.json"),
+            tcache = TrustCache(trust_cache or ds["trust_cache"])
+            if tcache.per_item:        # cross-fitted T: each scene's map and conformal threshold come from its own fold
+                thr, crc_hash = "per_item", None
+            else:
+                thr, crc_hash = crc_threshold(cfg, ds["crc_dataset"])
+            receipt.update(trust_cache=str(tcache.root), trust_cache_receipt_sha256=sha256(tcache.root / "receipt.json"),
                            trust_threshold=thr, crc_file_sha256=crc_hash)
         write_json(output / "receipt.json", receipt)
         (output / "predictions").mkdir()
@@ -155,7 +160,8 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda"):
                 raise ValueError("sample checksum mismatch")
             s = load_sample(path)
             trust = tcache.trust(s, sample_hash, s.prompt.shape) if tcache is not None else None
-            depth_in, pinfo = model_input(s, variant, tau=float(cfg["tau"]), trust=trust, threshold=thr)
+            depth_in, pinfo = model_input(s, variant, tau=float(cfg["tau"]), trust=trust,
+                                          threshold=tcache.threshold_for(s) if thr == "per_item" else thr)
             if torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats(); torch.cuda.synchronize()
             t = time.perf_counter()
@@ -197,5 +203,9 @@ if __name__ == "__main__":
     ap.add_argument("--dataset", required=True, choices=["nyu", "hammer"])
     ap.add_argument("--variant", required=True, choices=VARIANTS)
     ap.add_argument("--limit", type=int); ap.add_argument("--output"); ap.add_argument("--device", default="cuda")
+    ap.add_argument("--trust-cache", default=None, help="tmask: T cache to use instead of configs/baselines/cache.yaml "
+                    "(a cross-fitted cache carries per-item thresholds)")
+    ap.add_argument("--train-scope", choices=["holdout", "all"], default=None)
+    ap.add_argument("--tag", default="", help="appended to the variant in the default output name")
     a = ap.parse_args()
-    run(a.model, a.dataset, a.variant, a.limit, a.output, a.device)
+    run(a.model, a.dataset, a.variant, a.limit, a.output, a.device, a.trust_cache, a.train_scope, a.tag)
