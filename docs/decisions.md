@@ -166,3 +166,30 @@
 - **run_eval 修正**：中断续跑时，已完成的记录改为按（传感器, 场景, 帧）识别。原来只用（场景, 帧），HAMMER 三个传感器共用同一帧，会被误判为已完成。之前所有运行都是一次跑完的，没有用到续跑，所以不受影响。
 - **判据结果（2026-10-17）**：成立。主族 12/12 显著；在事前写定的 5 个模型中，9/10 个组合同时满足干净区域的条件。HAMMER 的推断范围仅限场景内的帧。
 
+## 19. HAMMER 留场景交叉拟合（2026-10-17，在任何交叉拟合结果之前写定；用户已同意使用 GPU）
+
+- **目的**：HAMMER 的 val 和留出各只有 1 个场景，“T 可插拔”的结论只能覆盖这两个场景的帧。交叉拟合后，10 个开发场景（scene2–11，含 val 的 scene11）都有一张来自“没见过该场景”的 T 的可信度图，可以按场景做 bootstrap。
+- **折**（`configs/trust/hammer_crossfit_v1.yaml`）：
+
+  | 折 | 测试场景 | 选择 / 校准场景 |
+  |---|---|---|
+  | 0 | scene11 | scene10 |
+  | 1 | scene2、scene3 | scene4 |
+  | 2 | scene4、scene5 | scene6 |
+  | 3 | scene6、scene7、scene8 | scene9 |
+  | 4 | scene9、scene10 | scene2 |
+
+  - 每个场景恰好当一次测试场景。
+  - 测试场景不进入该折的拟合，也不进入选择。
+  - NYU 部分在每一折都相同。
+  - 训练配方与 T v1 一致：real_sim、无特征、按替换误差选择、4000 步。
+  - 第 0 折的拟合集（scene2–9）和选择集（scene10）与 T v1 完全相同，所以直接用 T v1 作为第 0 折的模型，不重训。
+- **阈值**：每折用自己的选择场景标定 conformal λ̂（α = 0.1，危险定义 P > 1.2·GT）。组装后的缓存为每张图记录各自所在折的 λ̂（`TrustCache.per_item`）。这样的缓存没有全局阈值，误用时会直接报错。
+- **检验**（`configs/baselines/holm_family_cf_v1.yaml`）：
+  - 6 个模型 × HAMMER 全部 10 个场景，作为一个 Holm 检验族，用成对场景 bootstrap。
+  - 没跑的模型按 p = 1 留在族里。
+  - 干净区域的检查与 §18 相同。
+- **注意**：
+  - 训练第 1–4 折时用到了 val 场景 scene11。这些模型只用于交叉拟合，原来的 val 报告不受影响。
+  - `.venvs/baselines` 装上 xFormers 之后，新跑的 CDM / Any2Full / LingBot 会走 xFormers 注意力。LingBot 的差异已核对，可以忽略（`docs/lingbot_xformers_check.md`）。
+

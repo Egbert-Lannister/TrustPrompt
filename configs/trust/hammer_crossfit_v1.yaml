@@ -1,0 +1,16 @@
+# HAMMER leave-scene-out cross-fitting of T v1 (real_sim, no features, error selection; same recipe as T v1).
+# Written 2026-10-17 before any cross-fitted result. Every HAMMER dev scene (scene2-scene11; train + val splits)
+# is a test scene in exactly one fold; that fold's T never reads it (fit or selection). `hold` = the fold's
+# selection scene (checkpoint, threshold) and conformal calibration scene. NYU data are the same in every fold.
+# Fold 0 has the same fit (scenes 2-9) and selection (scene10) sets as T v1, so T v1 itself is fold 0's model.
+recipe: [--regime, real_sim, --steps, "4000", --selection, error, --no-features]
+data: [cache/trust_data_v1_nyu, cache/trust_data_v1_hammer]
+crc: {alpha: 0.1, danger_tau: 0.2}
+folds:
+  - {id: 0, test: [scene11], hold: [scene10], model: results/trust_t_v1_real_sim_nofeat, cache: cache/trust_t_v1_real_sim_nofeat_hammer_dev_v1}
+  - {id: 1, test: [scene2, scene3], hold: [scene4], model: results/trust_t_v1cf_f1}
+  - {id: 2, test: [scene4, scene5], hold: [scene6], model: results/trust_t_v1cf_f2}
+  - {id: 3, test: [scene6, scene7, scene8], hold: [scene9], model: results/trust_t_v1cf_f3}
+  - {id: 4, test: [scene9, scene10], hold: [scene2], model: results/trust_t_v1cf_f4}
+fold_cache: cache/trust_t_v1cf_f{id}_hammer_dev_v1
+output: cache/trust_t_v1cf_real_sim_nofeat_hammer_dev_v1

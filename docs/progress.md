@@ -379,3 +379,17 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 方法 v1（PromptDA-L + T v1）仍是最好的可部署组合：NYU val 0.096，HAMMER val 0.034。Any2Full 配 GT 掩码在 NYU 上达到 0.039。
 - LingBot：装上 xFormers 0.0.35（--no-deps，torch 未变）后，与缓存比较 60 张图，差异处于噪声底（像素 p99 1.2e-7），现有缓存保留。
 - 之前对 xFormers 的错误说法已在 `docs/baselines.md` 中更正。
+
+## 2026-10-17 HAMMER 留场景交叉拟合（代码已实现；测试通过；待 Windows 运行）
+
+- 设计见 decisions §19。代码：
+  - `train_trust --hammer-fold`；
+  - `TrustCache` 支持逐项阈值；
+  - `scripts/crossfit_trust.py`：检查每折模型确实是按该折训练的，标定每折的 λ̂，组装覆盖全部 1143 张图的缓存，并报告每折在自己测试场景上的 conformal 风险；
+  - `cache_promptda` 新增 `trust_threshold=per_item`；
+  - `cache_completion` 新增 `--trust-cache/--train-scope/--tag`；
+  - `holm_family` 新增 `all_dev` 人群；
+  - `scripts/windows/step11_crossfit.ps1`。
+- 预计 GPU 时间：
+  - 第 1–4 折训练约 2 小时，PromptDA-L 约 50 分钟；
+  - 加 `-WithBaselines`（5 个对比方法 × raw / 交叉拟合 T 掩码 × 1143 张）再加约 5–6 小时（未实测）。

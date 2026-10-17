@@ -18,23 +18,28 @@ import yaml
 from tp.eval.family import compare, holm_family
 from tp.provenance import ROOT, sha256, start_run, write_json
 
-POP_SPLIT = {"val": "val", "train_holdout": "train"}
+# all_dev = every development scene (train + val splits); used with cross-fitted T, where each scene's trust map
+# comes from a fold that never saw that scene.
+POP_SPLIT = {"val": ["val"], "train_holdout": ["train"], "all_dev": ["train", "val"]}
 
 
-def load_rows(prefix, run, split, scope, dataset, population):
-    d = ROOT / "results" / f"{prefix}_{run}_{split}_v1"
-    f = d / f"per_image_{scope}.json"
-    rec = d / "receipt.json"
-    if not f.is_file() or not rec.is_file():
-        return None, str(d)
-    stage = json.loads(rec.read_text(encoding="utf-8")).get("stage")
-    if stage not in ("small_scale_validation_passed", "completed_with_invalid_predictions"):
-        return None, f"{d} (stage {stage})"
-    rows = json.loads(f.read_text(encoding="utf-8"))
-    if population == "train_holdout":
-        from tp.trust.data import scene_inner_holdout
-        rows = [r for r in rows if scene_inner_holdout(dataset, r["scene"])]
-    return dict(rows=rows, sha256=sha256(f), run=d.name), str(d)
+def load_rows(prefix, run, splits, scope, dataset, population):
+    rows, hashes, names = [], [], []
+    for split in splits:
+        d = ROOT / "results" / f"{prefix}_{run}_{split}_v1"
+        f = d / f"per_image_{scope}.json"
+        rec = d / "receipt.json"
+        if not f.is_file() or not rec.is_file():
+            return None, str(d)
+        stage = json.loads(rec.read_text(encoding="utf-8")).get("stage")
+        if stage not in ("small_scale_validation_passed", "completed_with_invalid_predictions"):
+            return None, f"{d} (stage {stage})"
+        part = json.loads(f.read_text(encoding="utf-8"))
+        if population == "train_holdout":
+            from tp.trust.data import scene_inner_holdout
+            part = [r for r in part if scene_inner_holdout(dataset, r["scene"])]
+        rows += part; hashes.append(sha256(f)); names.append(d.name)
+    return dict(rows=rows, sha256=hashes if len(hashes) > 1 else hashes[0], run="+".join(names)), "+".join(names)
 
 
 def fmt(v, d=4):

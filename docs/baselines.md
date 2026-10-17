@@ -151,7 +151,7 @@ LingBot 的 xFormers 核对（`docs/lingbot_xformers_check.md`）：60 张图上
 - 拿到结果后：
   - 汇总表和 Holm 结果更新到本文件和 progress。
   - 判定标准（预注册）：主族中至少 3 个“模型 × 数据集”组合在 Holm 校正后显著改善，并且干净区域没有明显变差，才算支持“T 可插拔”。
-- HAMMER 留场景交叉拟合 T：5 折，每折约 30 分钟 GPU。完成后 HAMMER 的 10 个场景都在样本外，可以做场景级 bootstrap。这一步需要你同意后再跑。
+- HAMMER 留场景交叉拟合 T：已同意并实现（decisions §19，`scripts/windows/step11_crossfit.ps1`），待运行。
 - Mirror3DNet、GlassRecon 式对齐、LingBot-Depth 2.0（等有公开权重）。
 
 ## 来源

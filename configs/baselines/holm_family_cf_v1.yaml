@@ -1,0 +1,23 @@
+# Pre-registered (2026-10-17, before any cross-fitted result): HAMMER leave-scene-out cross-fitting.
+# Question as in holm_family_v1 (does T v1 in front of a model lower main-scope C AbsRel?), now with T maps from
+# folds that never saw the scene (configs/trust/hammer_crossfit_v1.yaml), on all 10 HAMMER dev scenes, so the
+# paired scene bootstrap (10 scenes) gives scene-level inference. One Holm family over the 6 models; models whose
+# runs are missing (e.g. baselines not run) stay in the family with p = 1. Clean-region check as in decisions sec. 18.
+family: plugin_cf_v1
+alpha: 0.05
+region: C
+metric: absrel
+n_resamples: 10000
+seed: 20261017
+block_length: 8
+models:
+  promptda_l: {label: PromptDA-L, reference: promptda_vitl_raw, candidate: promptda_vitl_trust_v1cf_prior}
+  priorda:    {label: PriorDA-B v1.1, reference: bl_priorda_raw_all, candidate: bl_priorda_tmask_cfall}
+  omnidc:     {label: OMNI-DC v1.1, reference: bl_omnidc_raw_all, candidate: bl_omnidc_tmask_cfall}
+  cdm:        {label: CDM, reference: bl_cdm_raw_all, candidate: bl_cdm_tmask_cfall}
+  lingbot:    {label: LingBot-Depth v0.5, reference: bl_lingbot_raw_all, candidate: bl_lingbot_tmask_cfall}
+  any2full:   {label: Any2Full-L, reference: bl_any2full_raw_all, candidate: bl_any2full_tmask_cfall}
+datasets:
+  hammer: {prefix: hammer_dev, scope: objects_only}
+families:
+  crossfit: {population: all_dev}
