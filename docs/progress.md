@@ -404,3 +404,11 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 原因分析：交叉拟合 T 在多数场景接近 GT 掩码，T 本身没有失效。但 PromptDA-L 在 HAMMER 上用 GT 掩码也几乎没有提升；scene5 用 GT 掩码反而变差，说明 D_g 填充比原值差。val（scene11）高估了效果。
 - **Conformal 保证跨场景不成立**：5 折中 2 折的测试风险约为 0.22，超过 α = 0.1；按图像加权的平均为 0.128。单场景校准违反了可交换性。
 - 论文主线需要调整：可插拔性限定为“照抄输入的补全模型”；conformal 需要改为多场景校准。见 `docs/crossfit_results.md` §4。
+
+## 2026-10-18 输出级选择的上限（诊断；只用 CPU）
+
+- `scripts/selection_ceiling.py` → `docs/selection_ceiling.md`。由真值在“原始提示的预测”和“T 屏蔽后的预测”之间按 32×32 块做选择，得到的上限（主范围全部像素的 AbsRel）比硬屏蔽低：
+  - NYU val：6 个模型低 21–52%，干净像素基本回到原始水平；
+  - NYU 留出场景：0–3%（PromptDA-L −22%）；
+  - HAMMER 交叉拟合：CDM −19%（它在 scene4/5 上可纠正空间为负，选择可以避开），PriorDA 和 OMNI-DC −10%，LingBot 和 Any2Full −5–6%。
+- 判断：在过度屏蔽和可纠正空间为负的情形下，可学习的选择门控值得一试；其余情形空间很小。
