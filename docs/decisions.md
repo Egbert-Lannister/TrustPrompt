@@ -192,4 +192,8 @@
 - **注意**：
   - 训练第 1–4 折时用到了 val 场景 scene11。这些模型只用于交叉拟合，原来的 val 报告不受影响。
   - `.venvs/baselines` 装上 xFormers 之后，新跑的 CDM / Any2Full / LingBot 会走 xFormers 注意力。LingBot 的差异已核对，可以忽略（`docs/lingbot_xformers_check.md`）。
+- **结果（2026-10-17）**：
+  - 预注册检验族中，4/6 显著（PriorDA、OMNI-DC、LingBot、Any2Full）。PromptDA-L 不显著；CDM 按规则为 NA。
+  - 交叉拟合下，conformal 风险在 2/5 折超过 α。
+  - 由此调整的主张见 `docs/crossfit_results.md` §4。CDM 去掉那张图后的结果只作为敏感性分析报告，不改变检验族的结论。
 
