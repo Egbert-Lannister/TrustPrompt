@@ -197,3 +197,21 @@
   - 交叉拟合下，conformal 风险在 2/5 折超过 α。
   - 由此调整的主张见 `docs/crossfit_results.md` §4。CDM 去掉那张图后的结果只作为敏感性分析报告，不改变检验族的结论。
 
+
+## 20. 主线框架与 Marigold-DC 引导线（2026-10-18，在任何相关结果之前写定；用户同意先写方案）
+
+- **主线框架选 OMNI-DC。** 理由：
+  - 它是唯一公开了训练代码的提示/补全框架（`docs/related_work_audit.md` §5）。
+  - 它的积分层把稀疏项权重显式暴露出来。
+  - 它已经有一个有监督的输入置信度头，但训练用的噪声是逐像素独立的离群点，标签只覆盖单个方向。
+  - 方案和判据见 `docs/plan_omnidc.md`。P1 及以后要租 GPU，未经同意不开始。
+- **Marigold-DC 引导线**（`docs/marigold_guidance_plan.md`；规则见 `configs/baselines/marigold_guidance_v1.yaml`）：
+  - 把 T 的标记写进引导目标，用单边约束代替删除。
+  - 重写的循环在没有 guide 时按上游原式计算，CPU 上的小型随机管线与上游逐位一致。
+  - 在真实权重上，先过 M0 的忠实性检查，才跑引导变体。
+  - M1 → M2 的门槛和 M2 的确认条件都已事先写定。
+- **单边约束的事前诊断**（`docs/onesided_validity.md`，只读开发集）：被 T 标记的像素中，GT ≤ (1 + τ)·P 的比例在 NYU 主范围为 99.4%，在 HAMMER 主范围为 99.0%；读数偏近的为 0.6–1.0%。这个诊断在设计引导变体之前完成，用来判断单边约束是否站得住，不改动任何已有判据。
+- **代码约定：**
+  - `model_input` 改为返回 `(depth, guide, info)`。
+  - 引导变体要求模型声明 `supports_guidance`。
+  - HAMMER 子采样（每个场景 × 传感器取 N 帧）由 `tp.data.select.per_group_subsample` 统一完成，缓存和评测选的是同一批帧。

@@ -1,0 +1,21 @@
+# Pre-registered (2026-10-18, before any Marigold-DC prediction exists): stage M1 of the Marigold-DC guidance track
+# (docs/marigold_guidance_plan.md). Question: does putting the T v1 flags into Marigold-DC's guidance objective
+# (one-sided on flagged pixels instead of deleting them) beat deleting them? Same model, same NYU images.
+# Primary family: val; secondary: train-holdout scenes; Holm within each. The go / stop gate for M2 is in
+# configs/baselines/marigold_guidance_v1.yaml and is evaluated by scripts/summarize_guidance.py.
+family: marigold_nyu_v1
+alpha: 0.05
+region: C
+metric: absrel
+n_resamples: 10000
+seed: 20261018
+block_length: 8
+models:
+  tmask_vs_raw:       {label: "Marigold-DC: T mask vs raw", reference: bl_marigold_dc_raw, candidate: bl_marigold_dc_tmask}
+  tonesided_vs_tmask: {label: "Marigold-DC: T one-sided vs T mask", reference: bl_marigold_dc_tmask, candidate: bl_marigold_dc_tonesided}
+  tsoft_vs_tmask:     {label: "Marigold-DC: T soft vs T mask", reference: bl_marigold_dc_tmask, candidate: bl_marigold_dc_tsoft}
+datasets:
+  mirror3d_nyu: {prefix: mirror3d_dev, scope: mirror_only}
+families:
+  primary: {population: val}
+  secondary: {population: train_holdout}

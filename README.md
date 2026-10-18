@@ -105,7 +105,7 @@ python -m scripts.summarize_step1
 
 ## 文档和状态
 
-当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
+当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”，未执行）见 `docs/plan_omnidc.md`；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
 
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。

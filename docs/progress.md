@@ -412,3 +412,17 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - NYU 留出场景：0–3%（PromptDA-L −22%）；
   - HAMMER 交叉拟合：CDM −19%（它在 scene4/5 上可纠正空间为负，选择可以避开），PriorDA 和 OMNI-DC −10%，LingBot 和 Any2Full −5–6%。
 - 判断：在过度屏蔽和可纠正空间为负的情形下，可学习的选择门控值得一试；其余情形空间很小。
+
+## 2026-10-18 主线方案与 Marigold-DC 引导改造（代码已实现，小规模验证通过；未在真实权重上运行）
+
+- 主线方案：`docs/plan_omnidc.md`。在 OMNI-DC 内部做三件事：结构化错误合成（条件）、方向感知的输入置信度（模块 A）、单边深度积分（模块 B）。判据和停止规则都已事先写定。尚未执行，需要租 GPU 的阶段等用户同意。
+- Marigold-DC 引导线：
+  - 代码：`baselines/guidance.py`（重写的去噪循环和逐像素引导目标）；`MarigoldDC.predict(..., guide=)`；`cache_completion` 新增 tonesided / tsoft / oracle_onesided 三个变体和 `--per-group`；`run_eval` 新增 `per_group`。
+  - 检查与汇总：`scripts/check_marigold_guidance.py`（M0）；`scripts/summarize_guidance.py`（M1 门槛、M2 确认）。
+  - 配置与脚本：两个预注册 Holm 配置；`scripts/windows/step12_marigold_guidance.ps1`；共用的 `scripts/windows/common.ps1`。
+- 测试：
+  - 新增 `tests/test_guidance.py`：用小型随机管线验证与上游逐位一致；验证单边项只在预测落在读数后面时生效。
+  - 补充 `test_completion_baselines` 的变体、子采样和门槛测试。
+  - 云端全部测试 196 通过、3 跳过（缺合成数据）。
+- 单边约束的事前诊断已在本机 CPU 上跑完：`docs/onesided_validity.md`。被标记像素与真值的一致率为 99%（容差 τ 以内）。
+- 共用的检查函数移到 `tp/eval/consistency.py`，`check_lingbot_xformers` 改为调用它，行为不变。

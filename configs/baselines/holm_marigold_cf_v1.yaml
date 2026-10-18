@@ -1,0 +1,20 @@
+# Pre-registered (2026-10-18, before any Marigold-DC prediction exists): stage M2 of the Marigold-DC guidance track,
+# run only for guided variants that pass the M1 gate (configs/baselines/marigold_guidance_v1.yaml). HAMMER, all 10
+# dev scenes, 3 evenly spaced frames per (scene, sensor) (90 images; tp.data.select), cross-fitted T
+# (configs/trust/hammer_crossfit_v1.yaml), paired scene bootstrap. A guided variant that did not pass M1 has no run
+# and stays in the family with p = 1 (NA), so the family size is fixed now.
+family: marigold_cf_v1
+alpha: 0.05
+region: C
+metric: absrel
+n_resamples: 10000
+seed: 20261018
+block_length: 8
+models:
+  tmask_vs_raw:       {label: "Marigold-DC: T mask vs raw", reference: bl_marigold_dc_raw_allpg3, candidate: bl_marigold_dc_tmask_cfpg3}
+  tonesided_vs_tmask: {label: "Marigold-DC: T one-sided vs T mask", reference: bl_marigold_dc_tmask_cfpg3, candidate: bl_marigold_dc_tonesided_cfpg3}
+  tsoft_vs_tmask:     {label: "Marigold-DC: T soft vs T mask", reference: bl_marigold_dc_tmask_cfpg3, candidate: bl_marigold_dc_tsoft_cfpg3}
+datasets:
+  hammer: {prefix: hammer_dev, scope: objects_only}
+families:
+  crossfit: {population: all_dev}

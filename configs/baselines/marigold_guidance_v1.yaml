@@ -1,0 +1,17 @@
+# Marigold-DC guidance track (docs/marigold_guidance_plan.md). Written 2026-10-18, before any Marigold-DC
+# prediction exists. Variants: scripts/cache_completion.py; objective: baselines/guidance.py.
+nyu:                               # stage M1: all 30 NYU dev images (19 val + 11 train-holdout)
+  variants: [raw, tmask, tonesided, tsoft, oracle_mask, oracle_onesided]
+  holm_spec: configs/baselines/holm_marigold_nyu_v1.yaml
+hammer:                            # stage M2: only variants that pass the gate below
+  per_group: 3
+  variants: [raw, tmask, oracle_mask]          # + every guided variant that passed M1
+  holm_spec: configs/baselines/holm_marigold_cf_v1.yaml
+gate:                              # a guided variant g in {tonesided, tsoft} goes to M2 iff all hold
+  min_relative_gain_val: 0.10      # val main-scope C AbsRel(g) <= (1 - 0.10) * C AbsRel(tmask)
+  holdout_not_worse: true          # train-holdout C AbsRel(g) <= C AbsRel(tmask)
+  clean_not_clearly_worse: true    # val clean check g vs tmask (decisions sec. 18 rule) is not "clearly worse"
+ceiling:                           # descriptive, decides the reading when no g passes
+  oracle_relative_gain: 0.10       # 1 - C(oracle_onesided) / C(oracle_mask) on val
+confirm:                           # M2: g confirmed iff Holm-adjusted p < 0.05, difference < 0, clean not clearly worse
+  alpha: 0.05

@@ -20,6 +20,8 @@ and copied into the cache receipt:
   lingbot     MDMModel v0.5 .infer(image/255, depth, normalised K, apply_mask=False) -> dense depth; mask share kept.
   any2full    Any2Full(vitl) forward({'rgb','dep'}) as run_any2full.py (init_scailing, max_depth 1000, no denoise).
   marigold_dc MarigoldDepthCompletionPipeline (bf16, DDIM trailing, 50 steps, ensemble 1, 768 px, seed 2024).
+              With a `guide` (baselines/guidance.py) the same loop runs with a per-pixel equality / one-sided
+              objective; without one the upstream pipeline itself runs.
 torch >= 2.6 flipped torch.load's default to weights_only=True; projects written before that call torch.load
 without the argument. For those we set TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1 (only files verified by SHA256 are read).
 """
@@ -197,6 +199,7 @@ def patch_nested_blocks(lb):
 class Baseline:
     key = None
     min_points = 1          # fewer valid prompt pixels than this: the image is recorded as an invalid prediction
+    supports_guidance = False   # accepts predict(..., guide=Guide) (per-pixel guidance objective)
 
     def __init__(self, device="cuda"):
         self.device = device
@@ -483,6 +486,7 @@ class Any2Full(Baseline):
 
 class MarigoldDC(Baseline):
     key = "marigold_dc"
+    supports_guidance = True
 
     def __init__(self, device="cuda", load_weights=True):
         super().__init__(device)
@@ -500,17 +504,24 @@ class MarigoldDC(Baseline):
         pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config, timestep_spacing="trailing")
         self.pipe = pipe
 
-    def predict(self, rgb, depth, K):
+    def predict(self, rgb, depth, K, guide=None):
+        """guide None: the upstream pipeline. guide: baselines.guidance.complete (same loop, guided objective)."""
         self._check_inputs(rgb, depth)
         from PIL import Image
         s = self.spec["settings"]
-        pred = self.pipe(image=Image.fromarray(rgb), sparse_depth=np.ascontiguousarray(depth),
-                         num_inference_steps=s["num_inference_steps"], ensemble_size=s["ensemble_size"],
-                         processing_resolution=s["processing_resolution"], seed=s["seed"])
+        args = dict(num_inference_steps=s["num_inference_steps"], ensemble_size=s["ensemble_size"],
+                    processing_resolution=s["processing_resolution"], seed=s["seed"])
+        if guide is None:
+            pred = self.pipe(image=Image.fromarray(rgb), sparse_depth=np.ascontiguousarray(depth), **args)
+            report = dict(loop="upstream")
+        else:
+            from baselines.guidance import UPSTREAM, complete
+            pred = complete(self.pipe, Image.fromarray(rgb), np.ascontiguousarray(depth), guide, **args)
+            report = dict(loop=f"baselines.guidance.complete ({UPSTREAM})", guide_sha256=guide.sha256())
         pred = np.asarray(pred, np.float32)
         if pred.shape != depth.shape:
             raise ValueError(f"Marigold-DC output {pred.shape} != input {depth.shape}")
-        return pred, {}
+        return pred, report
 
 
 MODELS = {c.key: c for c in (PriorDA, OmniDC, CDM, LingBot, Any2Full, MarigoldDC)}

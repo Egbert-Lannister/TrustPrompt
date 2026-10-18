@@ -29,29 +29,12 @@ from baselines.cached_prior import CachedPrior
 from baselines.completion import build, patch_nested_blocks, registry, source_dir
 from scripts.cache_completion import CONFIG, model_input
 from tp.data.schema import load_sample
-from tp.eval.regions import regions
-from tp.eval.run_eval import focus_scope
+from tp.eval.consistency import main_c_absrel, quantize_cache
 from tp.provenance import ROOT, sha256, start_run, write_json
 
 TAU = 0.05
 MAX_DELTA_C = 1e-3
 MAX_P99_REL = 5e-3
-
-
-def quantize(d):
-    """The cache's uint16 0.2 mm storage, so both sides carry the same rounding."""
-    q = np.zeros(d.shape, np.float64)
-    ok = np.isfinite(d) & (d > 0)
-    q[ok] = np.clip(np.round(d[ok] / 2e-4), 1, 65535) * 2e-4
-    q[~ok] = np.nan
-    return q
-
-
-def c_absrel(s, pred):
-    c = regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=TAU, band=5)["C"] & focus_scope(s)[1]
-    if not c.any() or not np.isfinite(pred[c]).all():
-        return None                                  # empty region, or an invalid prediction inside it
-    return float(np.mean(np.abs(pred[c] - s.gt[c]) / s.gt[c]))
 
 
 def xformers_status():
@@ -104,22 +87,22 @@ def main():
             for key in keys:
                 r = recs[key]; path = processed / r["path"]; h = sha256(path)
                 s = load_sample(path)
-                depth_in, _ = model_input(s, "raw", tau=TAU)
+                depth_in, _, _ = model_input(s, "raw", tau=TAU)
                 cached = cache.predict(s, h).astype(np.float64)
                 torch.manual_seed(int(cfg["seed"]))                  # official xFormers path
-                xf = quantize(model.predict(s.rgb, depth_in, s.K_rgb)[0])
+                xf = quantize_cache(model.predict(s.rgb, depth_in, s.K_rgb)[0])
                 la.XFORMERS_AVAILABLE = lb.XFORMERS_AVAILABLE = False      # the path the caches used
                 patch_nested_blocks(lb)
                 torch.manual_seed(int(cfg["seed"]))
                 try:
-                    fb = quantize(model.predict(s.rgb, depth_in, s.K_rgb)[0])
+                    fb = quantize_cache(model.predict(s.rgb, depth_in, s.K_rgb)[0])
                 finally:                                                    # back to the official path
                     lb.NestedTensorBlock.forward = official_forward
                     lb.NestedTensorBlock._trustprompt_patched = False
                     la.XFORMERS_AVAILABLE = lb.XFORMERS_AVAILABLE = True
                 ok = np.isfinite(xf) & np.isfinite(cached) & np.isfinite(fb)
                 rel_xc = np.abs(xf[ok] - cached[ok]) / xf[ok]; rel_fc = np.abs(fb[ok] - cached[ok]) / fb[ok]
-                cx, cc = c_absrel(s, xf), c_absrel(s, cached)
+                cx, cc = main_c_absrel(s, xf, TAU), main_c_absrel(s, cached, TAU)
                 rows.append(dict(dataset=ds, sensor=s.sensor, scene=s.scene, frame=s.frame,
                                  xf_vs_cache=dict(median=float(np.median(rel_xc)), p99=float(np.quantile(rel_xc, 0.99)),
                                                   max=float(rel_xc.max())),

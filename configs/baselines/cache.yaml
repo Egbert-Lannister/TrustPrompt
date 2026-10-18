@@ -19,4 +19,7 @@ variants:
   raw: deployable; sensor prompt as is, holes = 0
   tmask: deployable; prompt pixels with T v1 trust < conformal threshold set to 0 (the model completes them)
   oracle_mask: "[oracle]; every contaminated prompt pixel (|P - GT| / GT > tau) set to 0"
+  tonesided: "deployable, guidance models only; T-flagged pixels kept as one-sided bounds (prediction not behind the reading)"
+  tsoft: "deployable, guidance models only; equality weight T, one-sided weight 1 - T"
+  oracle_onesided: "[oracle], guidance models only; as tonesided with C in place of the T flags"
 output: cache/bl_{model}_{variant}_{dataset}_dev_v1
