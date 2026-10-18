@@ -50,3 +50,28 @@
 - OMNI-DC：ICCV 2025（CVF 开放获取）
 - Perfecting Depth：https://arxiv.org/pdf/2506.04612
 - PromptDA：https://github.com/DepthAnything/PromptDA
+
+## 5. 补充核查：训练代码是否公开，以及最新工作（2026-10-18）
+
+这一节服务于“选一个最新的开源框架作 baseline，在框架内部针对‘提示有错’这个条件设计模块”的思路，所以重点看能不能训练。核查方式：克隆各官方仓库，查看其中的文件和 README（commit 日期如表），再读论文与项目页。
+
+| 工作 | 发表 | 推理代码 / 权重 | 训练代码 | 与“提示有错”的关系 |
+|---|---|---|---|---|
+| PromptDA（DepthAnything/PromptDA @ 9161547，2026-01-30） | CVPR 2025 | 有 | **无**（仓库里只有推理脚本） | 已上传 PromptDA++ 论文（按 token 处理任意提示），README 写“Code and models will be released”。论文的局限一节只谈到 iPhone LiDAR 远处噪声大，不涉及镜面 |
+| PriorDA（@ 8c029cb，2025-08-31） | ICLR 2026 | 有 | **无** | 训练时人工构造缺失、降采样、离群点、模糊 |
+| Any2Full（@ 780edf6，2026-06-22） | ECCV 2026 | 有 | **无**（README：“Training code and details are coming soon”） | 只做稀疏补全，附带一个简单的离群点去噪选项 |
+| LingBot-Depth v0.5（@ f3a237e，2026-07-08） | ECCV 2026 | 有，另有 3M 训练数据 | **无** | 只屏蔽无效像素 |
+| LingBot-Depth 2.0 | 2026-07 新闻稿 | **未见公开权重**（只开源了 LingBot-Vision 主干） | 无 | 宣称擅长玻璃和镜面，但没有给出指标 |
+| CDM（@ 757b2ea） | ICLR 2026 | 有（按相机） | **无** | 按相机建模的噪声是隐式的 |
+| OMNI-DC（@ a5ecd35，2026-05-04） | ICCV 2025 | 有 | **有**（Training.md；论文用 10 张 48GB 卡训练约 6 天） | 网络内部有置信度；作者承认在玻璃和反射表面上会出错 |
+| Marigold-DC（@ c6d756b） | ICCV 2025 | 有 | 不需要训练（测试时用扩散引导） | 引导损失对所有稀疏点一视同仁（L1+L2） |
+| MetricAnything（metric-anything/metric-anything @ 616a5e6，2026-07-06） | arXiv 2601.22054 | 只放出**不用提示**的学生模型；**用提示的教师模型标为 “Coming Soon”** | 无 | 声称“识别并纠正提示中的错误”，提到镜面和透明表面会造成传感器错误；在 Booster（含镜面和透明物体）上报告 AbsRel 0.282。没有专门针对镜面错误值的实验 |
+
+**结论：**
+
+1. 这些新框架里，**只有 OMNI-DC 公开了完整训练代码**。PromptDA、PriorDA、Any2Full、LingBot、CDM 都只有推理代码。
+2. 想在框架内部加模块并训练，可行的路线有三条：
+   - (a) 在 OMNI-DC 上从官方权重微调（有训练代码；它在 NYU 镜面上照抄错误的比例为 0.93，最严重）；
+   - (b) 自己写 PromptDA 的微调代码（结构简单，权重公开，但要复现它的数据流程）；
+   - (c) 选不需要训练的 Marigold-DC：把“提示有错”这个条件写进它的测试时引导目标，例如按可信度加权的鲁棒引导，再对测远型像素加单侧约束（真实深度 ≤ P）。不用训练 GPU，但每张图要 30–60 秒，而且 Marigold-DC 的继承率我们还没测过。
+3. MetricAnything 用提示的教师模型和 LingBot-Depth 2.0 都没有公开权重，暂时无法测它们的继承率。这两项是最直接的潜在竞争工作，权重放出后要第一时间补测。
