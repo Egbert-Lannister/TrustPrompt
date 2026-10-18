@@ -79,17 +79,56 @@ def test_model_input_rejects_prompt_off_the_rgb_grid():
 
 def test_model_input_variants_never_read_gt_unless_oracle():
     s = same_grid_sample()
-    raw, info = model_input(s, "raw", tau=0.05)
-    assert info["removed"] == 0 and np.all(raw[~s.prompt_valid] == 0) and np.all(raw[s.prompt_valid] == s.prompt[s.prompt_valid])
+    raw, g, info = model_input(s, "raw", tau=0.05)
+    assert g is None and info["removed"] == 0
+    assert np.all(raw[~s.prompt_valid] == 0) and np.all(raw[s.prompt_valid] == s.prompt[s.prompt_valid])
     trust = np.ones(s.prompt.shape, np.float32); trust[:5] = 0.1
-    t, ti = model_input(s, "tmask", tau=0.05, trust=trust, threshold=0.5)
+    t, _, ti = model_input(s, "tmask", tau=0.05, trust=trust, threshold=0.5)
     assert ti["removed"] == int((s.prompt_valid[:5]).sum()) and np.all(t[:5] == 0)
     s2 = same_grid_sample(); s2.gt = s2.gt * 3        # changing GT must not change deployable inputs
-    assert np.array_equal(model_input(s2, "raw", tau=0.05)[0], raw)
-    assert np.array_equal(model_input(s2, "tmask", tau=0.05, trust=trust, threshold=0.5)[0], t)
-    o, oi = model_input(s, "oracle_mask", tau=0.05)
+    for variant in ("raw", "tmask", "tonesided", "tsoft"):
+        a = model_input(s, variant, tau=0.05, trust=trust, threshold=0.5)
+        b = model_input(s2, variant, tau=0.05, trust=trust, threshold=0.5)
+        assert np.array_equal(a[0], b[0]) and (a[1] is None or a[1].sha256() == b[1].sha256())
+    o, _, oi = model_input(s, "oracle_mask", tau=0.05)
     assert oi["removed"] > 0 and o.dtype == np.float32 and np.all(o >= 0)
     assert np.all(o[(raw > 0) & (o == 0)] == 0) and oi["kept"] + oi["removed"] == info["kept"]
+
+
+def test_guided_variants_keep_the_prompt_and_move_flagged_pixels_to_the_hinge():
+    s = same_grid_sample()
+    valid = s.prompt_valid
+    trust = np.ones(s.prompt.shape, np.float32); trust[:5] = 0.1
+    raw = model_input(s, "raw", tau=0.05)[0]
+    d, g, info = model_input(s, "tonesided", tau=0.05, trust=trust, threshold=0.5)
+    flag = valid.copy(); flag[5:] = False
+    assert np.array_equal(d, raw) and info["removed"] == 0 and info["flagged"] == int(flag.sum())
+    assert np.array_equal(g.hinge > 0, flag) and np.array_equal(g.weight > 0, valid & ~flag)
+    assert np.array_equal(g.anchor, valid & ~flag) and info["kept"] == int(g.anchor.sum())
+    g.check(valid)
+    d, g, _ = model_input(s, "tsoft", tau=0.05, trust=trust, threshold=0.5)
+    assert np.allclose(g.weight + g.hinge, valid.astype(np.float32)) and np.array_equal(g.anchor, valid & ~flag)
+    d, g, info = model_input(s, "oracle_onesided", tau=0.05)
+    c = model_input(s, "oracle_mask", tau=0.05)[2]
+    assert np.array_equal(d, raw) and info["flagged"] == c["removed"] and int((g.hinge > 0).sum()) == c["removed"]
+
+
+def test_guided_variant_needs_a_guidance_model():
+    from scripts.cache_completion import run
+    with pytest.raises(ValueError, match="no guidance objective"):
+        run("priorda", "nyu", "tonesided", output="unused")
+
+
+def test_per_group_subsample_is_even_and_shared():
+    from tp.data.select import per_group_subsample
+    recs = [dict(dataset="hammer", scene=sc, sensor=se, frame=f"traj1_1_{i:06d}", split="val")
+            for sc in ("scene2", "scene3") for se in ("d435", "tof") for i in range(10)]
+    recs += [dict(dataset="hammer", scene="scene4", sensor="d435", frame="traj1_1_000000", split="val")]
+    got = per_group_subsample(recs, 3)
+    assert len(got) == 4 * 3 + 1
+    assert [r["frame"][-2:] for r in got[:3]] == ["00", "04", "09"]      # linspace 0, 4.5, 9; numpy rounds half to even
+    assert per_group_subsample(list(reversed(recs)), 3) == list(reversed(got))      # order-independent choice
+    assert per_group_subsample(recs, None) == recs
 
 
 def test_select_records_holdout_and_test_lock():
@@ -100,3 +139,15 @@ def test_select_records_holdout_and_test_lock():
     assert len(select_records(recs, {"train", "val"}, "all")) == 3
     with pytest.raises(ValueError):
         select_records(recs, {"train", "test"}, "holdout")
+
+
+def test_marigold_gate_needs_all_three_conditions():
+    import yaml
+    from scripts.summarize_guidance import CONFIG, gate_verdict
+    g = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))["gate"]
+    assert gate_verdict(0.08, 0.10, 0.09, 0.10, False, g)["passes"]                  # 20% gain, holdout better
+    assert not gate_verdict(0.095, 0.10, 0.09, 0.10, False, g)["passes"]             # 5% gain < 10%
+    assert not gate_verdict(0.08, 0.10, 0.11, 0.10, False, g)["passes"]              # holdout worse
+    assert not gate_verdict(0.08, 0.10, 0.09, 0.10, True, g)["passes"]               # clean clearly worse
+    assert not gate_verdict(None, 0.10, 0.09, 0.10, False, g)["passes"]              # missing run fails
+    assert not gate_verdict(0.08, 0.10, 0.09, 0.10, None, g)["passes"]               # clean check NA fails

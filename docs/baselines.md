@@ -153,6 +153,7 @@ LingBot 的 xFormers 核对（`docs/lingbot_xformers_check.md`）：60 张图上
   - 判定标准（预注册）：主族中至少 3 个“模型 × 数据集”组合在 Holm 校正后显著改善，并且干净区域没有明显变差，才算支持“T 可插拔”。
 - HAMMER 留场景交叉拟合 T：已完成，见 `docs/crossfit_results.md`。在 10 个场景上做场景级推断时，PromptDA-L 和 CDM 的收益不显著；§5b 中 HAMMER 部分的结论只适用于 val 和留出这两个场景。
 - Mirror3DNet、GlassRecon 式对齐、LingBot-Depth 2.0（等有公开权重）。
+- Marigold-DC：除了 raw / T 屏蔽 / GT 屏蔽，还有把 T 标记写进引导目标的三个变体（tonesided / tsoft / oracle_onesided），独立成线，见 `docs/marigold_guidance_plan.md`。它不进 §5b 的检验族。
 
 ## 来源
 

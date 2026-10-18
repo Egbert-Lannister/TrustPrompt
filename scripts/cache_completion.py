@@ -1,6 +1,7 @@
 """Run a depth-completion baseline on a processed manifest and cache verified predictions (GPU, Windows).
 
   python -m scripts.cache_completion --model priorda --dataset hammer --variant raw [--limit 3] [--output DIR]
+      [--per-group N]   N evenly spaced frames per (scene, sensor) (tp.data.select; the evaluation uses the same)
 
 Models: baselines/completion.py (pinned sources and weights, configs/baselines/registry.json).
 Variants (configs/baselines/cache.yaml):
@@ -8,6 +9,12 @@ Variants (configs/baselines/cache.yaml):
   tmask        prompt pixels with T v1 trust < the conformal threshold (alpha 0.1, method v1) set to 0; the baseline
                completes them itself. Deployable: no GT is read.
   oracle_mask  every contaminated prompt pixel C (|P - GT| / GT > tau) set to 0 [oracle; reads GT]
+Guided variants (models with supports_guidance, i.e. Marigold-DC; baselines/guidance.py): the whole prompt is
+handed over and the trust map enters the guidance objective instead of deleting pixels.
+  tonesided        T < threshold: one-sided (prediction must not lie behind the reading); else equality
+  tsoft            equality weight T, one-sided weight 1 - T on every valid pixel
+  oracle_onesided  as tonesided with C in place of T < threshold [oracle; reads GT]
+In all three the affine range is anchored on the pixels not flagged.
 Populations: val and the train-split holdout scenes only (T is out of fit on both); test is never admitted.
 The cache layout and receipt match scripts/cache_promptda.py, so tp.eval.run_eval --method cached_prediction
 evaluates it (expected_model = the registry label, train_scope = holdout).
@@ -27,12 +34,15 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from baselines.completion import build, registry, source_dir, verify_weights, weight_files
+from baselines.completion import MODELS, build, registry, source_dir, verify_weights
+from baselines.guidance import Guide
 from tp.data.schema import load_sample
+from tp.data.select import per_group_subsample
 from tp.eval.regions import regions
 from tp.provenance import ROOT, sha256, start_run, write_json
 
-VARIANTS = ("raw", "tmask", "oracle_mask")
+GUIDED = ("tonesided", "tsoft", "oracle_onesided")
+VARIANTS = ("raw", "tmask", "oracle_mask") + GUIDED
 CONFIG = ROOT / "configs" / "baselines" / "cache.yaml"
 
 
@@ -67,25 +77,42 @@ def crc_threshold(cfg, crc_dataset):
     return float(lam), sha256(p)
 
 
+def flagged(s, variant, *, tau, trust=None, threshold=None):
+    """Prompt pixels the variant treats as possibly wrong (removed by a mask, re-weighted by guidance)."""
+    valid = s.prompt_valid
+    if variant == "raw":
+        return np.zeros_like(valid)
+    if variant in ("oracle_mask", "oracle_onesided"):
+        return regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=tau, band=5)["C"] & valid
+    if variant in ("tmask", "tonesided", "tsoft"):
+        return valid & (trust < threshold)
+    raise ValueError(f"unknown variant {variant}")
+
+
 def model_input(s, variant, *, tau, trust=None, threshold=None):
-    """Depth handed to the baseline on the RGB grid (float32 m, 0 = missing) and the removal record."""
+    """(depth, guide, info): depth handed to the baseline on the RGB grid (float32 m, 0 = missing), the guidance
+    for a guided variant (None otherwise) and the record of removed / flagged pixels."""
     if s.prompt.shape != s.rgb.shape[:2]:
         raise ValueError("baselines need the prompt on the RGB grid (true for the NYU and HAMMER dev sets)")
     valid = s.prompt_valid.copy()
-    info = dict(variant=variant, native_valid=int(valid.sum()))
-    if variant == "tmask":
-        remove = valid & (trust < threshold)
+    flag = flagged(s, variant, tau=tau, trust=trust, threshold=threshold)
+    info = dict(variant=variant, native_valid=int(valid.sum()), flagged=int(flag.sum()))
+    if threshold is not None:
         info.update(threshold=float(threshold))
-    elif variant == "oracle_mask":
-        remove = regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=tau, band=5)["C"] & valid
-    elif variant == "raw":
-        remove = np.zeros_like(valid)
+    guide = None
+    if variant in GUIDED:
+        if variant == "tsoft":
+            weight, hinge = np.where(valid, trust, 0), np.where(valid, 1 - trust, 0)
+        else:
+            weight, hinge = valid & ~flag, flag
+        guide = Guide(weight=weight.astype(np.float32), hinge=hinge.astype(np.float32), anchor=valid & ~flag)
+        keep = valid                                    # nothing removed; `kept` = pixels anchoring the fit
+        info.update(removed=0, kept=int(guide.anchor.sum()))
     else:
-        raise ValueError(f"unknown variant {variant}")
-    keep = valid & ~remove
+        keep = valid & ~flag
+        info.update(removed=int(flag.sum()), kept=int(keep.sum()))
     depth = np.where(keep, s.prompt, 0.0).astype(np.float32)
-    info.update(removed=int(remove.sum()), kept=int(keep.sum()))
-    return depth, info
+    return depth, guide, info
 
 
 def store(path, depth, storage):
@@ -100,24 +127,27 @@ def store(path, depth, storage):
         return 0
 
 
-def run(model_key, dataset, variant, limit=None, output=None, device="cuda", trust_cache=None, train_scope=None, tag=""):
+def run(model_key, dataset, variant, limit=None, output=None, device="cuda", trust_cache=None, train_scope=None, tag="",
+        per_group=None):
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     if variant not in VARIANTS:
         raise ValueError(f"variant must be one of {VARIANTS}")
+    if variant in GUIDED and not MODELS[model_key].supports_guidance:
+        raise ValueError(f"{model_key} has no guidance objective; {variant} needs one (baselines/guidance.py)")
     reg = registry()["models"][model_key]
     ds = cfg["datasets"][dataset]
     processed = ROOT / ds["processed"]
     manifest = json.loads((processed / "manifest.json").read_text(encoding="utf8"))
     train_scope = train_scope or cfg["train_scope"]
-    records = select_records(manifest["records"], set(cfg["splits"]), train_scope)
+    records = per_group_subsample(select_records(manifest["records"], set(cfg["splits"]), train_scope), per_group)
     if model_key == "cdm":           # one camera model on the GPU at a time
         records = sorted(records, key=lambda r: r.get("sensor", ""))
     records = records[:limit] if limit else records
     output = Path(output or cfg["output"].format(model=model_key, variant=variant + tag, dataset=dataset))
     output = output if output.is_absolute() else ROOT / output
     config = dict(cfg, model=model_key, dataset=dataset, variant=variant, limit=limit, device=device,
-                  train_scope=train_scope, trust_cache_override=trust_cache, tag=tag,
-                  oracle=variant == "oracle_mask", registry_entry=reg)
+                  train_scope=train_scope, trust_cache_override=trust_cache, tag=tag, per_group=per_group,
+                  oracle=variant.startswith("oracle"), registry_entry=reg)
     receipt = start_run(output, config, [sys.executable, "-m", "scripts.cache_completion", *sys.argv[1:]],
                         int(cfg["seed"]))
     log = (output / "run.log").open("w", encoding="utf8")
@@ -126,7 +156,7 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda", tru
         torch.manual_seed(int(cfg["seed"])); np.random.seed(int(cfg["seed"]))
         src = source_dir(model_key)
         receipt["model_version"] = dict(
-            name=reg["label"], key=model_key, variant=variant, oracle=variant == "oracle_mask",
+            name=reg["label"], key=model_key, variant=variant, oracle=variant.startswith("oracle"),
             repo=reg["repo"], pinned_commit=reg["commit"], source=str(src),
             source_commit=git_source(src, "rev-parse", "HEAD"), source_status=git_source(src, "status", "--porcelain=v1"),
             source_hashes={p.relative_to(src).as_posix(): sha256(p) for p in sorted(src.rglob("*.py"))
@@ -141,7 +171,7 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda", tru
         model = build(model_key, device=device)
         receipt["model_version"].update(deviations=model.deviations, load_info=model.load_info)
         tcache = thr = None
-        if variant == "tmask":
+        if variant in ("tmask", "tonesided", "tsoft"):
             from tp.trust.cache import TrustCache
             tcache = TrustCache(trust_cache or ds["trust_cache"])
             if tcache.per_item:        # cross-fitted T: each scene's map and conformal threshold come from its own fold
@@ -160,8 +190,8 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda", tru
                 raise ValueError("sample checksum mismatch")
             s = load_sample(path)
             trust = tcache.trust(s, sample_hash, s.prompt.shape) if tcache is not None else None
-            depth_in, pinfo = model_input(s, variant, tau=float(cfg["tau"]), trust=trust,
-                                          threshold=tcache.threshold_for(s) if thr == "per_item" else thr)
+            depth_in, guide, pinfo = model_input(s, variant, tau=float(cfg["tau"]), trust=trust,
+                                                 threshold=tcache.threshold_for(s) if thr == "per_item" else thr)
             if torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats(); torch.cuda.synchronize()
             t = time.perf_counter()
@@ -169,6 +199,8 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda", tru
                 depth, report = np.full(depth_in.shape, np.nan, np.float32), dict(status="too_few_prompt_points")
             else:
                 kw = dict(sensor=s.sensor) if model_key == "cdm" else {}
+                if guide is not None:
+                    kw["guide"] = guide
                 depth, report = model.predict(s.rgb, depth_in, s.K_rgb, **kw)
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
@@ -178,6 +210,7 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda", tru
             rows.append(dict(dataset=s.dataset, sensor=s.sensor, scene=s.scene, frame=s.frame, split=s.split,
                              sample_npz_sha256=sample_hash, rgb_sha256=hashlib.sha256(s.rgb.tobytes()).hexdigest(),
                              prompt_in_sha256=hashlib.sha256(depth_in.tobytes()).hexdigest(),
+                             guide_sha256=None if guide is None else guide.sha256(),
                              prediction_path=str(output / "predictions" / name),
                              prediction_sha256=sha256(output / "predictions" / name), seconds=seconds,
                              peak_allocated_bytes=torch.cuda.max_memory_allocated() if torch.cuda.is_available() else None,
@@ -207,5 +240,6 @@ if __name__ == "__main__":
                     "(a cross-fitted cache carries per-item thresholds)")
     ap.add_argument("--train-scope", choices=["holdout", "all"], default=None)
     ap.add_argument("--tag", default="", help="appended to the variant in the default output name")
+    ap.add_argument("--per-group", type=int, default=None, help="N evenly spaced frames per (scene, sensor)")
     a = ap.parse_args()
-    run(a.model, a.dataset, a.variant, a.limit, a.output, a.device, a.trust_cache, a.train_scope, a.tag)
+    run(a.model, a.dataset, a.variant, a.limit, a.output, a.device, a.trust_cache, a.train_scope, a.tag, a.per_group)

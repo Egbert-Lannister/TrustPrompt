@@ -111,6 +111,9 @@ def evaluate_manifest(config, output, command, resume=False, time_budget_s=None)
             selected=[r for r in selected if scene_inner_holdout(r["dataset"],r["scene"])]
         elif config.get("train_scope","all")!="all" and config["split"]=="train":
             raise ValueError("train_scope must be all or holdout")
+        if config.get("per_group"):          # same frames as a cache made with cache_completion --per-group
+            from tp.data.select import per_group_subsample
+            selected=per_group_subsample(selected,int(config["per_group"]))
         if not selected:raise ValueError("empty requested split")
         receipt.update(manifest_path=str(manifest),manifest_sha256=sha256(manifest),synthetic=data["synthetic"])
         if resuming:
