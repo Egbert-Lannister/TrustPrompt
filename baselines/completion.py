@@ -19,7 +19,8 @@ and copied into the cache receipt:
               1/prediction out, RGB array passed to infer_image exactly as infer.py does).
   lingbot     MDMModel v0.5 .infer(image/255, depth, normalised K, apply_mask=False) -> dense depth; mask share kept.
   any2full    Any2Full(vitl) forward({'rgb','dep'}) as run_any2full.py (init_scailing, max_depth 1000, no denoise).
-  marigold_dc MarigoldDepthCompletionPipeline (bf16, DDIM trailing, 50 steps, ensemble 1, 768 px, seed 2024).
+  marigold_dc MarigoldDepthCompletionPipeline (bf16, DDIM trailing, 50 steps, ensemble 1, 768 px, seed 2024);
+              gradient checkpointing and no resident text encoder so it fits an 8 GB card.
               With a `guide` (baselines/guidance.py) the same loop runs with a per-pixel equality / one-sided
               objective; without one the upstream pipeline itself runs.
 torch >= 2.6 flipped torch.load's default to weights_only=True; projects written before that call torch.load
@@ -503,6 +504,34 @@ class MarigoldDC(Baseline):
                                                                prediction_type="depth").to(device, dtype=dtype)
         pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config, timestep_spacing="trailing")
         self.pipe = pipe
+        self._fit_in_memory()
+
+    def _fit_in_memory(self):
+        """Without this the guidance backward peaks at 10.6 GB (768 px, bf16), over an 8 GB card, and Windows pages
+        into shared memory (about 17 min per image). Both changes keep the arithmetic:
+          - gradient checkpointing recomputes UNet / VAE activations in the backward pass. diffusers only checkpoints
+            in train mode, so both modules are put in train mode; that is safe only without dropout (checked) and
+            without batch norm (none in these models);
+          - the empty-prompt text embedding is computed once, then the text encoder is released (set to None, so
+            the pipeline's device lookup only sees UNet and VAE); the pipeline only runs the encoder while that
+            embedding is None."""
+        import torch
+        pipe = self.pipe
+        for name in ("unet", "vae"):
+            m = getattr(pipe, name)
+            if any(isinstance(x, torch.nn.Dropout) and x.p > 0 for x in m.modules()) or any(
+                    isinstance(x, torch.nn.modules.batchnorm._BatchNorm) for x in m.modules()):
+                raise RuntimeError(f"Marigold-DC {name} has dropout or batch norm; train-mode checkpointing would change it")
+            m.enable_gradient_checkpointing(); m.train()
+        with torch.no_grad():
+            ids = pipe.tokenizer("", padding="do_not_pad", max_length=pipe.tokenizer.model_max_length,
+                                 truncation=True, return_tensors="pt").input_ids.to(self.device)
+            pipe.empty_text_embedding = pipe.text_encoder(ids)[0]       # same call as marigold_dc.py
+        pipe.text_encoder = None
+        if self.device != "cpu":
+            torch.cuda.empty_cache()
+        self.deviations.append("gradient checkpointing in UNet and VAE (train mode, no dropout / batch norm) and the "
+                               "text encoder released after computing the empty-prompt embedding; arithmetic unchanged")
 
     def predict(self, rgb, depth, K, guide=None):
         """guide None: the upstream pipeline. guide: baselines.guidance.complete (same loop, guided objective)."""

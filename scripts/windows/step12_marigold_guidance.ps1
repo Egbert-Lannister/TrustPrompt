@@ -1,11 +1,12 @@
 # Marigold-DC guidance track (docs/marigold_guidance_plan.md; rules in configs/baselines/marigold_guidance_v1.yaml).
 # Train/val only; test never read. No training; everything runs on this laptop.
-#   default  M0 + M1: Marigold-DC weights (about 5.2 GB, once), loop check on 3 NYU images, then the 6 variants on
-#            the 30 NYU dev images, evaluation, Holm family and the gate.  GPU time: printed by the M0 check.
+#   default  M0 + M1: Marigold-DC weights (about 5.2 GB, once), M0 v2 check (loop exactness, memory, time), then the
+#            6 variants on the 30 NYU dev images, evaluation, Holm family and the gate. GPU time: printed by M0.
+#   -CheckOnly  stop after M0 (to look at the M1 time estimate before committing the GPU for hours).
 #   -Hammer  M2: only after M1 passed the gate (results\marigold_guidance_gate.json): HAMMER, 10 scenes x 3 sensors
 #            x 3 frames, raw / T mask / GT mask + the variants that passed, cross-fitted T, Holm family.
-#   powershell -ExecutionPolicy Bypass -File scripts\windows\step12_marigold_guidance.ps1 [-Hammer] [-HfMirror https://hf-mirror.com]
-param([switch]$Hammer, [string]$HfMirror = "", [int]$Parallel = 6)
+#   powershell -ExecutionPolicy Bypass -File scripts\windows\step12_marigold_guidance.ps1 [-CheckOnly] [-Hammer] [-HfMirror https://hf-mirror.com]
+param([switch]$Hammer, [switch]$CheckOnly, [string]$HfMirror = "", [int]$Parallel = 6)
 $ErrorActionPreference = "Stop"
 Set-Location D:\Python_Script\TrustPrompt
 . "$PSScriptRoot\common.ps1"
@@ -43,8 +44,9 @@ if (-not $Hammer) {
   if ($HfMirror -ne "") { $setupArgs += @("--hf-endpoint", $HfMirror) }
   Invoke-Step "Marigold-DC source and weights (pinned, SHA256)" { & $bpy @setupArgs }
   $checked = @(Get-ChildItem results -Directory -Filter "marigold_guidance_check_*" | Where-Object {
-      (Get-Stage $_.FullName) -eq "check_complete" -and (Get-Content (Join-Path $_.FullName "receipt.json") -Raw | ConvertFrom-Json).summary.faithful })
-  if ($checked.Count -eq 0) { Invoke-Step "M0: guided loop vs upstream on 3 NYU images" { & $bpy -m scripts.check_marigold_guidance } }
+      (Get-Stage $_.FullName) -eq "check_complete" -and (Get-Content (Join-Path $_.FullName "receipt.json") -Raw | ConvertFrom-Json).summary.passed })
+  if ($checked.Count -eq 0) { Invoke-Step "M0 v2: loop exactness (deterministic, small) + production cost" { & $bpy -m scripts.check_marigold_guidance } }
+  if ($CheckOnly) { Write-Host "M0 PASSED: see docs\marigold_guidance_check.md for the M1 time estimate. Tell Claude."; exit 0 }
 
   # ---------------- M1: NYU, 6 variants, 30 images ----------------
   foreach ($vr in @("raw", "tmask", "tonesided", "tsoft", "oracle_mask", "oracle_onesided")) {

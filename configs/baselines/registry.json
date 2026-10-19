@@ -96,7 +96,8 @@
                         "vae/config.json": [611, null],
                         "vae/diffusion_pytorch_model.safetensors": [334643276, "a1d993488569e928462932c8c38a0760b874d166399b14414135bd9c42df5815"]}}],
       "settings": {"num_inference_steps": 50, "ensemble_size": 1, "processing_resolution": 768, "seed": 2024, "dtype": "bfloat16",
-                   "scheduler": "DDIM, timestep_spacing=trailing"}
+                   "scheduler": "DDIM, timestep_spacing=trailing",
+                   "memory": "gradient checkpointing (UNet, VAE); text encoder released after the empty-prompt embedding"}
     }
   }
 }
