@@ -330,7 +330,9 @@ class OmniDC(Baseline):
         self.net = net.to(device).eval()
         self.torch = torch
 
-    def predict(self, rgb, depth, K):
+    def outputs(self, rgb, depth):
+        """The network's output dict for one image (as demo.py: ImageNet-normalised RGB, metres, padded to a
+        multiple of 4 * 2^(resolutions - 1)), and the padding. Maps are still padded."""
         self._check_inputs(rgb, depth)
         torch = self.torch
         import torchvision.transforms as T
@@ -344,8 +346,12 @@ class OmniDC(Baseline):
             x = torch.nn.functional.pad(x, (0, pw, 0, ph)); d = torch.nn.functional.pad(d, (0, pw, 0, ph))
         sample = dict(rgb=x, dep=d, K=torch.eye(3, device=self.device).reshape(1, 3, 3), pattern=0)
         with torch.no_grad():
-            out = self.net(sample)["pred"][..., :H, :W]
-        return out[0, 0].float().cpu().numpy().astype(np.float32), dict(pad=[int(ph), int(pw)], divisor=div)
+            return self.net(sample), dict(pad=[int(ph), int(pw)], divisor=div)
+
+    def predict(self, rgb, depth, K):
+        out, report = self.outputs(rgb, depth)
+        H, W = depth.shape
+        return out["pred"][0, 0, :H, :W].float().cpu().numpy().astype(np.float32), report
 
 
 class CDM(Baseline):
