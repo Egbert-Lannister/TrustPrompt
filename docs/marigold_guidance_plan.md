@@ -1,6 +1,6 @@
 # Marigold-DC 引导线：把 T 的标记写进引导目标（v1，2026-10-18）
 
-状态：**代码已实现，小规模验证通过（CPU 上的小型随机管线），尚未在真实权重上运行。** 判据都在任何 Marigold-DC 预测之前写定，见 `configs/baselines/marigold_guidance_v1.yaml`。不需要训练，在本机运行。
+状态：**代码已实现，小规模验证通过（CPU 上的小型随机管线）。M0 v1 在真实权重上已运行，判定无效（见下）；M0 v2 待运行。** 判据都在任何 Marigold-DC 预测之前写定，见 `configs/baselines/marigold_guidance_v1.yaml`。不需要训练，在本机运行。
 
 ## 1. 做什么
 
@@ -46,13 +46,20 @@ Marigold-DC（ICCV 2025，prs-eth/Marigold-DC @ c6d756b）在扩散去噪的每�
 
 ## 3. 阶段与判据（事先写定）
 
-**M0：重写的循环是否忠实，以及单张图的代价**（`scripts/check_marigold_guidance.py`）
+**M0：重写的循环是否忠实，以及单张图的代价**（`scripts/check_marigold_guidance.py`，当前为 v2）
 
-- 用 3 张 NYU val 图比较：上游管线、上游再跑一次（噪声基线）、重写循环（等式 guide），再测一次 tonesided 的耗时和显存。
-- 判定“忠实”的条件（和 LingBot 的检查一样）：
-  - 逐图 |ΔC AbsRel| 的最大值 < 1e-3；
-  - 合并后的像素相对差 p99 < 0.5%。
-- 不忠实就不跑引导变体。显存不够（8 GB）时停下来报告，不自行降低分辨率。
+- **v1 的结果（2026-10-18，`docs/marigold_guidance_check_v1.md`）：判定为“不忠实”，但这个结论不说明代码有问题。**
+  - 规则要求“和上游相比像素相对差 p99 < 0.5%”。可上游自己跑两次，p99 就有 0.9–1.6%（bf16 下 CUDA 核不确定，经过 50 步引导被放大），所以这条规则在生产设置下本身就过不了。
+  - 重写循环与上游的差（p99 0.7–3.1%）和上游自身的重跑差是同一量级。
+  - 同时暴露出显存问题：峰值 10.6 GB，超过 8 GB 显卡，Windows 把显存换页到共享内存，每张图约 17.7 分钟。
+- **v2 的规则（看到 v1 结果后写定，见 decisions §20）：**
+  1. **精确性**：开确定性 CUDA，用生产的模型和精度，在小设置下（384 px、10 步）跑 3 张 NYU val 图：上游、上游重跑、重写循环。
+     - 若上游两次逐位相同，要求重写循环和上游也逐位相同；
+     - 若确定性没有达到，要求重写循环与上游之差的 p99 ≤ 2 × 上游重跑差的 p99。
+  2. **代价**：生产设置下跑 1 张图（上游和 tonesided 各一次），峰值显存要低于显卡的 95%，否则不跑 M1。
+  - 两条都通过才进入 M1，同时打印 M1 的耗时估计。
+- **显存处理**（不改变数值）：UNet 和 VAE 打开梯度检查点。diffusers 只在 train 模式下做检查点，代码会先确认模型里没有 dropout 和 batch norm。空提示的文本嵌入只算一次，之后释放文本编码器。CPU 上的小型管线中，这样做前后的输出逐位相同（`tests/test_guidance.py`）。
+- 如果显存仍然不够，或者 M1 估计耗时太长，停下来报告，不自行降低分辨率或步数。
 
 **M1：NYU 全部 30 张开发图 × 6 个变体**
 
@@ -83,6 +90,7 @@ Marigold-DC（ICCV 2025，prs-eth/Marigold-DC @ c6d756b）在扩散去噪的每�
 ## 4. 运行
 
 ```
+powershell -ExecutionPolicy Bypass -File scripts\windows\step12_marigold_guidance.ps1 -CheckOnly  # 只跑 M0
 powershell -ExecutionPolicy Bypass -File scripts\windows\step12_marigold_guidance.ps1            # M0 + M1
 powershell -ExecutionPolicy Bypass -File scripts\windows\step12_marigold_guidance.ps1 -Hammer    # M2，先看 M1 结果
 ```

@@ -1,3 +1,5 @@
+import types
+
 import numpy as np
 import pytest
 
@@ -109,3 +111,33 @@ def test_guides_change_the_result_and_flagged_pixels_respect_the_hinge(tiny_pipe
     # weight 1 everywhere with an all-valid anchor is the same objective as upstream up to float rounding
     same = complete(tiny_pipe, rgb, far, Guide(weight=valid.astype(np.float32), anchor=valid), **args)
     assert np.allclose(same, plain, rtol=1e-4, atol=1e-4)
+
+
+def test_memory_setup_keeps_the_result(tiny_pipe):
+    """MarigoldDC._fit_in_memory (train-mode checkpointing, text encoder released) changes no number."""
+    import copy
+    from baselines.completion import MarigoldDC
+    rgb, depth = scene(2)
+    valid = depth > 0
+    flag = valid.copy(); flag[:12] = False
+    g = Guide(weight=(valid & ~flag).astype(np.float32), hinge=flag.astype(np.float32), anchor=valid & ~flag)
+    args = dict(num_inference_steps=3, ensemble_size=1, processing_resolution=32, seed=3)
+    pipe = copy.deepcopy(tiny_pipe)
+    before = [complete(pipe, rgb, depth, None, **args), complete(pipe, rgb, depth, g, **args)]
+    emb = pipe.empty_text_embedding.clone()
+
+    class Tok:
+        model_max_length = 77
+        def __call__(self, *a, **k):
+            return types.SimpleNamespace(input_ids=torch.zeros(1, 2, dtype=torch.long))
+
+    object.__setattr__(pipe, "tokenizer", Tok())
+    object.__setattr__(pipe, "text_encoder", lambda ids: (emb,))
+    m = MarigoldDC.__new__(MarigoldDC)
+    m.device, m.deviations, m.pipe = "cpu", [], pipe
+    m._fit_in_memory()
+    assert pipe.text_encoder is None and pipe.unet.training and pipe.unet.is_gradient_checkpointing
+    assert torch.equal(pipe.empty_text_embedding, emb) and m.deviations
+    after = [complete(pipe, rgb, depth, None, **args), complete(pipe, rgb, depth, g, **args)]
+    assert all(np.array_equal(a, b) for a, b in zip(before, after))
+    assert np.array_equal(pipe(image=rgb, sparse_depth=depth, **args), before[0])     # upstream path too
