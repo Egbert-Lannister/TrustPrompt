@@ -330,6 +330,11 @@ class OmniDC(Baseline):
         self.net = net.to(device).eval()
         self.torch = torch
 
+    def padding(self, shape):
+        """(pad rows, pad cols, divisor): images are padded at the bottom / right to a multiple of 4 * 2^(R - 1)."""
+        div = int(4 * 2 ** (self.args.num_resolution - 1))
+        return (-shape[0]) % div, (-shape[1]) % div, div
+
     def outputs(self, rgb, depth):
         """The network's output dict for one image (as demo.py: ImageNet-normalised RGB, metres, padded to a
         multiple of 4 * 2^(resolutions - 1)), and the padding. Maps are still padded."""
@@ -339,9 +344,7 @@ class OmniDC(Baseline):
         t_rgb = T.Compose([T.ToTensor(), T.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
         x = t_rgb(rgb)[None].to(self.device)
         d = torch.from_numpy(depth)[None, None].to(self.device)
-        H, W = depth.shape
-        div = int(4 * 2 ** (self.args.num_resolution - 1))
-        ph, pw = (-H) % div, (-W) % div
+        ph, pw, div = self.padding(depth.shape)
         if ph or pw:
             x = torch.nn.functional.pad(x, (0, pw, 0, ph)); d = torch.nn.functional.pad(d, (0, pw, 0, ph))
         sample = dict(rgb=x, dep=d, K=torch.eye(3, device=self.device).reshape(1, 3, 3), pattern=0)

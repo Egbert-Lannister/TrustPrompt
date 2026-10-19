@@ -17,12 +17,18 @@ def quantize_cache(d):
     return q
 
 
-def main_c_absrel(s, pred, tau=0.05):
-    """Main-scope C AbsRel of one image; None for an empty region or an invalid prediction inside it."""
-    c = regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=tau, band=5)["C"] & focus_scope(s)[1]
-    if not c.any() or not np.isfinite(pred[c]).all():
+def main_region_absrel(s, pred, region="C", tau=0.05):
+    """Main-scope AbsRel of one image in an evaluation region (tp.eval.regions: C, clean, hole, ...); None for an
+    empty region or an invalid prediction inside it."""
+    m = regions(s.prompt, s.prompt_valid, s.gt, s.gt_valid, tau=tau, band=5)[region] & focus_scope(s)[1]
+    if not m.any() or not np.isfinite(pred[m]).all():
         return None
-    return float(np.mean(np.abs(pred[c] - s.gt[c]) / s.gt[c]))
+    return float(np.mean(np.abs(pred[m] - s.gt[m]) / s.gt[m]))
+
+
+def main_c_absrel(s, pred, tau=0.05):
+    """Main-scope C AbsRel of one image (see main_region_absrel)."""
+    return main_region_absrel(s, pred, "C", tau)
 
 
 def relative_difference(a, b):
