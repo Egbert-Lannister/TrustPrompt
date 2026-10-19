@@ -451,3 +451,9 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 
 - OMNI-DC 自带置信度的 AUROC：NYU 0.52，HAMMER 0.43；T 分别为 0.91 和 0.80。按事先写定的判读，需要模块 A（`docs/plan_omnidc.md` §12）。
 - 新增 D1b 路径门控诊断：`tp/omnidc/gates.py`（只对单个网络实例临时打补丁，退出时还原）和 `scripts/omnidc_gates.py`。还新增 `tp/eval/consistency.main_region_absrel`，以及 `OmniDC.padding()`。
+
+## 2026-10-19 Hypersim 下载准备（代码已实现，小规模验证通过；尚未下载）
+
+- 用户同意下载，上限 40 GB。场景选择见 `configs/hypersim/selection_v1.json`（85 个场景，14,116 帧）。下载脚本和规则见 `docs/plan_omnidc.md` §13。
+- 测试：`tests/test_remote_zip.py` 覆盖普通 ZIP 和 ZIP64、CRC 损坏检测、本地头部超出预读范围的情况；`tests/test_hypersim_fetch.py` 用两个假场景包从头到尾跑一遍各阶段，并验证续传时不会重复下载。
+- 从云端容器和本机虚拟机都连不到 Apple 的 CDN，只能在 Windows 上运行。
