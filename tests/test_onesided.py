@@ -107,3 +107,4 @@ def test_gradients_through_omnidc_ddi_with_the_hinge(ddi):
     solve = lambda w: ddi.apply(grads, logp, valid, conf, w, R, None, b0, ALPHA, 1e-12, 5000)[0]
     assert torch.allclose(solve(input_weights(w_eq, far, active, 3.0)), x, atol=1e-8)   # fixed point of the last set
     assert torch.autograd.gradcheck(lambda gr, we, fa: run(gr, we, fa)[0], (grads, w_eq, far), eps=1e-6, atol=1e-5)
+

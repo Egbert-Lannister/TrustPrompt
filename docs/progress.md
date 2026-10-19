@@ -446,3 +446,8 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - T 屏蔽对 Marigold-DC 显著有效：val 0.579 → 0.157（p = 0.003），留出场景 1.088 → 0.046（p = 0.0003）。
 - 单边引导和软加权都没有通过门槛（val 增益为 +2.2% 和 −5.8%），GT 标记下的上限为 −1.9%，所以不跑 M2。主线模块 B 降为消融（`docs/plan_omnidc.md` §11）。
 - 事后观察：tonesided 让干净区域的误差在 val 上下降 16%、在留出场景上下降 27%，不作为证据。
+
+## 2026-10-19 P0-D1 结果与 D1b
+
+- OMNI-DC 自带置信度的 AUROC：NYU 0.52，HAMMER 0.43；T 分别为 0.91 和 0.80。按事先写定的判读，需要模块 A（`docs/plan_omnidc.md` §12）。
+- 新增 D1b 路径门控诊断：`tp/omnidc/gates.py`（只对单个网络实例临时打补丁，退出时还原）和 `scripts/omnidc_gates.py`。还新增 `tp/eval/consistency.main_region_absrel`，以及 `OmniDC.padding()`。
