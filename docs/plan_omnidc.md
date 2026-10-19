@@ -190,3 +190,14 @@ Marigold-DC 引导线（`docs/marigold_guidance_plan.md`）用不训练的方式
 - S ≤ 0.5：模块 A 还必须对网络输入做门控。
 - 介于两者之间：两种都要做。
 - 同时报告干净区域，用来看只关路径能否避免删除像素对正确像素的损伤。
+
+## 13. D3 的数据：Hypersim 子集（2026-10-19，用户同意下载，上限 40 GB）
+
+- **选场景**（`scripts/hypersim_scenes.py` → `configs/hypersim/selection_v1.json`）：只读 apple/ml-hypersim 仓库（提交 3463c5c）里的元数据，不读任何图像。规则是网格标注中含 NYU40 第 19 类（镜面）物体，结果为 85 个场景、14,116 个公开帧（官方划分：train 66 个场景、val 11 个、test 8 个）。每个场景另外记录是否含窗户物体，以及该场景的相机矩阵（M_cam_from_uv、M_proj）。
+- **下载**（`scripts/hypersim_fetch.py`，`scripts/windows/step13_hypersim.ps1`）：
+  - 用 HTTP 分段请求，从官方每个场景的 ZIP 包里只取需要的成员文件。读包代码 `tp/data/remote_zip.py` 是我们自己写的，支持 ZIP64，每个文件都做 CRC 校验；没有运行 Apple 的下载脚本。
+  - 先读所有场景的目录，算出确切大小；如果阶段 A 加阶段 B 的上界超过 40 GB，或磁盘空间不足，就停止。
+  - 阶段 A 下载全部帧的语义图。
+  - 选帧规则（在看到任何图像之前写定）：镜面像素 ≥ 1%，或窗户像素 ≥ 5%；另外按固定种子，从同场景中既无镜面也无窗户的帧里抽取选中数量的 25% 作为干净帧，用来在微调时保持原有能力。
+  - 阶段 B 只下载选中帧的 tone-mapped 图像和深度。
+- **注意**：Hypersim 的 depth_meters 是沿光线的距离，不是光轴方向的 Z。处理时必须用每个场景的 M_cam_from_uv 换算，这一步放在 D3 的处理脚本里。

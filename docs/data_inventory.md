@@ -14,6 +14,7 @@
 | PromptDA 检查点（三个，SHA256 已核对） | `checkpoints/promptda` | PromptDA 推理 |
 | PromptDA 官方源码（提交 9161547，哈希已核对） | `external/PromptDA` | PromptDA 推理 |
 | 所有评测结果、运行记录和预测哈希 | `results/` | 表格、配对检验 |
+| Hypersim 子集（85 个含镜面的场景；语义图、选中帧的图像和深度；CC BY-SA 3.0；2026-10-19 用户同意下载，上限 40 GB） | `data/source_cache/hypersim_v1`（清单：`manifest.jsonl`；选帧：`frames_v1.json`） | 主线的结构化错误合成与训练（`docs/plan_omnidc.md`） |
 
 ## 已删除（用户在清理 E 盘时删除，2026-10-14 确认）
 
