@@ -466,3 +466,13 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 语义图已全部下载（14,116 个）。
   - 选帧结果：镜面 4,613 帧、窗户 2,095 帧、干净帧 1,677 帧。
   - 图像和深度正在下载（02:17 时约 2,000 / 16,770 个文件）。
+
+## 2026-10-20 P0：D3 / D2 代码（用户同意“来跑吧”）
+
+- 新增：`tp/data/hypersim.py`、`tp/sim/hypersim_condition.py`、`mirror_render.backwall_depth`、`mirror_render.project`（含斜切）、`tp/omnidc/gate.py`、`tp/omnidc/model.py`、`gates.soft_gated` / `extend_depth_input`、`scripts/hypersim_synthesis_stats.py`、`scripts/omnidc_train_smoke.py`、`scripts/windows/step14_p0.ps1`。
+- 测试：
+  - Hypersim 相机：4 个场景的往返精确；
+  - 背墙深度：与显式光线追踪一致；
+  - 条件合成：在玩具房间上测试；
+  - 门控：输入与 T 的 `make_inputs` 一致；先验拟合在有 20% 离群点时仍能还原；全开时输出不变；三个入口各自生效。
+- 校准与 R3 规则的修改见 `docs/plan_omnidc.md` §15。

@@ -41,3 +41,29 @@ def test_plane_fit_recovers_mirror_plane_from_depth():
     P = backproject(np.where(mask, z, 1.0), K)[mask]
     np.testing.assert_allclose(P @ n - d, 0, atol=1e-9)
     assert r < 1e-9 and d > 0
+
+
+def test_skewed_intrinsics_round_trip():
+    import numpy as np
+    from tp.sim.mirror_render import backproject, project
+    K = np.array([[500.0, 9.0, 320.5], [0.0, 498.0, 240.2], [0.0, 0.0, 1.0]])    # Hypersim tilt-shift: skew ~ 2 %
+    z = np.random.default_rng(0).uniform(0.5, 5.0, (6, 8))
+    u, v = project(backproject(z, K), K)
+    vv, uu = np.mgrid[0:6, 0:8]
+    assert np.allclose(u, uu) and np.allclose(v, vv)
+
+
+def test_backwall_depth_matches_explicit_ray_tracing():
+    import numpy as np
+    from tp.sim.mirror_render import backwall_depth
+    K = np.array([[60.0, 0.0, 15.5], [0.0, 60.0, 11.5], [0.0, 0.0, 1.0]])
+    n = np.array([0.3, -0.1, -1.0]); n /= np.linalg.norm(n); d = -2.0          # mirror ~2 m ahead, facing the camera
+    b = 1.2
+    z = backwall_depth(K, (24, 32), n, d, b)
+    for (y, x) in ((3, 4), (12, 16), (20, 30)):
+        r = np.array([(x - K[0, 2]) / K[0, 0], (y - K[1, 2]) / K[1, 1], 1.0])
+        t = d / (r @ n); hit = t * r                                       # point on the mirror
+        ro = r - 2 * (r @ n) * n                                           # reflected direction (same length as r)
+        s = (-b - hit[2]) / ro[2]                                          # reach the wall Z = -b
+        path = t * np.linalg.norm(r) + s * np.linalg.norm(ro)
+        assert np.isclose(z[y, x], path / np.linalg.norm(r) * r[2], rtol=1e-6)
