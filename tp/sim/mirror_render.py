@@ -18,13 +18,26 @@ import numpy as np
 from scipy import ndimage
 
 
+def _ray_xy(K, u, v):
+    """Normalised ray (X/Z, Y/Z) of pixel (u, v) for an upper-triangular K, skew K[0, 1] included (Hypersim
+    tilt-shift scenes); with zero skew the arithmetic equals the plain pinhole formula exactly."""
+    y = (v - K[1, 2]) / K[1, 1]
+    x = (u - K[0, 2] - K[0, 1] * y) / K[0, 0]
+    return x, y
+
+
+def project(points, K):
+    """Pixel coordinates (u, v) of camera points [..., 3] (Z > 0)."""
+    x, y = points[..., 0] / points[..., 2], points[..., 1] / points[..., 2]
+    return K[0, 0] * x + K[0, 1] * y + K[0, 2], K[1, 1] * y + K[1, 2]
+
+
 def backproject(depth, K):
     h, w = depth.shape
     v, u = np.mgrid[0:h, 0:w].astype(np.float64)
     z = depth.astype(np.float64)
-    x = (u - K[0, 2]) / K[0, 0] * z
-    y = (v - K[1, 2]) / K[1, 1] * z
-    return np.stack([x, y, z], -1)
+    x, y = _ray_xy(K, u, v)
+    return np.stack([x * z, y * z, z], -1)
 
 
 def reflect(points, n, d):
@@ -37,7 +50,7 @@ def plane_depth_along_rays(K, shape, n, d):
     """Axial depth where each pixel ray meets the plane n.X = d (inf if parallel/behind)."""
     h, w = shape
     v, u = np.mgrid[0:h, 0:w].astype(np.float64)
-    ray = np.stack([(u - K[0, 2]) / K[0, 0], (v - K[1, 2]) / K[1, 1], np.ones_like(u)], -1)
+    ray = np.stack([*_ray_xy(K, u, v), np.ones_like(u)], -1)
     denom = ray @ np.asarray(n, np.float64)
     with np.errstate(divide="ignore", invalid="ignore"):
         z = d / denom
@@ -68,8 +81,8 @@ def render_mirror(gt, gt_valid, K, omega, n, d, *, fill_small_holes=1):
     q = reflect(pts[src], n, d)
     front = q[:, 2] > 1e-6
     q = q[front]
-    u = np.round(q[:, 0] / q[:, 2] * K[0, 0] + K[0, 2]).astype(np.int64)
-    v = np.round(q[:, 1] / q[:, 2] * K[1, 1] + K[1, 2]).astype(np.int64)
+    pu, pv = project(q, K)
+    u, v = np.round(pu).astype(np.int64), np.round(pv).astype(np.int64)
     inside = (u >= 0) & (u < w) & (v >= 0) & (v < h)
     u, v, z = u[inside], v[inside], q[inside, 2]
     keep = omega[v, u]
@@ -88,3 +101,24 @@ def render_mirror(gt, gt_valid, K, omega, n, d, *, fill_small_holes=1):
     out = np.full((h, w), np.nan)
     out[resolved] = zbuf[resolved]
     return out.astype(np.float32), resolved
+
+
+def backwall_depth(K, shape, n, d, b):
+    """Axial depth of the virtual image of a wall behind the camera (plane Z = -b, b > 0) seen in the mirror n.X = d.
+
+    One view cannot render what a mirror reflects from behind the camera (render_mirror leaves it unresolved).
+    This closes that gap with the simplest room: the camera ray to the mirror (axial depth z_m) is reflected,
+    r' = r - 2 (r.n) n, and travels to the plane Z = -b; the sensor reports the unfolded path length along the
+    original ray, Z_v = z_m + (z_m + b) / |r'_z| (r normalised to r_z = 1). NaN where the reflected ray does not
+    head back towards the camera side (r'_z >= 0) or the mirror is not hit in front of the camera.
+    """
+    h, w = shape
+    v, u = np.mgrid[0:h, 0:w].astype(np.float64)
+    ray = np.stack([*_ray_xy(K, u, v), np.ones_like(u)], -1)
+    n = np.asarray(n, np.float64); n = n / np.linalg.norm(n)
+    z_m = plane_depth_along_rays(K, shape, n, d)
+    r_out_z = ray[..., 2] - 2.0 * (ray @ n) * n[2]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        z_v = z_m + (z_m + b) / np.abs(r_out_z)
+    z_v[~np.isfinite(z_m) | (r_out_z >= 0)] = np.nan
+    return z_v.astype(np.float32)
