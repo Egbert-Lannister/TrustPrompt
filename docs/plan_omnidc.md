@@ -266,3 +266,26 @@ Marigold-DC 引导线（`docs/marigold_guidance_plan.md`）用不训练的方式
   1. 公开的训练代码不提供 v1.1 训练所需的 `mono_dep`（DAv2 相对深度），由 `GatedOMNIDC` 自己计算；
   2. 公开的 v1.1 权重里没有 Laplace 输出置信度头，因此微调损失用 train_full.sh 的配置去掉 SeqLaplace 一项。
 - **运行**：`scripts/windows/step14_p0.ps1` 依次跑 D3 统计（`scripts/hypersim_synthesis_stats.py`）和 D2 冒烟测试（`scripts/omnidc_train_smoke.py`）。冒烟测试先检查门控全开时与 OMNI-DC 原输出一致，再跑 3 步训练。
+
+## 16. P0 结果（2026-10-21）
+
+**D2：通过**（`docs/omnidc_train_smoke.md`）
+
+- 门控全开时，与 OMNI-DC 原输出的最大差为 3.1e-6 m 和 9.5e-7 m。
+- 3 步训练中：损失全部有限；梯度能到达门控、门控输入通道和 OMNI-DC 的置信度头。
+- 256×320 裁剪、batch 1 时，峰值显存 3.8 GB，每步 1.8 到 4.4 秒。
+
+**D3 v1：未通过**（`docs/hypersim_synthesis_v1.md`）
+
+- R1、R2、R3 通过：
+  - 错误像素中偏远的比例为 0.999（NYU 0.991）；
+  - 相对误差中位数 1.27（NYU 0.90）；
+  - 空洞比例 0.62（NYU 0.52）。
+- R4 未通过：错误像素占画面比例的中位数为 0.012，NYU 为 0.050，比值 0.24，低于 0.25。
+- **原因**：Hypersim 帧里的镜面面积偏小（镜面占画面比例的中位数为 3.2%，NYU 为 7.4%）；镜面内部的误差模型本身与 NYU 相近（R1 到 R3 都通过）。
+- **修订**（`configs/hypersim/training_v1.yaml`）：
+  - 只用镜面占画面 ≥ 5% 的帧，共 1,695 帧；
+  - 误差模型、窗户帧和干净帧都不变，也不需要再下载。
+- 修订后用同样的四条规则重跑 D3（v2）。D3 v2 通过之前不训练。
+
+**进入 P1 时要考虑的成本**：笔记本上 256×320、batch 1 每步约 3 秒。按方案的 10 万个样本计算，要 80 小时以上，而且裁剪块比 OMNI-DC 训练用的 480×640 小。所以 P1 仍按 §7 租用 48 GB 显卡（480×640、batch 6）；先实测 1 小时吞吐量，再定预算。

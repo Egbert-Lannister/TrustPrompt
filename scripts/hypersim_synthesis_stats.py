@@ -4,7 +4,8 @@
   python -m scripts.hypersim_synthesis_stats [--previews 8]
 
 Synthetic: a fixed-seed sample of the selected Hypersim frames (data/source_cache/hypersim_v1/frames_v1.json:
-300 mirror, 150 window, 50 clean), each through tp.sim.hypersim_condition.condition with its own seed.
+300 mirror, 150 window, 50 clean; mirror frames restricted by configs/hypersim/training_v1.yaml), each through
+tp.sim.hypersim_condition.condition with its own seed.
 Real: NYU (Mirror3D) train split, mirror pixels; HAMMER train split, object pixels, 3 frames per scene x sensor.
 Per image, inside the surface region (synthetic: the annotated mirror / window pixels; real: the main scope):
 contaminated share C (|P - GT| / GT > tau), far / near share of C, hole share, median relative error of C, and C as
@@ -44,6 +45,7 @@ SAMPLE = {"mirror": 300, "window": 150, "clean": 50}
 SEED = 20261020
 DATA = ROOT / "data" / "source_cache" / "hypersim_v1"
 SELECTION = ROOT / "configs" / "hypersim" / "selection_v1.json"
+TRAINING = ROOT / "configs" / "hypersim" / "training_v1.yaml"
 REAL = {"nyu": dict(processed="data/processed/mirror3d_dev_v1", per_group=None),
         "hammer": dict(processed="data/processed/hammer_dev_v1", per_group=3)}
 
@@ -110,14 +112,18 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--previews", type=int, default=8)
     a = ap.parse_args()
     selection = json.loads(SELECTION.read_text(encoding="utf-8"))
+    import yaml
+    min_mirror = float(yaml.safe_load(TRAINING.read_text(encoding="utf-8"))["min_mirror_share"])
     frames = json.loads((DATA / "frames_v1.json").read_text(encoding="utf-8"))["frames"]
+    frames = [f for f in frames if f["role"] != "mirror" or f["mirror"] >= min_mirror]
     rng = np.random.default_rng(SEED)
     sample = []
     for role, n in SAMPLE.items():
         pool = [f for f in frames if f["role"] == role]
         sample += [pool[i] for i in sorted(rng.choice(len(pool), min(n, len(pool)), replace=False))]
     out_dir = ROOT / "results" / f"hypersim_synthesis_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    receipt = start_run(out_dir, dict(tau=TAU, sample=SAMPLE, seed=SEED, real=REAL,
+    receipt = start_run(out_dir, dict(tau=TAU, sample=SAMPLE, seed=SEED, real=REAL, min_mirror_share=min_mirror,
+                                      training_config_sha256=sha256(TRAINING),
                                       frames_sha256=sha256(DATA / "frames_v1.json"), selection_sha256=sha256(SELECTION)),
                         [sys.executable, "-m", "scripts.hypersim_synthesis_stats", *sys.argv[1:]], SEED)
     try:

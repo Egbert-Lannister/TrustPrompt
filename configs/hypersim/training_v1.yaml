@@ -1,0 +1,7 @@
+# Which downloaded Hypersim frames feed the condition-C synthesis (scripts/hypersim_synthesis_stats.py now, the
+# fine-tuning data loader in P1). Revision 2026-10-21 after D3 v1 (docs/plan_omnidc.md sec. 16): v1 used every frame
+# with >= 1 % mirror pixels and failed R4 (median contaminated share of the image 0.012 vs NYU 0.050) because Hypersim
+# mirrors are small in frame (median 3.2 % of the image vs NYU's 7.4 %), not because of the error model (inside the
+# mirror, R1-R3 pass). Mirror frames now need >= 5 % mirror pixels (1,695 of the 4,613 downloaded mirror frames);
+# window and clean frames are unchanged; nothing new is downloaded.
+min_mirror_share: 0.05
