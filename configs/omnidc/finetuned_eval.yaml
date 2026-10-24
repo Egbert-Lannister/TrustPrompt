@@ -1,0 +1,19 @@
+# F0/F1 development inference only; never a formal/test result.
+# Pass --checkpoint-sha256 from the training/transfer record and a NEW --output.
+# Generated eval_<split>.yaml evaluates exactly the cached limit/per-group cohort.
+# Pilot/last checkpoints remain smoke/development diagnostics even with --evaluate.
+# Old R0 uint16_0p2mm caches can saturate >13.107 m; audit clipped_pixels before comparison.
+# Existing CachedPrior requires legacy real_* stage tokens, even for CPU fixtures.
+# Those tokens only indicate reader compatibility: synthetic=true plus
+# validation_stage=synthetic_fixture_verified explicitly mark synthetic results.
+seed: 20261024
+experiment_role: development_diagnostic_not_final_test
+storage: float32
+alignment: none
+datasets:
+  nyu:
+    manifest: data/processed/mirror3d_dev_v1/manifest.json
+    train_scope: holdout
+  hammer:
+    manifest: data/processed/hammer_dev_v1/manifest.json
+    train_scope: all

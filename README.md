@@ -107,7 +107,7 @@ python -m scripts.summarize_step1
 
 ## 文档和状态
 
-当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”）见 `docs/plan_omnidc.md`：P0 已完成（§16–17），P1 训练代码已写好，尚未在 GPU 上运行（先在本机跑冒烟测试 `scripts\windows\step15_p1_smoke.ps1`；租用的 Linux 机器上：`bash scripts/linux/p1_setup.sh`，然后 `bash scripts/linux/p1_run.sh pilot`）；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
+当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”）见 `docs/plan_omnidc.md`：P0 已完成（§16–17），P1 本机 GPU 冒烟测试 S1–S6 已通过（`docs/omnidc_p1_smoke.md`），AutoDL 无卡准备进行中，云端 pilot 和正式 F0/F1 尚未开始。当前部署、固定环境与命令见 `docs/autodl_p1.md`；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
 
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
@@ -119,3 +119,11 @@ python -m scripts.summarize_step1
 - `configs/splits/mirror3d_nyu_v1.json`：可版本控制的完整场景划分。
 
 T v0 / v1 / v2 都已训练，但只有开发集诊断。目前没有正式实验，也没有论文主结果：测试集未读取，HAMMER 三传感器留一测试也还没做。
+
+F0/F1 微调检查点评测入口已通过 CPU 工程测试，真实检查点验证待 pilot。将训练目录中的 `receipt.json`、`config.json`、`training_frames.json` 和 `checkpoints/last.pt` 一起取回，保留远端记录的 SHA-256，然后以新的输出目录运行：
+
+```powershell
+.\.venvs\baselines\Scripts\python.exe -m scripts.cache_omnidc_finetuned --run-dir results/p1_f1_RUN --variant f1 --checkpoint last.pt --checkpoint-sha256 SHA256_FROM_TRAINING_HOST --dataset nyu --split val --limit 1 --output cache/f1_pilot_nyu_smoke --evaluate
+```
+
+这里只允许开发 train/val；pilot 评测不算完整训练结果。预测缓存使用 float32 并保留无效值；与旧 R0 缓存比较前需核对其 `clipped_pixels`。
