@@ -241,3 +241,5 @@
 - 远端只部署明确文件清单，回执核对原始提交、工作差异、上传字节哈希。没有 `.git` 的云端保持 git_commit=null，并单独保留 deployment.base_commit，避免伪造仓库版本。
 - 用户建议 HF 镜像；模型 revision、大小与 SHA-256 检查不变。官方 PyTorch 大文件链路慢时允许使用公开 wheel 镜像，但从官方索引取得并验证整文件 SHA-256 后安装，固定版本不变。详情与实际执行状态见 `docs/autodl_p1.md`。
 - 训练场景数事实修正：官方 train 候选 66 个，经既定镜面 ≥5% 筛选后实际 65 个、4,418 帧，`ai_016_002` 没有保留训练帧。代码、选择阈值、样本身份与类别数均不变，仅修正文档把候选数当成实际数的问题。
+- F0/F1 微调推理（云端 pilot 之前实现）：使用官方 OMNI-DC eval 前向，仅恢复非冻结 `net.*` 参数；不运行训练 wrapper 前向，避免重复先验计算。缓存固定 float32，保留无效和超量程预测；旧 R0 uint16 缓存的上界为 13.107 m，比较前须审查饱和记录。
+- 兼容旧缓存读器的状态枚举：它只接受 `real_train_smoke_verified` / `real_dev_verified`。新入口的 CPU 合成 fixture 保留前一枚举作为兼容状态码，另外明确记录 `synthetic=true`、`validation_stage=synthetic_fixture_verified` 和 `stage_semantics=legacy_reader_compatibility_only`；测试确认合成标识进入逐图与汇总，不据此宣称真实实验。
