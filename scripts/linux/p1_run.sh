@@ -1,26 +1,44 @@
 #!/usr/bin/env bash
-# Mainline P1 on the rented GPU (docs/plan_omnidc.md sec. 7, 17). Run after p1_setup.sh.
-#   bash scripts/linux/p1_run.sh pilot    # 60 min of f1: measured throughput + GPU-hour estimate; stop and report
-#   bash scripts/linux/p1_run.sh train    # f0 then f1, full runs (resumable: re-run the same command)
-# Copy results/p1_*/checkpoints/final.pt back to your machine for the evaluation (it runs there, on the dev sets).
+# Defaults to the one-hour P1 pilot only. Full runs require a reviewed pilot
+# report and explicit user approval; then set TP_P1_ALLOW_FULL_TRAIN=1.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-. .venv-p1/bin/activate
-latest() { ls -d results/p1_"$1"_* 2>/dev/null | sort | tail -1; }
-case "${1:-}" in
+. "${TP_P1_VENV:-.venv-p1}/bin/activate"
+latest() {
+  python -c "import pathlib,sys; d=sorted(p for p in pathlib.Path('results').glob('p1_'+sys.argv[1]+'_*') if p.is_dir()); print(d[-1] if d else '')" "$1"
+}
+case "${1:-pilot}" in
   pilot)
-    python -m scripts.train_omnidc --variant f1 --pilot-minutes 60
-    python -c "import json,glob; d=sorted(glob.glob('results/p1_f1_*'))[-1]; print(json.load(open(d+'/receipt.json')).get('pilot'))" ;;
+    command -v timeout >/dev/null || { echo "GNU timeout is required for the pilot wall limit." >&2; exit 2; }
+    # Includes process/model startup; trainer reserves 60 seconds for saving.
+    # This bounds the process, not instance billing or GPU-kernel time.
+    before=$(latest f1)
+    status=0
+    timeout --signal=INT --kill-after=30s 60m python -m scripts.train_omnidc --variant f1 --pilot-minutes 60 || status=$?
+    d=$(latest f1)
+    if [ -n "$d" ] && [ "$d" != "$before" ]; then
+      python -c "import json,sys; r=json.load(open(sys.argv[1]+'/receipt.json')); print(json.dumps(dict(stage=r.get('stage'),pilot=r.get('pilot'),error=r.get('error')),indent=2))" "$d"
+    else
+      echo "No new run directory was created; inspect the error above." >&2
+    fi
+    echo "Pilot stopped. Review the report and obtain user approval before any full training."
+    exit "$status" ;;
   train)
+    if [ "${TP_P1_ALLOW_FULL_TRAIN:-0}" != "1" ]; then
+      echo "Full training is disabled. After explicit user approval set TP_P1_ALLOW_FULL_TRAIN=1." >&2
+      exit 2
+    fi
     for v in f0 f1; do
       d=$(latest "$v")
-      if [ -n "$d" ] && grep -q '"training_complete"' "$d/receipt.json"; then echo "$v done: $d"; continue; fi
-      if [ -n "$d" ] && grep -q '"stage": "training"\|"failed"' "$d/receipt.json" && [ -f "$d/checkpoints/last.pt" ]; then
+      if [ -n "$d" ]; then
+        stage=$(python -c "import json,sys; print(json.load(open(sys.argv[1]+'/receipt.json')).get('stage',''))" "$d")
+        if [ "$stage" = training_complete ]; then echo "$v done: $d"; continue; fi
+        # Missing/invalid checkpoints are errors, never silent fresh runs.
         python -m scripts.train_omnidc --variant "$v" --resume "$d"
       else
         python -m scripts.train_omnidc --variant "$v"
       fi
     done
-    echo "P1 TRAINING DONE: copy results/p1_f0_*/checkpoints/final.pt and results/p1_f1_*/checkpoints/final.pt back." ;;
-  *) echo "usage: $0 pilot|train"; exit 1 ;;
+    ;;
+  *) echo "usage: $0 [pilot|train]"; exit 1 ;;
 esac

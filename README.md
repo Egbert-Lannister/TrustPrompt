@@ -2,6 +2,8 @@
 
 独立的提示可信度深度补全实验项目。已完成 Mirror3D-NYU 的5帧真实训练集最小闭环，并扩展到 UniDepthV2-S、全局/局部鲁棒对齐。全部85项测试通过；局部对齐的真实失败已保留并报告。结果见 [smoke_results.md](docs/smoke_results.md)，正式实验尚未完成。
 
+当前 OMNI-DC P1 的 AutoDL 部署、无卡准备及 pilot 操作见 [autodl_p1.md](docs/autodl_p1.md)；本机冒烟结果见 [omnidc_p1_smoke.md](docs/omnidc_p1_smoke.md)。云端完整训练不能从本机冒烟通过推断为已完成。
+
 ## 环境
 
 在 PowerShell 中进入本目录：

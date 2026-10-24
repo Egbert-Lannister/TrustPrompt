@@ -78,9 +78,10 @@ def main():
     out = ROOT / "checkpoints" / "baselines" / "setup_receipt.json"
     old = json.loads(out.read_text(encoding="utf-8")) if out.is_file() else {}
     rec = dict(old, schema="trustprompt.baselines.setup.v1", updated_at_utc=datetime.now(timezone.utc).isoformat(),
-               python=sys.version, packages={}, models=old.get("models", {}))
+               python=sys.version, packages={}, models=old.get("models", {}),
+               hf_endpoint=os.environ.get("HF_ENDPOINT", "https://huggingface.co"))
     for pkg in ("torch", "torchvision", "numpy", "scipy", "huggingface_hub", "safetensors", "einops", "timm",
-                "omegaconf", "trimesh", "diffusers", "transformers", "accelerate", "opencv-python"):
+                "omegaconf", "trimesh", "diffusers", "transformers", "accelerate", "opencv-python", "opencv-python-headless"):
         try:
             rec["packages"][pkg] = importlib.metadata.version(pkg)
         except importlib.metadata.PackageNotFoundError:

@@ -6,10 +6,10 @@ Config: configs/omnidc/p1.yaml (fixed before training). Data: tp/omnidc/data.py 
 (only Hypersim's train scenes; no NYU / HAMMER image is used, so both stay zero-shot evaluations). Model:
 tp/omnidc/model.GatedOMNIDC (gate only in f2). Loss: tp/omnidc/losses.FineTuneLoss. Depth Anything V2 stays frozen
 as in OMNI-DC; batch-norm statistics are frozen (fine-tuning with small batches).
---pilot-minutes N  train for N minutes, then write the measured throughput and the GPU-hour estimate for the full
-                   run (plan sec. 7: measure before committing the budget) and stop.
+--pilot-minutes N  process-wall budget including startup, reserving up to 60 seconds to save. Report training
+                   throughput separately from startup/save time; scripts/linux/p1_run.sh adds a hard watchdog.
 Writes results/p1_<variant>_<time>/: receipt, config, log.jsonl (every log_every steps), checkpoints/last.pt (every
-checkpoint_every steps, atomic, with the RNG states so a resumed run continues exactly) and final.pt, both without the frozen Depth Anything V2 weights (load_trainable puts
+checkpoint_every steps and at pilot exit, atomic, with RNG states) and final.pt, both without the frozen Depth Anything V2 weights (load_trainable puts
 them back from OMNI-DC's pinned weights). --resume continues from last.pt with the same config and code.
 --smoke STEPS      laptop check of this exact script (scripts/omnidc_p1_smoke.py): the same data, model and loss with
                    256 x 320 crops, batch 1, 2 workers, a log line every step and a checkpoint every 10 steps; stops
@@ -22,6 +22,7 @@ import argparse
 from datetime import datetime
 import json
 import math
+import random
 import sys
 import time
 from pathlib import Path
@@ -34,6 +35,83 @@ CONFIG = ROOT / "configs" / "omnidc" / "p1.yaml"
 SMOKE_TRAIN = dict(batch=1, workers=2, log_every=1, checkpoint_every=10)
 FROZEN = "net.depth_module."                              # Depth Anything V2: frozen, pinned weights, not saved
 SMOKE_CROP = [256, 320]
+
+
+def pilot_clock(minutes, started):
+    """Process-wall budget; leave a bounded save window, not a GPU-kernel timer."""
+    if minutes is None:
+        return None
+    if not math.isfinite(minutes) or minutes <= 0:
+        raise ValueError("pilot-minutes must be positive and finite")
+    seconds = 60 * minutes
+    reserve = min(60.0, seconds * 0.2)
+    return dict(deadline=started + seconds, train_deadline=started + seconds - reserve,
+                budget_seconds=seconds, cleanup_reserve_seconds=reserve)
+
+
+def training_contract(cfg, variant, root=ROOT):
+    """Bind resume to executable code, data selection/order and pinned baseline."""
+    root = Path(root)
+    code = {}
+    for folder in ("tp", "baselines", "scripts"):
+        for path in sorted((root / folder).rglob("*")):
+            if path.is_file() and path.suffix in {".py", ".sh"} and "__pycache__" not in path.parts:
+                code[path.relative_to(root).as_posix()] = sha256(path)
+    data = cfg["data"]
+    paths = [root / data["selection"], root / data["training"],
+             root / data["root"] / "frames_v1.json", root / "configs/baselines/registry.json"]
+    return dict(variant=variant, code_sha256=code,
+                input_sha256={path.relative_to(root).as_posix(): sha256(path) for path in paths})
+
+
+def validate_resume(out, variant, cfg, contract):
+    out = Path(out)
+    last = out / "checkpoints/last.pt"
+    if not last.is_file():
+        raise ValueError("resume requires checkpoints/last.pt; refusing to restart in an old run")
+    saved = json.loads((out / "config.json").read_text(encoding="utf-8"))
+    receipt = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+    if saved.get("variant") != variant or receipt.get("config", {}).get("variant") != variant:
+        raise ValueError("resume variant mismatch")
+    if saved.get("config") != cfg:
+        raise ValueError("resume needs the identical configuration")
+    if receipt.get("resume_contract") != contract:
+        raise ValueError("resume code/data/baseline hashes differ or are missing")
+    return receipt
+
+
+def validate_checkpoint(checkpoint, variant, contract, stop):
+    if checkpoint.get("variant") != variant or checkpoint.get("resume_contract") != contract:
+        raise ValueError("checkpoint variant/code/data identity mismatch")
+    step = checkpoint.get("step")
+    if isinstance(step, bool) or not isinstance(step, int) or not 0 <= step <= stop:
+        raise ValueError("checkpoint step is outside the requested run")
+    return step
+
+
+def save_checkpoint(last, model, opt, step, variant, contract):
+    """Atomic replacement retains the previous valid checkpoint on save failure."""
+    import numpy as np
+    import torch
+    import shutil
+    payload = dict(model=trainable_state(model), optimizer=opt.state_dict(), step=step, variant=variant,
+                   resume_contract=contract,
+                   rng=dict(torch=torch.get_rng_state(), cuda=torch.cuda.get_rng_state_all(),
+                            numpy=np.random.get_state(), python=random.getstate()))
+    def tensor_bytes(value):
+        if isinstance(value, torch.Tensor):
+            return value.numel() * value.element_size()
+        if isinstance(value, dict):
+            return sum(tensor_bytes(v) for v in value.values())
+        if isinstance(value, (list, tuple)):
+            return sum(tensor_bytes(v) for v in value)
+        return 0
+    required = int(tensor_bytes(payload) * 1.1) + 64 * 2 ** 20
+    if shutil.disk_usage(last.parent).free < required:
+        raise OSError(f"insufficient checkpoint disk space: need {required} free bytes for atomic temp file")
+    tmp = last.with_suffix(".tmp")
+    torch.save(payload, tmp)
+    os.replace(tmp, last)
 
 
 def lr_at(step, total, cfg):
@@ -93,6 +171,7 @@ def grad_norms(model):
 
 
 def main():
+    invocation_t0 = time.perf_counter()
     import numpy as np
     import torch
     from torch.utils.data import DataLoader
@@ -103,25 +182,31 @@ def main():
     ap.add_argument("--resume", default=None)
     ap.add_argument("--smoke", type=int, default=None, metavar="STEPS")
     a = ap.parse_args()
+    clock = pilot_clock(a.pilot_minutes, invocation_t0)
+    if a.smoke is not None and a.smoke <= 0:
+        ap.error("smoke must be a positive step count")
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     if a.smoke:
         cfg["train"].update(SMOKE_TRAIN); cfg["data"]["crop"] = SMOKE_CROP
     t = cfg["train"]
     steps_total = t["samples"] // t["batch"]
     stop = min(a.smoke, steps_total) if a.smoke else steps_total
+    contract = training_contract(cfg, a.variant)
     if a.resume:
         out = Path(a.resume) if os.path.isabs(a.resume) else ROOT / a.resume
-        receipt = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
-        if json.loads((out / "config.json").read_text(encoding="utf-8"))["config"] != cfg:
-            raise ValueError("resume needs the identical configuration")
+        receipt = validate_resume(out, a.variant, cfg, contract)
+        receipt.setdefault("resume_history", []).append(dict(command=[sys.executable, *sys.argv],
+                                                             prior_stage=receipt.get("stage")))
     else:
         out = ROOT / "results" / f"p1{'smoke' if a.smoke else ''}_{a.variant}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         receipt = start_run(out, dict(variant=a.variant, config=cfg, config_sha256=sha256(CONFIG), pilot_minutes=a.pilot_minutes,
                                       smoke=bool(a.smoke)),
                             [sys.executable, "-m", "scripts.train_omnidc", *sys.argv[1:]], int(cfg["seed"]))
+        receipt["resume_contract"] = contract
     (out / "checkpoints").mkdir(exist_ok=True)
+    log = None
     try:
-        torch.manual_seed(cfg["seed"]); np.random.seed(cfg["seed"])
+        torch.manual_seed(cfg["seed"]); np.random.seed(cfg["seed"]); random.seed(cfg["seed"])
         torch.backends.cuda.matmul.allow_tf32 = True; torch.backends.cudnn.allow_tf32 = True
         model, loss_fn, base = build(a.variant, cfg)
         receipt.update(model_deviations=base.deviations, gpu=torch.cuda.get_device_name(),
@@ -130,11 +215,14 @@ def main():
         opt = torch.optim.AdamW(params, lr=t["lr"], weight_decay=t["weight_decay"])
         start = 0
         last = out / "checkpoints" / "last.pt"
-        if a.resume and last.is_file():
-            ck = torch.load(last, map_location="cuda", weights_only=False)
-            load_trainable(model, ck["model"]); opt.load_state_dict(ck["optimizer"]); start = ck["step"]
+        if a.resume:
+            ck = torch.load(last, map_location="cpu", weights_only=False)
+            start = validate_checkpoint(ck, a.variant, contract, stop)
+            load_trainable(model, ck["model"]); opt.load_state_dict(ck["optimizer"])
             torch.set_rng_state(ck["rng"]["torch"].cpu())   # OMNI-DC's PVT trains with stochastic depth (drop_path
             torch.cuda.set_rng_state_all([r.cpu() for r in ck["rng"]["cuda"]])   # 0.1), drawn from the CUDA RNG
+            np.random.set_state(ck["rng"]["numpy"]); random.setstate(ck["rng"]["python"])
+            del ck
         d = cfg["data"]
         selection = json.loads((ROOT / d["selection"]).read_text(encoding="utf-8"))
         min_mirror = float(yaml.safe_load((ROOT / d["training"]).read_text(encoding="utf-8"))["min_mirror_share"])
@@ -143,14 +231,22 @@ def main():
                                 d.get("crop", (480, 640)))
         sampler = range(start * t["batch"], stop * t["batch"])
         loader = DataLoader(data, batch_size=t["batch"], sampler=sampler, num_workers=t["workers"],
-                            persistent_workers=t["workers"] > 0, pin_memory=True, drop_last=True)
+                            persistent_workers=t["workers"] > 0, pin_memory=True, drop_last=True,
+                            # Worker startup must not advance the restored model CPU RNG.
+                            generator=torch.Generator().manual_seed(cfg["seed"]))
         receipt.update(frames=len(frames), frame_roles={r: sum(1 for f in frames if f["role"] == r) for r in ("mirror", "window", "clean")},
                        stage="training", started_step=start)
         write_json(out / "receipt.json", receipt)
         log = (out / "log.jsonl").open("a", encoding="utf-8")
         model.train(); freeze_batchnorm(model)
-        t0 = time.perf_counter(); step = start; n_since = 0
-        for batch in loader:
+        t0 = time.perf_counter(); step = start; n_since = 0; saved_step = start if a.resume else None
+        iterator = iter(loader) if not clock or time.perf_counter() < clock["train_deadline"] else None
+        while step < stop:
+            if clock and time.perf_counter() >= clock["train_deadline"]:
+                break
+            batch = next(iterator)
+            if clock and time.perf_counter() >= clock["train_deadline"]:
+                break
             batch = {k: v.cuda(non_blocking=True) for k, v in batch.items()}
             for g in opt.param_groups:
                 g["lr"] = lr_at(step, steps_total, t)
@@ -162,7 +258,7 @@ def main():
             total.backward()
             logging = step + 1 == stop or (step + 1) % t["log_every"] == 0
             groups = grad_norms(model) if logging else {}
-            gnorm = float(torch.nn.utils.clip_grad_norm_(params, t["grad_clip"]))
+            gnorm = float(torch.nn.utils.clip_grad_norm_(params, t["grad_clip"], error_if_nonfinite=True))
             opt.step()
             step += 1; n_since += t["batch"]
             if logging:
@@ -174,18 +270,25 @@ def main():
                     rec["gate_mean"] = float(out_["gate"].mean())
                 log.write(json.dumps(rec) + "\n"); log.flush(); print(json.dumps(rec), flush=True)
             if step % t["checkpoint_every"] == 0 or step == stop:
-                tmp = last.with_suffix(".tmp")
-                torch.save(dict(model=trainable_state(model), optimizer=opt.state_dict(), step=step, variant=a.variant,
-                                rng=dict(torch=torch.get_rng_state(), cuda=torch.cuda.get_rng_state_all())), tmp)
-                os.replace(tmp, last)
-            if a.pilot_minutes and time.perf_counter() - t0 > 60 * a.pilot_minutes:
-                rate = n_since / (time.perf_counter() - t0)
-                receipt.update(stage="pilot_complete", pilot=dict(steps=step - start, samples_per_s=rate,
-                               full_run_gpu_hours=t["samples"] / rate / 3600, peak_gb=torch.cuda.max_memory_allocated() / 2 ** 30))
-                print(json.dumps(receipt["pilot"]), flush=True)
-                return
-            if step >= stop:
-                break
+                save_checkpoint(last, model, opt, step, a.variant, contract); saved_step = step
+        if clock:
+            train_seconds = time.perf_counter() - t0
+            save_t0 = time.perf_counter()
+            if saved_step != step:
+                save_checkpoint(last, model, opt, step, a.variant, contract)
+            save_seconds = time.perf_counter() - save_t0
+            rate = n_since / train_seconds if n_since and train_seconds > 0 else None
+            report = dict(steps=step - start, final_step=step, samples=n_since, samples_per_s=rate,
+                          full_run_gpu_hours=t["samples"] / rate / 3600 if rate else None,
+                          peak_gb=torch.cuda.max_memory_allocated() / 2 ** 30,
+                          training_wall_seconds=train_seconds, startup_wall_seconds=t0 - invocation_t0,
+                          checkpoint_save_seconds=save_seconds, process_wall_seconds=time.perf_counter() - invocation_t0,
+                          budget_seconds=clock["budget_seconds"], cleanup_reserve_seconds=clock["cleanup_reserve_seconds"],
+                          timing_definition="process wall budget; training throughput excludes startup and final save; not GPU kernel time",
+                          last_checkpoint_step=step, last_checkpoint_bytes=last.stat().st_size)
+            receipt.update(stage="pilot_complete" if rate else "pilot_no_training", pilot=report)
+            print(json.dumps(report), flush=True)
+            return
         if a.smoke:
             receipt.update(stage="smoke_complete", final_step=step, total_gb=torch.cuda.get_device_properties(0).total_memory / 2 ** 30)
             return
@@ -194,6 +297,8 @@ def main():
     except BaseException as e:
         receipt.update(stage="failed", error=repr(e)); raise
     finally:
+        if log is not None:
+            log.close()
         write_json(out / "receipt.json", receipt)
 
 
