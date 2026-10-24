@@ -42,11 +42,30 @@ def runtime() -> dict:
     return dict(python=sys.version, executable=sys.executable, platform=platform.platform(), packages=versions)
 
 
+def deployment_origin(root: Path) -> dict | None:
+    """Verify the source-only archive receipt, without pretending it is Git HEAD."""
+    root = Path(root).resolve()
+    path = root / "deployment_manifest.json"
+    if not path.is_file():
+        return None
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if manifest.get("schema") != "trustprompt.deployment.v1":
+        raise ValueError("unknown deployment manifest schema")
+    for rel, digest in manifest["source_sha256"].items():
+        candidate = (root / rel).resolve()
+        if not candidate.is_relative_to(root) or sha256(candidate) != digest:
+            raise ValueError(f"deployed source mismatch: {rel}")
+    if sha256(root / "deployment_working_tree.diff") != manifest["diff_sha256"]:
+        raise ValueError("deployment patch mismatch")
+    return manifest
+
+
 def start_run(output: Path, config: dict, command: list[str], seed: int) -> dict:
+    deployment = deployment_origin(ROOT)
     output.mkdir(parents=True, exist_ok=False)
     files = []
     for folder in ("tp", "baselines", "scripts", "tests", "configs"):
-        files.extend(p for p in (ROOT / folder).rglob("*") if p.suffix in {".py", ".yaml", ".json"} and "__pycache__" not in p.parts)
+        files.extend(p for p in (ROOT / folder).rglob("*") if p.suffix in {".py", ".yaml", ".json", ".sh"} and "__pycache__" not in p.parts)
     files += [ROOT / "pyproject.toml", ROOT / "requirements-local.txt"]
     hashes = {p.relative_to(ROOT).as_posix(): sha256(p) for p in sorted(files) if p.is_file()}
     with zipfile.ZipFile(output / "source_snapshot.zip", "x", zipfile.ZIP_DEFLATED) as z:
@@ -55,10 +74,14 @@ def start_run(output: Path, config: dict, command: list[str], seed: int) -> dict
     receipt = dict(schema="trustprompt.run.v1", started_at_utc=datetime.now(timezone.utc).isoformat(),
                    seed=seed, command=command, shell_command=subprocess.list2cmdline(command),
                    git_commit=git("rev-parse", "HEAD"), git_status=git("status", "--porcelain=v1"),
+                   deployment=deployment,
                    source_sha256=hashes, runtime=runtime(), model_version=None, config=config,
                    stage="started")
     write_json(output / "config.json", config)
     write_json(output / "receipt.json", receipt)
     (output / "working_tree.diff").write_text(git("diff", "HEAD", "--") or git("diff", "--") or "", encoding="utf-8")
+    if deployment is not None:
+        for name in ("deployment_manifest.json", "deployment_working_tree.diff"):
+            (output / name).write_bytes((ROOT / name).read_bytes())
     (output / "command.txt").write_text(receipt["shell_command"] + "\n", encoding="utf-8")
     return receipt

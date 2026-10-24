@@ -7,8 +7,12 @@ Supports ZIP64 (archives > 4 GB), stored and deflated members; every member is c
 """
 from __future__ import annotations
 
+import http.client
+import re
+import ssl
 import struct
 import time
+import urllib.error
 import urllib.request
 import zlib
 from dataclasses import dataclass
@@ -106,25 +110,69 @@ class RemoteZip:
         return out
 
 
+class RangeProtocolError(OSError):
+    """The server did not honour the bounded byte-range contract."""
+
+
 def http_range_fetcher(url, retries=5, timeout=60):
-    """(fetch, size) for a URL whose server honours Range requests."""
-    def request(headers, method="GET"):
+    """(fetch, size), rejecting full-body responses before reading any payload.
+
+    HEAD must report an archive size. Each GET must then describe precisely the
+    requested inclusive range, that same total size, and an unencoded body of
+    the expected length. No full-archive GET fallback is performed.
+    """
+    if isinstance(retries, bool) or not isinstance(retries, int) or retries < 1:
+        raise ValueError("retries must be a positive integer")
+    if timeout <= 0:
+        raise ValueError("timeout must be positive")
+
+    def request(method, start=None, end=None, total=None):
+        headers = {"Accept-Encoding": "identity"}
+        if method == "GET":
+            headers["Range"] = f"bytes={start}-{end}"
+        expected = None if method == "HEAD" else end - start + 1
         for attempt in range(retries):
             try:
                 with urllib.request.urlopen(urllib.request.Request(url, headers=headers, method=method), timeout=timeout) as r:
-                    return r.status, r.headers, (r.read() if method == "GET" else b"")
-            except OSError:
+                    # Check status before read(), including if a proxy ignores Range.
+                    required_status = 200 if method == "HEAD" else 206
+                    if r.status != required_status:
+                        raise RangeProtocolError(f"{url}: {method} requires status {required_status}, got {r.status}")
+                    if r.headers.get("Content-Encoding", "identity").strip().lower() not in ("", "identity"):
+                        raise RangeProtocolError(f"{url}: encoded responses are not byte-addressable")
+                    length_text = r.headers.get("Content-Length", "").strip()
+                    if re.fullmatch(r"[0-9]+", length_text) is None:
+                        raise RangeProtocolError(f"{url}: missing or invalid Content-Length")
+                    length = int(length_text)
+                    if method == "HEAD":
+                        if length <= 0:
+                            raise RangeProtocolError(f"{url}: HEAD archive size must be positive")
+                        return length                      # HEAD never reads a body.
+                    match = re.fullmatch(r"bytes ([0-9]+)-([0-9]+)/([0-9]+)", r.headers.get("Content-Range", "").strip())
+                    if match is None or tuple(map(int, match.groups())) != (start, end, total):
+                        raise RangeProtocolError(f"{url}: Content-Range differs from the requested offsets or archive size")
+                    if length != expected:
+                        raise RangeProtocolError(f"{url}: Content-Length differs from the requested range length")
+                    body = r.read(expected + 1)             # Bounded even when the response lies about its size.
+                    if len(body) != expected:
+                        raise RangeProtocolError(f"{url}: truncated or oversized Range body ({len(body)} != {expected})")
+                    return body
+            except (RangeProtocolError, urllib.error.HTTPError, ssl.SSLCertVerificationError):
+                raise                                       # Protocol/status failures never trigger another GET.
+            except (OSError, http.client.IncompleteRead, http.client.RemoteDisconnected) as error:
+                if isinstance(error, urllib.error.URLError) and isinstance(error.reason, ssl.SSLCertVerificationError):
+                    raise
                 if attempt == retries - 1:
                     raise
                 time.sleep(2 ** attempt)
 
-    _, headers, _ = request({}, "HEAD")
-    size = int(headers["Content-Length"])
+    size = request("HEAD")
 
     def fetch(start, end):
+        if any(isinstance(v, bool) or not isinstance(v, int) for v in (start, end)):
+            raise ValueError("Range offsets must be integers")
+        if not 0 <= start <= end or start >= size:
+            raise ValueError("Range start/end lie outside the archive")
         end = min(end, size - 1)
-        status, _, body = request({"Range": f"bytes={start}-{end}"})
-        if status != 206 or len(body) != end - start + 1:
-            raise IOError(f"{url}: range {start}-{end} not honoured (status {status}, {len(body)} bytes)")
-        return body
+        return request("GET", start, end, size)
     return fetch, size
