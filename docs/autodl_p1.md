@@ -1,8 +1,8 @@
 # AutoDL P1 执行记录（2026-10-24）
 
-当前状态：**F1 pilot 已结束，训练回执、资源汇总和远端 CPU 检查点完整性核验通过。2026-10-24 14:49:27–15:48:32 UTC，完成 2,598 步 / 15,588 样本；一小时预算内 operator 实际墙钟 59.0705 分钟。训练目录为 `results/p1_f1_20261024_224929`，源码保持 `8515378`。完整 F0/F1 尚未启动，结束后未发现训练或 GPU 计算进程，实例未关闭。** 最终结果与待批准预算见 [autodl_p1_pilot.md](autodl_p1_pilot.md)。
+当前状态：**用户已批准后续 100 元预算，F0 于 2026-10-24 17:17:47 UTC 启动，随后将由固定作业让 F1 从 pilot 第 2,598 步续训。全局预算保护、自动关机及完成通知已配置；完整训练尚未完成。** 最新状态见 [完整训练执行记录](autodl_p1_full_training.md)，pilot 实测见 [pilot 报告](autodl_p1_pilot.md)。
 
-用户已提供现有 AutoDL 实例并授权 SSH 操作、公开数据下载和首个 1 小时 pilot；无卡准备完成后，用户已加载 GPU。完整 F0/F1 要在 pilot 实测报告与预算确认后开始。密码仅通过交互式登录使用，不存储于项目文件。没有修改服务器的登录认证设置。
+用户已提供现有 AutoDL 实例并授权 SSH 操作、公开数据下载和首个 1 小时 pilot；无卡准备完成后，用户已加载 GPU。用户随后已确认100元完整训练预算，当前由独立全局预算控制器执行F0/F1。密码仅通过交互式登录使用，不存储于项目文件。没有修改服务器的登录认证设置。
 
 ## 核验与来源
 
@@ -52,7 +52,7 @@
 - 只解码 train 的 `ai_001_001/cam_00` frame 1 / 4 / 21，分别来自 mirror/window/clean；实际运行轴向 Z 转换、480×640 缩放、f1 提示合成与增强，检查 shape、有限值、有效掩码、中位数归一化和标签定义，均通过。它们是实际下载的 **Hypersim 渲染帧及模拟提示**，属于训练输入工程检查，不是真实传感器评测，也没有运行模型或训练。验证/test 文件仅做不解码的字节哈希检查。
 - 数据预检总计 36.49 s，进程峰值 RSS 240,885,760 B（约 229.7 MiB），OOM/oom_kill 均为 0。回执、命令、日志和三列对齐图在本地 `results/autodl_p1_20261024/data_preflight/`，远端对应 `results/p1_data_preflight_v1/`。图已取回并目视检查；各模态使用同一次裁剪/翻转，镜面来源帧的镜面部分被随机裁剪移出大半，不另换更好看的样本。
 - 数据清单 SHA-256：`bc8f498a187c3f002434b6cc000a1c84f67a732e6bba4a3a54277bfc87b6c083`；按文件名排序的实际内容清单 SHA-256：`714e56df24e599b6c250213cd38ebbd99d67e345db02777f3ba23af594a44ca0`。
-- 无卡准备结束时，后续资源门槛与检查方案记录于 `docs/autodl_p1_gpu_preflight.md`：建议 32 GiB RAM，保守启动门槛为 16 GiB。用户随后加载的实际设备与 cu128 检查结果见下一节；batch 6 / 480×640 的 pilot 最终核验见下文。完整 F0/F1 训练尚未授权。
+- 无卡准备结束时，后续资源门槛与检查方案记录于 `docs/autodl_p1_gpu_preflight.md`：建议 32 GiB RAM，保守启动门槛为 16 GiB。用户随后加载的实际设备与 cu128 检查结果见下一节；batch 6 / 480×640 的 pilot 最终核验见下文。在这一无卡准备阶段，完整 F0/F1 当时尚未授权。
 - 本地 F0/F1 检查点评测入口已提交 `4ffb047`，32 项 CPU 检查通过。该入口尚未执行真实微调模型推理；后续 pilot 检查点的 CPU 完整性验证见下文。评测入口没有上传到当前服务器训练部署，远端仍为 `8515378`。
 
 ## GPU 载入、cu128 验证与 pilot 启动记录
@@ -73,7 +73,7 @@
 - 训练端 CPU mmap 完整性检查 **passed**，耗时 **3.923 秒**：**836 个模型张量与 1,890 个优化器张量全部有限**，无冻结 `depth_module` / gate 权重；`step`、`pilot.final_step`、`last_checkpoint_step` 一致为 2,598，torch/CUDA/NumPy/Python 四类 RNG 状态齐全。该检查不构造模型，不执行 GPU 推理或续训，不能称为真实续训复现。
 - 检查点 `checkpoints/last.pt` 为 **1,023,597,413 B**；训练端独立 SHA-256：`000a5106b1d6430eee44978f3c926eb4900e137b4448744961840462d65b697b`。本轮只取回较小的元数据、日志与 CPU 校验报告，没有复制整个检查点到本地。
 - 按用户给定 **7 元/GPU 小时**，F0 主体从零估计 **6.2846 小时 / 43.99 元**；F1 已完成部分扣除后还需 **14,068 步 / 84,408 样本**，主体估计 **5.3049 小时 / 37.13 元**。含两次启动与终端保存代理的后续基础预算为 **11.598 小时 / 81.19 元**，加一次 20% 预留为 **13.9177 小时 / 97.42 元**。F0 吞吐使用 F1 代理，恢复优化器额外读盘和 `final.pt` 写入/哈希尚未单独计时；不含评测、平台空闲时间或实际账单。周期保存已包含在 pilot 累计吞吐内，不重复追加。
-- **15:49:31 UTC** 后检无训练 PID、无 GPU 计算进程；未启动完整 F0/F1，未请求关闭实例。仍需用户批准上述实测预算后再开展完整训练。
+- **15:49:31 UTC** 后检无训练 PID、无 GPU 计算进程；未启动完整 F0/F1，未请求关闭实例。这是用户批准完整训练之前的退出快照；此后的授权与新作业见最新执行记录。
 
 本地证据在 `results/autodl_p1_20261024/pilot/`：训练目录的 `receipt.json`，独立 `checkpoint_validation.json`，operator 目录的 `resource_summary.json`，以及 `post_pilot_status.json`。当前联合汇总 [summary/pilot_summary.json](../results/autodl_p1_20261024/pilot/summary/pilot_summary.json) 已绑定独立 CPU 检查点验证。operator 子目录中较早的同名汇总仅核对日志、元数据和外部 SHA，原样保留其较窄的验证范围。汇总说明见 [autodl_p1_pilot.md](autodl_p1_pilot.md)。
 
@@ -95,7 +95,7 @@ export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 
 本次 pilot 已由 operator 执行并结束，入口位于 `results/autodl_operator/pilot_operator.py`，数据预检回执为 `results/p1_data_preflight_v1/receipt.json`，GPU 预检回执为 `results/autodl_operator/cu128/gpu_preflight.json`。最终训练目录已保存，无需重新运行 pilot。
 
-**pilot 回执与 CPU 检查点完整性已核验通过；以下完整训练命令尚未执行，仍须用户批准实测预算后使用：**
+**以下是批准前准备的普通启动命令，当前不要执行。用户已授权，新作业使用带全局预算、明确目录和自动关机的外层控制器，见 [完整训练记录](autodl_p1_full_training.md)。**
 
 ```bash
 export PATH=/root/miniconda3/bin:$PATH

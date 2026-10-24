@@ -1,6 +1,8 @@
 # AutoDL P1 pilot 实测与完整训练预算
 
-2026-10-24：**一小时预算的 F1 pilot 通过，完整 F0/F1 尚未启动。** 实际 operator 墙钟 59.07 分钟；训练器按事先设置预留 60 秒保存，正常退出码 0，没有触发超时终止。此结果验证工程稳定性和资源需求，不是模型精度评测或正式实验结果。
+本页记录 pilot 结束时的验证和预算快照。用户随后已批准 100 元完整训练并启动 F0，后续状态见 [完整训练执行记录](autodl_p1_full_training.md)。
+
+2026-10-24 pilot 结束时：**一小时预算的 F1 pilot 通过，当时完整 F0/F1 尚未启动。** 实际 operator 墙钟 59.07 分钟；训练器按事先设置预留 60 秒保存，正常退出码 0，没有触发超时终止。此结果验证工程稳定性和资源需求，不是模型精度评测或正式实验结果。
 
 ## 实际运行
 
@@ -62,4 +64,4 @@
 .\.venvs\baselines\Scripts\python.exe -B results/autodl_p1_20261024/summarize_pilot.py --run-dir results/autodl_p1_20261024/pilot/p1_f1_20261024_224929 --operator-dir results/autodl_p1_20261024/pilot/pilot_operator_20261024T144927Z_a49f31b2 --checkpoint-sha256 000a5106b1d6430eee44978f3c926eb4900e137b4448744961840462d65b697b --checkpoint-validation results/autodl_p1_20261024/pilot/checkpoint_validation.json --price 7 --output-dir results/autodl_p1_20261024/pilot/summary_recomputed
 ```
 
-完整训练的环境和命令已准备在 [执行记录](autodl_p1.md#可重复命令)，**尚未执行，须先得到用户对预算的确认**。继续训练须保持同一 cu128 环境与远端源码；新增评测脚本不能写入原训练源码树，否则会改变恢复合同。下一步为获批后运行 F0，再恢复 F1；完成后再做独立开发集检查点评测。
+pilot 报告提交时，完整训练命令已准备但尚未执行；用户随后批准了100元预算，当前启动情况见 [完整训练记录](autodl_p1_full_training.md)。继续训练须保持同一 cu128 环境与远端源码；新增评测脚本不能写入原训练源码树，否则会改变恢复合同。已批准的顺序为 F0 后恢复 F1；完成后再另行安排独立开发集检查点评测。
