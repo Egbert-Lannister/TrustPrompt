@@ -7,9 +7,12 @@ differ:
   f1, f2  the same, with condition C applied first (tp.sim.hypersim_condition; mirror and window frames)
 With probability `p_sparse` the reading is thinned to 100-2000 random points (OMNI-DC's main training pattern), so
 the fine-tuned model keeps working on sparse inputs (non-inferiority check N2).
-Per sample: load the frame, resize to 480 x 640 (K scaled), synthesise, random scale in [1, 1.5] + random 480 x 640
-crop + horizontal flip (OMNI-DC's augmentation), divide reading and GT by the median reading (OMNI-DC's
-data_normalize_median). Sample n always uses the generator default_rng([seed, n]), so a run resumes exactly.
+Per sample: load the frame, resize to 480 x 640 (K scaled), synthesise, then OMNI-DC's training augmentation
+(src/data/__init__.py process: random scale in [1, 1.5], random 480 x 640 crop, horizontal flip, colour jitter 0.4 on
+brightness / contrast / saturation, no rotation as in train_full.sh), drop GT below max(GT) / 100 and divide reading
+and GT by the median GT (OMNI-DC's data_normalize_median; the scale only sets the loss units, since OMNI-DC whitens
+its network input and its integrator is scale-equivariant). Sample n always uses the generator
+default_rng([seed, n, attempt]), so a run resumes exactly. `crop` is smaller only for the laptop smoke test.
 Labels (for the gate and the two-sided ConfInput loss): tp.sim.corrupt.type_labels on the final reading.
 """
 from __future__ import annotations
@@ -84,7 +87,19 @@ def augment(arrays, rng, h=HEIGHT, w=WIDTH, scale=(1.0, 1.5)):
     return [a[ys][:, xs] for a in arrays]
 
 
-def make_sample(frame, variant, rng, p_sparse=0.3):
+def color_jitter(rgb, rng, s=0.4):
+    """torchvision ColorJitter(brightness=s, contrast=s, saturation=s) on uint8 RGB, in a fixed order (brightness,
+    contrast, saturation; torchvision draws the order at random, which changes little at these strengths)."""
+    x = rgb.astype(np.float32) / 255
+    gray = lambda y: (y @ np.array([0.299, 0.587, 0.114], np.float32))[..., None]
+    b, c, sat = rng.uniform(1 - s, 1 + s, 3)
+    x = np.clip(x * b, 0, 1)
+    x = np.clip(c * x + (1 - c) * gray(x).mean(), 0, 1)
+    x = np.clip(sat * x + (1 - sat) * gray(x), 0, 1)
+    return (x * 255 + 0.5).astype(np.uint8)
+
+
+def make_sample(frame, variant, rng, p_sparse=0.3, crop=(HEIGHT, WIDTH)):
     """One training sample (numpy) of configuration `variant` (f0 / f1 / f2) from a resized frame."""
     gt = np.where(frame.valid, frame.depth, 0).astype(np.float32)
     if variant == "f0":
@@ -97,10 +112,14 @@ def make_sample(frame, variant, rng, p_sparse=0.3):
     P, V = omnidc_noise(P, V, rng)
     if rng.random() < p_sparse:
         P, V = sparsify(P, V, rng)
-    rgb, P, V, gt, gv = augment([frame.rgb, P, V, gt, frame.valid], rng)
-    if not V.any():
-        raise ValueError("no reading left")
-    med = float(np.median(P[V]))
+    rgb, P, V, gt, gv = augment([frame.rgb, P, V, gt, frame.valid], rng, *crop)
+    rgb = color_jitter(rgb, rng)
+    gv = gv & (gt > 0)
+    if gv.any():
+        gv &= gt >= gt[gv].max() / 100.0                   # OMNI-DC's depth_min_bound (max_depth_range 100)
+    if not V.any() or not gv.any():
+        raise ValueError("no reading or no GT left")
+    med = float(np.median(gt[gv]))
     P, gt = np.where(V, P / med, 0).astype(np.float32), np.where(gv, gt / med, 0).astype(np.float32)
     labels = type_labels(P, V, gt, gv)
     rgbn = ((rgb.astype(np.float32) / 255 - IMAGENET_MEAN) / IMAGENET_STD).transpose(2, 0, 1)
@@ -111,9 +130,9 @@ def make_sample(frame, variant, rng, p_sparse=0.3):
 class HypersimTraining:
     """Map-style dataset: item n -> sample of frame perm[n % N] with generator default_rng([seed, n])."""
 
-    def __init__(self, data_root, selection, frames, variant, seed, p_sparse=0.3):
+    def __init__(self, data_root, selection, frames, variant, seed, p_sparse=0.3, crop=(HEIGHT, WIDTH)):
         self.root, self.selection, self.frames = data_root, selection, frames
-        self.variant, self.seed, self.p_sparse = variant, int(seed), p_sparse
+        self.variant, self.seed, self.p_sparse, self.crop = variant, int(seed), p_sparse, tuple(crop)
         self.perm = np.random.default_rng(self.seed).permutation(len(frames))
 
     def __len__(self):
@@ -127,7 +146,7 @@ class HypersimTraining:
             frame = resize_frame(load_frame(self.root, f["scene"], f["camera"], f["frame"],
                                             self.selection["scenes"][f["scene"]]["camera"]["M_cam_from_uv"]))
             try:
-                s = make_sample(frame, self.variant, rng, self.p_sparse)
+                s = make_sample(frame, self.variant, rng, self.p_sparse, self.crop)
             except ValueError:
                 continue
             out = {k: torch.from_numpy(np.asarray(v)) for k, v in s.items()}

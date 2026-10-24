@@ -490,3 +490,12 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 修改：`tp/omnidc/model.py`（F0/F1 没有门控时直接调用 OMNI-DC）。
 - 测试覆盖：缩放后光线一致、样本可复现、中位数归一化、增强与稀疏化、`confinput_original` 与 OMNI-DC 原式相等、学习率曲线。
 - 租卡、平台和预算由用户决定；没有开通任何付费资源，也没有开始训练。
+
+## 2026-10-24 P1 训练脚本的本机冒烟测试（用户要求先在本机跑）
+
+- 新增：`scripts/omnidc_p1_smoke.py`、`scripts/windows/step15_p1_smoke.ps1`。`scripts/train_omnidc.py` 增加 `--smoke STEPS`，并记录门控、门控通道和置信度头的梯度范数。
+- 对照 OMNI-DC 源码修正了数据流程：改为 GT 中位数归一化，补上颜色扰动和近处 GT 的去除。检查点不再保存冻结的 DAv2。
+- 验证：
+  - CPU 上用随机权重跑 f0/f1/f2 各一步，通过；
+  - `tests/test_omnidc_train.py` 6 项通过，包括与 torchvision 颜色扰动的对比。
+- 待办：在本机 GPU 上运行 `scripts\windows\step15_p1_smoke.ps1`，S1–S6 全部通过之后再租卡。

@@ -26,8 +26,11 @@ def test_samples_are_deterministic_and_shaped():
     a, b = make_sample(f, "f1", np.random.default_rng(3)), make_sample(f, "f1", np.random.default_rng(3))
     assert all(np.array_equal(a[k], b[k]) for k in a)
     assert a["rgb"].shape == (3, 480, 640) and a["dep"].shape == (1, 480, 640) and a["labels"].shape == (480, 640)
-    v = a["dep"][0] > 0
-    assert np.isclose(np.median(a["dep"][0][v]), 1.0, atol=1e-6)              # median-normalised
+    g = a["gt"][0] > 0
+    assert np.isclose(np.median(a["gt"][0][g]), 1.0, atol=1e-6)               # GT-median-normalised (OMNI-DC)
+    assert np.allclose(a["dep"][0] * a["median_m"], make_sample(f, "f1", np.random.default_rng(3))["dep"][0] * a["median_m"])
+    small = make_sample(f, "f1", np.random.default_rng(4), crop=(256, 320))
+    assert small["rgb"].shape == (3, 256, 320) and small["labels"].shape == (256, 320)
     f0 = make_sample(f, "f0", np.random.default_rng(1))
     assert ((f0["labels"] == 1).mean() < (make_sample(f, "f1", np.random.default_rng(1))["labels"] == 1).mean())
 
@@ -66,6 +69,17 @@ def test_confinput_original_equals_omnidc_formula(monkeypatch):
     confident = torch.full_like(conf, 0.9)                 # a confident head is right on clean, wrong on far readings
     assert confinput_two_sided(confident, lab, dep) < confinput_two_sided(confident, torch.ones_like(lab), dep)
     assert confinput_two_sided(confident, 2 * torch.ones_like(lab), dep) == confinput_two_sided(confident, torch.ones_like(lab), dep)
+
+
+def test_color_jitter_matches_torchvision():
+    tvf = pytest.importorskip("torchvision.transforms.functional")
+    from tp.omnidc.data import color_jitter
+    rgb = (np.random.default_rng(0).random((16, 20, 3)) * 255).astype(np.uint8)
+    b, c, s = np.random.default_rng(5).uniform(0.6, 1.4, 3)
+    x = torch.from_numpy(rgb.transpose(2, 0, 1).copy()).float() / 255
+    ref = tvf.adjust_saturation(tvf.adjust_contrast(tvf.adjust_brightness(x, b), c), s)
+    out = torch.from_numpy(color_jitter(rgb, np.random.default_rng(5)).transpose(2, 0, 1).copy()).float() / 255
+    assert (out - ref).abs().max() < 2 / 255
 
 
 def test_lr_schedule():
