@@ -6,6 +6,7 @@ Set-Location D:\Python_Script\TrustPrompt
 . "$PSScriptRoot\common.ps1"
 $bpy = "D:\Python_Script\TrustPrompt\.venvs\baselines\Scripts\python.exe"
 $startTime = Get-Date
+$env:MKL_THREADING_LAYER = "SEQUENTIAL"   # torch + Anaconda MKL in one process (OMP Error #15, progress 2026-10-14)
 Assert-FreeGB "D" 4
 & $bpy -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('pytest') else 1)"
 if ($LASTEXITCODE -eq 0) { Invoke-Step "P1 unit tests" { & $bpy -m pytest -q tests\test_omnidc_train.py } } else { Write-Host "pytest not in .venvs\baselines: unit tests skipped (they passed on Claude's side)" }
