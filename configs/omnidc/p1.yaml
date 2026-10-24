@@ -1,0 +1,27 @@
+# Mainline P1 / P2 fine-tuning of OMNI-DC v1.1 (docs/plan_omnidc.md sec. 5-7, 16). Written 2026-10-24, before any
+# training. One file, three configurations that differ only where the plan says they differ.
+seed: 20261024
+data:
+  root: data/source_cache/hypersim_v1
+  selection: configs/hypersim/selection_v1.json
+  training: configs/hypersim/training_v1.yaml        # mirror frames >= 5 % mirror pixels (D3 v2)
+  splits: [train]                                    # Hypersim's official train scenes; val / test not used
+  p_sparse: 0.3
+train:
+  samples: 100000                                    # plan sec. 7 budget basis; steps = samples / batch
+  batch: 6                                           # OMNI-DC's per-GPU batch (train_full.sh)
+  lr: 1.0e-4                                         # fine-tuning (OMNI-DC trained from scratch at 1e-3)
+  weight_decay: 0.01
+  warmup_steps: 500
+  final_lr_ratio: 0.1                                # cosine decay to 0.1 x lr
+  grad_clip: 1.0
+  workers: 8
+  log_every: 20
+  checkpoint_every: 2000
+  max_depth: 10.0                                    # median-normalised depths, as train_full.sh
+loss:
+  gate_weight: 1.0
+variants:
+  f0: {gate: false}                                  # OMNI-DC's i.i.d. noise only, OMNI-DC's ConfInput
+  f1: {gate: false}                                  # + condition C, two-sided ConfInput
+  f2: {gate: true, paths: [input, ddi, spn]}         # + module A (gate on all three entry points)

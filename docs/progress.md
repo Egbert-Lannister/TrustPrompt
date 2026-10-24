@@ -481,3 +481,12 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 
 - D2 冒烟测试通过：门控全开时输出不变（差 ≤ 3.1e-6 m）；梯度能到达门控、门控通道和置信度头；显存 3.8 GB。
 - D3 v1 只有 R4 未通过（错误像素占画面比例：合成 0.012，NYU 0.050）。原因是镜面在画面中偏小。修订为只用镜面 ≥ 5% 的帧（`configs/hypersim/training_v1.yaml`），等待重跑 D3 v2。v1 的报告保留为 `docs/hypersim_synthesis_v1.md`。
+
+## 2026-10-24 P0 完成（D3 v2 通过）；P1 训练代码
+
+- D3 v2 通过：R1–R4 全部满足（数字见 `docs/plan_omnidc.md` §17）。P0 的 D1/D1b/D2/D3 全部完成。
+- P1 代码已实现，小规模验证通过，尚未在 GPU 上运行：
+  - 新增：`tp/omnidc/data.py`、`tp/omnidc/losses.py`、`configs/omnidc/p1.yaml`、`scripts/train_omnidc.py`、`scripts/linux/p1_setup.sh`、`scripts/linux/p1_run.sh`、`tests/test_omnidc_train.py`；
+  - 修改：`tp/omnidc/model.py`（F0/F1 没有门控时直接调用 OMNI-DC）。
+- 测试覆盖：缩放后光线一致、样本可复现、中位数归一化、增强与稀疏化、`confinput_original` 与 OMNI-DC 原式相等、学习率曲线。
+- 租卡、平台和预算由用户决定；没有开通任何付费资源，也没有开始训练。
