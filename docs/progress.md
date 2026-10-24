@@ -500,3 +500,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - `tests/test_omnidc_train.py` 6 项通过，包括与 torchvision 颜色扰动的对比。
 - 待办：在本机 GPU 上运行 `scripts\windows\step15_p1_smoke.ps1`，S1–S6 全部通过之后再租卡。
 - 冒烟测试 v1（`omnidc_p1_smoke_20261024_045155`）：S1–S4 和 S6 通过，峰值显存 3.89 GB。S5（续训是否精确）未通过，最大相对差 5.3%。原因是检查点没有保存随机数状态，而 OMNI-DC 的 PVT 训练时使用 drop_path 0.1。已改为保存并恢复 torch 和 CUDA 的随机数状态，规则不变，待重跑。
+- 冒烟测试 v2（`omnidc_p1_smoke_20261024_051523`）：S1–S6 全部通过，续训最大相对差 0.27%，峰值显存 3.89 GB。训练脚本已完整跑通；下一步是在租用的 48 GB 卡上跑 1 小时 pilot（需要用户决定平台并授权）。
