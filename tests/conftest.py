@@ -2,8 +2,11 @@
 
 TP_TEST_TMP overrides the parent directory (used on hosts where the project
 folder is mounted without delete permission, e.g. the Linux workspace).
+MKL runs sequentially in tests, as in every script that loads torch: Anaconda's MKL brings its own OpenMP runtime,
+which aborts the process next to torch's (OMP Error #15, docs/progress.md 2026-10-14).
 """
 import os
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
 from pathlib import Path
 import shutil
 import uuid
