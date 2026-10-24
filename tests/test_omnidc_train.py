@@ -216,6 +216,7 @@ def test_pilot_loop_counts_startup_and_saves_nonperiodic_step_on_cpu(tmp_path, m
     monkeypatch.setattr(trainer, "ROOT", tmp_path)
     monkeypatch.setattr(trainer, "CONFIG", config_path)
     monkeypatch.setattr(trainer, "training_contract", lambda *args: {"fixture": True})
+    monkeypatch.setattr(trainer, "verified_model_version", lambda variant: {"name": "CPU toy", "variant": variant})
     def start(out, config, command, seed):
         out.mkdir(parents=True)
         return dict(config=config, stage="started")
@@ -229,10 +230,11 @@ def test_pilot_loop_counts_startup_and_saves_nonperiodic_step_on_cpu(tmp_path, m
             return {"value": self.weight.square().sum()}
     def build(*args):
         clock[0] += 10.0  # Simulated model/GPU startup counts against the pilot.
-        return ToyModel(), lambda batch, out: (out["value"], {"toy": float(out["value"].detach())}), types.SimpleNamespace(deviations=[])
+        return ToyModel(), lambda batch, out: (out["value"], {"toy": float(out["value"].detach())}), types.SimpleNamespace(deviations=[], load_info={})
     monkeypatch.setattr(trainer, "build", build)
     monkeypatch.setattr(trainer, "freeze_batchnorm", lambda model: None)
-    monkeypatch.setattr(training_data, "training_frames", lambda *args: [{"role": "clean"}])
+    monkeypatch.setattr(training_data, "training_frames", lambda *args: [dict(scene="scene_0", camera="cam_00",
+                                                                            frame=0, split="train", role="clean")])
     monkeypatch.setattr(training_data, "HypersimTraining", lambda *args: None)
     class Loader:
         def __init__(self, *args, **kwargs):
@@ -252,6 +254,65 @@ def test_pilot_loop_counts_startup_and_saves_nonperiodic_step_on_cpu(tmp_path, m
     assert receipt["pilot"]["steps"] == 4  # 10 startup + 4*11 training > 48-second train deadline.
     assert receipt["pilot"]["startup_wall_seconds"] == 10
     assert receipt["pilot"]["process_wall_seconds"] == 54
+    assert receipt["model_version"]["name"] == "CPU toy"
+    assert receipt["training_data"]["frame_count"] == receipt["training_data"]["scene_count"] == 1
     checkpoint = torch.load(run / "checkpoints/last.pt", map_location="cpu", weights_only=False)
     assert checkpoint["step"] == 4
     assert not (run / "checkpoints/final.pt").exists()
+
+
+@pytest.mark.parametrize("head,dirty", [("wrong_revision", ""), ("pinned_revision", " M src/model.py")])
+def test_model_version_rejects_wrong_or_modified_upstream_before_weights(tmp_path, monkeypatch, head, dirty):
+    import baselines.completion as completion
+    import scripts.setup_baselines as setup
+    from scripts.train_omnidc import verified_model_version
+    spec = dict(commit="pinned_revision", label="OMNI-DC-v1.1")
+    monkeypatch.setattr(completion, "registry", lambda: {"models": {"omnidc": spec}})
+    monkeypatch.setattr(completion, "source_dir", lambda key: tmp_path)
+    monkeypatch.setattr(setup, "git", lambda src, *args: head if args[0] == "rev-parse" else dirty)
+    def forbidden_weights(key):
+        raise AssertionError("do not read weights from an unverified source")
+    monkeypatch.setattr(completion, "verify_weights", forbidden_weights)
+    with pytest.raises(ValueError, match="source"):
+        verified_model_version("f1")
+
+
+def test_model_version_records_actual_verified_weights_without_loading_model(tmp_path, monkeypatch):
+    import baselines.completion as completion
+    import scripts.setup_baselines as setup
+    from scripts.train_omnidc import verified_model_version
+    spec = dict(commit="pinned_revision", label="OMNI-DC-v1.1", repo="https://example.invalid/source")
+    weight_record = {"repo/model.safetensors": dict(path="local/model.safetensors", size=123,
+                                                  sha256="a" * 64, revision="weight_revision")}
+    calls = []
+    monkeypatch.setattr(completion, "registry", lambda: {"models": {"omnidc": spec}})
+    monkeypatch.setattr(completion, "source_dir", lambda key: tmp_path)
+    monkeypatch.setattr(setup, "git", lambda src, *args: "pinned_revision" if args[0] == "rev-parse" else "")
+    def verify(key):
+        calls.append(key)
+        return weight_record
+    monkeypatch.setattr(completion, "verify_weights", verify)
+    version = verified_model_version("f1")
+    assert calls == ["omnidc"]
+    assert version["weights"] == weight_record and version["registry_entry"] == spec
+    assert version["source_commit"] == "pinned_revision" and version["source_status"] == ""
+    assert version["variant"] == "f1"
+
+
+def test_actual_training_manifest_preserves_rows_splits_and_hash(tmp_path):
+    import json
+    from scripts.train_omnidc import record_training_frames
+    from tp.provenance import sha256
+    frames = [dict(scene="scene_b", camera="cam_00", frame=3, split="train", role="clean"),
+              dict(scene="scene_a", camera="cam_00", frame=8, split="train", role="mirror"),
+              dict(scene="scene_a", camera="cam_00", frame=9, split="train", role="window")]
+    record = record_training_frames(tmp_path, frames, ["train"], .05, 7)
+    path = tmp_path / record["manifest"]
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    assert manifest["frames"] == frames  # Order and the actual eligible pool are preserved.
+    assert manifest["frame_count"] == 3 and manifest["scene_count"] == 2
+    assert manifest["scenes"]["scene_a"] == dict(split="train", frame_count=2)
+    assert record["sha256"] == sha256(path)
+    assert record["scene_splits"] == {"scene_a": "train", "scene_b": "train"}
+    with pytest.raises(ValueError, match="split"):
+        record_training_frames(tmp_path, [dict(frames[0], split="test")], ["train"], .05, 7)
