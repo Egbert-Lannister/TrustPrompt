@@ -11,7 +11,7 @@ set -Eeuo pipefail
 usage() {
   cat <<'USAGE'
 Usage: bash scripts/linux/p1_setup.sh [cu126] [options]
-  --cpu-only           Prepare without GPU; no CUDA check, data workers <= 2.
+  --cpu-only           Prepare without GPU; no CUDA check, data workers <= 16.
                        Installs the requested CUDA wheel build for later GPU use.
   --index NAME         PyTorch wheel index (default cu126; positional form retained).
   --workers N          Data-download workers (default 2 CPU / 16 GPU).
@@ -65,7 +65,9 @@ if [[ -z "$WORKERS" ]]; then
   if ((CPU_ONLY)); then WORKERS=2; else WORKERS=16; fi
 fi
 [[ "$WORKERS" =~ ^[1-9][0-9]*$ ]] || { echo "workers must be a positive integer" >&2; exit 2; }
-if ((CPU_ONLY && WORKERS > 2)); then echo "--cpu-only allows at most 2 download workers" >&2; exit 2; fi
+# Default stays at 2. A bounded public-file probe on the 0.5 CPU / 2 GiB instance
+# validated 16 threads at 303 MiB process RSS and 0.18 CPU cores; use it explicitly.
+if ((CPU_ONLY && WORKERS > 16)); then echo "--cpu-only allows at most 16 download workers" >&2; exit 2; fi
 if [[ -n "$FROM_STAGE" && ${#REQUESTED[@]} -gt 0 ]]; then
   echo "Use --from or --stage/--stages, not both" >&2; exit 2
 fi
