@@ -9,7 +9,7 @@ as in OMNI-DC; batch-norm statistics are frozen (fine-tuning with small batches)
 --pilot-minutes N  train for N minutes, then write the measured throughput and the GPU-hour estimate for the full
                    run (plan sec. 7: measure before committing the budget) and stop.
 Writes results/p1_<variant>_<time>/: receipt, config, log.jsonl (every log_every steps), checkpoints/last.pt (every
-checkpoint_every steps, atomic) and final.pt, both without the frozen Depth Anything V2 weights (load_trainable puts
+checkpoint_every steps, atomic, with the RNG states so a resumed run continues exactly) and final.pt, both without the frozen Depth Anything V2 weights (load_trainable puts
 them back from OMNI-DC's pinned weights). --resume continues from last.pt with the same config and code.
 --smoke STEPS      laptop check of this exact script (scripts/omnidc_p1_smoke.py): the same data, model and loss with
                    256 x 320 crops, batch 1, 2 workers, a log line every step and a checkpoint every 10 steps; stops
@@ -133,6 +133,8 @@ def main():
         if a.resume and last.is_file():
             ck = torch.load(last, map_location="cuda", weights_only=False)
             load_trainable(model, ck["model"]); opt.load_state_dict(ck["optimizer"]); start = ck["step"]
+            torch.set_rng_state(ck["rng"]["torch"].cpu())   # OMNI-DC's PVT trains with stochastic depth (drop_path
+            torch.cuda.set_rng_state_all([r.cpu() for r in ck["rng"]["cuda"]])   # 0.1), drawn from the CUDA RNG
         d = cfg["data"]
         selection = json.loads((ROOT / d["selection"]).read_text(encoding="utf-8"))
         min_mirror = float(yaml.safe_load((ROOT / d["training"]).read_text(encoding="utf-8"))["min_mirror_share"])
@@ -173,7 +175,8 @@ def main():
                 log.write(json.dumps(rec) + "\n"); log.flush(); print(json.dumps(rec), flush=True)
             if step % t["checkpoint_every"] == 0 or step == stop:
                 tmp = last.with_suffix(".tmp")
-                torch.save(dict(model=trainable_state(model), optimizer=opt.state_dict(), step=step, variant=a.variant), tmp)
+                torch.save(dict(model=trainable_state(model), optimizer=opt.state_dict(), step=step, variant=a.variant,
+                                rng=dict(torch=torch.get_rng_state(), cuda=torch.cuda.get_rng_state_all())), tmp)
                 os.replace(tmp, last)
             if a.pilot_minutes and time.perf_counter() - t0 > 60 * a.pilot_minutes:
                 rate = n_since / (time.perf_counter() - t0)
