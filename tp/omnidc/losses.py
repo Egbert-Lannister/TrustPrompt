@@ -42,10 +42,12 @@ def confinput_two_sided(conf, labels, dep):
 class FineTuneLoss:
     def __init__(self, omnidc_args, variant, gate_weight=1.0):
         """omnidc_args: the OGNIDC args namespace (its loss fields are overwritten for the OMNI-DC terms)."""
-        from loss.sequentialloss import SequentialLoss          # OMNI-DC src (on sys.path once OGNIDC is built)
+        from baselines.completion import _sys_path, source_dir
         omnidc_args.loss = OMNIDC_TERMS
         omnidc_args.intermediate_loss_weight = 1.0
-        self.omnidc = SequentialLoss(omnidc_args)
+        with _sys_path(source_dir("omnidc") / "src"):            # OMNI-DC's own loss modules
+            from loss.sequentialloss import SequentialLoss
+            self.omnidc = SequentialLoss(omnidc_args)
         self.variant, self.gate_weight = variant, gate_weight
 
     def cuda(self):
