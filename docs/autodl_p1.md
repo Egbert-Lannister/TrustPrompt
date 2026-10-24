@@ -1,6 +1,6 @@
 # AutoDL P1 执行记录（2026-10-24）
 
-当前状态：**无卡环境准备进行中；云端 GPU pilot 和正式 F0/F1 均未开始。**
+当前状态：**无卡环境已安装，依赖与 CPU 算子预检通过；公开模型/数据准备进行中。云端 GPU pilot 和正式 F0/F1 均未开始。**
 
 用户已提供现有 AutoDL 实例并授权 SSH 操作、公开数据下载和首个 1 小时 pilot。实例目前无 GPU；由用户在准备就绪后加载卡。完整 F0/F1 要在 pilot 实测报告与预算确认后开始。密码仅通过交互式登录使用，不存储于项目文件。没有修改服务器的登录认证设置。
 
@@ -15,7 +15,7 @@
 
 ## 部署前修复
 
-- `p1_setup.sh` 支持 `--cpu-only` 和分阶段恢复，同一个 venv 安装目标 CUDA wheels。无卡阶段不实例化大模型，下载并发最多 2，补齐固定 OpenCV headless 版本。
+- `p1_setup.sh` 支持 `--cpu-only` 和分阶段恢复，同一个 venv 安装目标 CUDA wheels。无卡阶段不实例化大模型，下载并发默认 2；资源试跑后可显式选择最多 16，补齐固定 OpenCV headless 版本。
 - 帧清单校验改为 canonical JSON SHA-256，避免 Windows CRLF 与 Linux LF 造成假失败。预期值 `ba4768d0f8a0af30f30bc973148d1a6befc830ebf6cabf2becbd28193985cd2f`，选帧规则与训练集不变。
 - HTTP Range 下载器先核对响应状态与范围，再有限读取正文；服务器忽略 Range 时立即停止，避免误下载整场景 ZIP。
 - pilot 外层限制 60 分钟进程墙钟时间，最多额外 30 秒退出宽限；训练循环预留 60 秒保存时间，并在不足 2000 步时也保存可续训的 `last.pt`。这不会自动关闭 AutoDL 实例，不能等同于账单 GPU 小时或 GPU kernel 时间。
@@ -34,6 +34,13 @@
 - 训练集合独立复核：4,418 帧来自 **65 个实际训练场景**，不是原文写的 66 个；66 是官方 train 候选场景数，`ai_016_002` 经原先 ≥5% 镜面阈值筛除后无训练帧。类别数仍为 1,285/1,777/1,356；不改变任何样本或方法。该事实已同步修正主线计划。
 - 补齐模型与样本来源回执：GPU 加载前验证上游实际 HEAD、tracked 源码状态和各权重的真实 SHA-256；`model_version` 保存版本及加载信息；`training_frames.json` 保存有序帧清单与实际场景划分。对应训练单测 **25 passed（54.06 s）**，包含原先 21 项和新增 4 项；现在云端 setup 清单为 62 项，另有 1 项明确排除，尚待远端执行。
 - 第二次安装也遇到 R2 通用小包下载缓慢，主动终止后保留 `prepare.log`（143）；恢复脚本改为 `prepare_autodl_v2.sh`：直接安装已完成的公开 NVIDIA wheels，通用依赖走阿里云 PyPI 镜像，torch/torchvision 显式固定 `+cu126`。环境本体与研究配置不变，最后仍执行原 setup 的依赖/导入核验。
+- 最新部署：`e8da1ae0405f8bb7823d4ad37d050a38d264e870` 的干净源码归档 v3，42 文件；压缩包 SHA-256 `4956f7d6b5f30ccd98a13954f77c62a5199fc49a0468de3034441fa369041b24`。远端逐文件校验通过。
+- 远端 env 阶段 **已完成**：`results/p1_setup/20261024T102552Z-2011`，`pip check` 及 torchvision CPU NMS 通过；实测 torch 2.11.0+cu126、torchvision 0.26.0+cu126、OpenCV headless 4.11.0.86，CUDA build 12.6。未加载模型到 GPU，cgroup OOM/oom_kill 均为 0。完整实际依赖以该阶段 `packages.txt` 为准，未固定的传递依赖可能与本机不同。
+- 后续 model/plan/semantic/select/frames/tests 正在 `results/p1_setup/20261024T103045Z-2060` 执行。远端后台总进程和日志记录于本地 `results/autodl_p1_20261024/handoff.json`，该文件不含密码。
+- 定期自动访问服务器的提议被自动审批拒绝，未创建自动任务；继续在当前会话跟进。也未安装持久化 root SSH 密钥。
+- 公开 OMNI-DC 和 DAv2-L 两个权重 **大小/SHA-256 均验证通过**，上游源码固定版本验证通过；回执已取回 `results/autodl_p1_20261024/baselines_setup_receipt.json`。远端 plan 完成：语义 14,116 文件/0.250507775 GB，RGB+depth 候选上界 28,232 文件/4.872510174 GB，符合 40 GB 上限。
+- 下载并发试跑（每档 256 个真实公开语义文件，不是模型实验）：2/4/8/16 线程分别约 2.43/5.72/7.55/15.90 文件每秒。16 线程进程峰值 RSS 302.96 MiB，平均 cgroup CPU 增量 0.176 核，OOM/oom_kill 均 0。因此把 CPU 下载线程可选上限调整到 16，默认仍为 2，本次后续显式用 16。目标最大成员不足 1 MiB，ZIP 均 stored；并发不复制完整索引。cgroup memory.current 含可回收文件缓存，不能把它误当成进程常驻内存。
+- 原 semantic 阶段为试跑而主动中断，退出 143；555 条已完成记录解析正常。两轮试跑新增文件进入同一经 CRC/SHA 记录的缓存，后续从 semantic 恢复会验证并复用，不改变数据选择。试跑日志、完整指标和样本名单保存在 `results/autodl_p1_20261024/worker_probe*.json`。
 
 ## 可重复命令
 
