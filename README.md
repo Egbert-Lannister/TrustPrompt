@@ -2,7 +2,7 @@
 
 独立的提示可信度深度补全实验项目。已完成 Mirror3D-NYU 的5帧真实训练集最小闭环，并扩展到 UniDepthV2-S、全局/局部鲁棒对齐。全部85项测试通过；局部对齐的真实失败已保留并报告。结果见 [smoke_results.md](docs/smoke_results.md)，正式实验尚未完成。
 
-当前 OMNI-DC P1 的 AutoDL F1 pilot 已结束并通过回执与 CPU 检查点完整性核验：2,598 步、15,588 样本，一小时预算内 operator 实际墙钟 59.0705 分钟。完整 F0/F1 尚未启动。最终结果与后续预算见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)，部署过程见 [autodl_p1.md](docs/autodl_p1.md)；本机冒烟结果见 [omnidc_p1_smoke.md](docs/omnidc_p1_smoke.md)。
+当前 OMNI-DC P1 的 AutoDL F1 pilot 已结束并通过回执与 CPU 检查点完整性核验：2,598 步、15,588 样本，一小时预算内 operator 实际墙钟 59.0705 分钟。完整 F0/F1 已获100元预算授权，当前F0运行中、F1排队续训。最终结果与后续预算见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)，部署过程见 [autodl_p1.md](docs/autodl_p1.md)；本机冒烟结果见 [omnidc_p1_smoke.md](docs/omnidc_p1_smoke.md)。
 
 ## 环境
 
@@ -107,7 +107,7 @@ python -m scripts.summarize_step1
 
 ## 文档和状态
 
-当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”）见 `docs/plan_omnidc.md`：P0 已完成（§16–17），P1 本机 GPU 冒烟测试 S1–S6 已通过（`docs/omnidc_p1_smoke.md`），AutoDL 的 cu128 环境与 GPU 预检、F1 pilot 及 CPU 检查点完整性核验均已通过；正式 F0/F1 尚未启动。pilot 结果与预算见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)，当前部署、固定环境与命令见 `docs/autodl_p1.md`；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
+当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”）见 `docs/plan_omnidc.md`：P0 已完成（§16–17），P1 本机 GPU 冒烟测试 S1–S6 已通过（`docs/omnidc_p1_smoke.md`），AutoDL 的 cu128 环境与 GPU 预检、F1 pilot 及 CPU 检查点完整性核验均已通过；正式 F0/F1 已获授权并启动，当前尚未完成。pilot 结果与预算见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)，当前部署、固定环境与命令见 `docs/autodl_p1.md`；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
 
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
@@ -129,3 +129,6 @@ F0/F1 微调检查点评测入口已通过 CPU 工程测试；本次真实 pilot
 ```
 
 这里只允许开发 train/val；pilot 评测不算完整训练结果。预测缓存使用 float32 并保留无效值；与旧 R0 缓存比较前需核对其 `clipped_pixels`。
+
+
+AutoDL 完整训练已获用户 100 元预算授权并启动：F0 从零，随后 F1 从 pilot 第 2,598 步续训。全局预算、自动关机保护和完成通知已配置，当前仍在训练中；见 [执行记录](docs/autodl_p1_full_training.md)。
