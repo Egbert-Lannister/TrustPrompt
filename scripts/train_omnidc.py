@@ -89,6 +89,50 @@ def validate_checkpoint(checkpoint, variant, contract, stop):
     return step
 
 
+def verified_model_version(variant):
+    """Verify the actual upstream checkout and every weight before model load."""
+    from baselines.completion import registry, source_dir, verify_weights
+    from scripts.setup_baselines import git as source_git
+    spec = registry()["models"]["omnidc"]
+    source = source_dir("omnidc")
+    head = source_git(source, "rev-parse", "HEAD")
+    status = source_git(source, "status", "--porcelain=v1", "--untracked-files=no")
+    if head != spec["commit"]:
+        raise ValueError(f"OMNI-DC source commit {head} differs from pinned {spec['commit']}")
+    if status:
+        raise ValueError("OMNI-DC tracked source has local modifications")
+    return dict(name=spec["label"], key="omnidc", variant=variant, registry_entry=spec,
+                source=str(source), source_commit=head, source_status=status,
+                weights=verify_weights("omnidc"))
+
+
+def record_training_frames(out, frames, splits, min_mirror, seed):
+    """Persist the actual filtered ordered frame pool, rather than just counts."""
+    from collections import Counter
+    if not frames:
+        raise ValueError("training frame selection is empty")
+    scenes = {}
+    for frame in frames:
+        scene, split = frame["scene"], frame["split"]
+        if split not in splits:
+            raise ValueError("training frame split differs from requested splits")
+        if scene in scenes and scenes[scene]["split"] != split:
+            raise ValueError("training scene occurs in multiple splits")
+        entry = scenes.setdefault(scene, dict(split=split, frame_count=0))
+        entry["frame_count"] += 1
+    counts = dict(frame_count=len(frames), scene_count=len(scenes),
+                  split_counts=dict(Counter(f["split"] for f in frames)),
+                  role_counts=dict(Counter(f["role"] for f in frames)))
+    manifest = dict(schema="trustprompt.omnidc.training_frames.v1", requested_splits=list(splits),
+                    min_mirror_share=float(min_mirror), seed=int(seed), **counts,
+                    scenes={key: scenes[key] for key in sorted(scenes)}, frames=frames,
+                    frame_order="filtered source order; sampler permutes with default_rng(seed).permutation(N)")
+    path = Path(out) / "training_frames.json"
+    write_json(path, manifest)
+    return dict(manifest=path.name, sha256=sha256(path), **counts,
+                scene_splits={key: scenes[key]["split"] for key in sorted(scenes)})
+
+
 def save_checkpoint(last, model, opt, step, variant, contract):
     """Atomic replacement retains the previous valid checkpoint on save failure."""
     import numpy as np
@@ -208,7 +252,10 @@ def main():
     try:
         torch.manual_seed(cfg["seed"]); np.random.seed(cfg["seed"]); random.seed(cfg["seed"])
         torch.backends.cuda.matmul.allow_tf32 = True; torch.backends.cudnn.allow_tf32 = True
+        receipt["model_version"] = verified_model_version(a.variant)
+        write_json(out / "receipt.json", receipt)
         model, loss_fn, base = build(a.variant, cfg)
+        receipt["model_version"].update(load_info=base.load_info, deviations=base.deviations)
         receipt.update(model_deviations=base.deviations, gpu=torch.cuda.get_device_name(),
                        torch=torch.__version__, steps_total=steps_total)
         params = [p for p in model.parameters() if p.requires_grad]
@@ -227,6 +274,7 @@ def main():
         selection = json.loads((ROOT / d["selection"]).read_text(encoding="utf-8"))
         min_mirror = float(yaml.safe_load((ROOT / d["training"]).read_text(encoding="utf-8"))["min_mirror_share"])
         frames = training_frames(ROOT / d["root"], min_mirror, tuple(d["splits"]))
+        receipt["training_data"] = record_training_frames(out, frames, d["splits"], min_mirror, cfg["seed"])
         data = HypersimTraining(ROOT / d["root"], selection, frames, a.variant, cfg["seed"], d["p_sparse"],
                                 d.get("crop", (480, 640)))
         sampler = range(start * t["batch"], stop * t["batch"])
