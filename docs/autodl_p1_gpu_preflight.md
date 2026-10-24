@@ -2,7 +2,9 @@
 
 本页依据当前 `scripts/linux/p1_run.sh`、`scripts/train_omnidc.py`、`tp/omnidc/data.py` 和固定配置核查。命令不下载数据、不构造完整 OMNI-DC、不改配置、不启动 pilot。无卡阶段可以完成下面的三帧读取检查；GPU 检查必须等用户挂载 GPU 后执行。
 
-## 当前运行约定与真实阻塞项
+**实际 GPU 适配更新（2026-10-24）：** 用户加载的设备报告 RTX 6000D / sm_120，cu126 最小 CUDA 张量检查失败。现已建立 `/root/trustprompt-envs/p1-cu128`，torch 2.11.0+cu128 / torchvision 0.26.0+cu128 / cuDNN 91900；sm_120 编译支持、CUDA deform_conv2d 前后向、pip check 及 62 项 CPU 检查通过。当前 pilot 必须使用这个新环境。下方原始 cu126 命令保留为准备过程记录，不能直接用于本次设备；已执行的 cu128 检查脚本及回执在 `results/autodl_p1_20261024/cu128/`。后续恢复同一训练应保持 cu128 环境及远端源码树不变。
+
+## 无卡阶段原始预检约定（历史记录）
 
 - 使用同一个 `TP_P1_VENV=/root/trustprompt-envs/p1-cu126`；`p1_run.sh` 会激活它，未设置时才回退 `.venv-p1`。不能误用实例原有的 torch 2.8 / cu128 基础环境。目标版本是 torch 2.11.0、torchvision 0.26.0、CUDA wheel cu126、opencv-python-headless 4.11.0.86。
 - `configs/omnidc/p1.yaml` 固定 batch 6、8 个数据加载进程；正式 pilot 不传 `--smoke`，训练裁剪为 480×640。`--smoke` 会改变为 batch 1、256×320，不能用它的吞吐量代表 P1。

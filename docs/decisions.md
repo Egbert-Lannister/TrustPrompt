@@ -243,3 +243,14 @@
 - 训练场景数事实修正：官方 train 候选 66 个，经既定镜面 ≥5% 筛选后实际 65 个、4,418 帧，`ai_016_002` 没有保留训练帧。代码、选择阈值、样本身份与类别数均不变，仅修正文档把候选数当成实际数的问题。
 - F0/F1 微调推理（云端 pilot 之前实现）：使用官方 OMNI-DC eval 前向，仅恢复非冻结 `net.*` 参数；不运行训练 wrapper 前向，避免重复先验计算。缓存固定 float32，保留无效和超量程预测；旧 R0 uint16 缓存的上界为 13.107 m，比较前须审查饱和记录。
 - 兼容旧缓存读器的状态枚举：它只接受 `real_train_smoke_verified` / `real_dev_verified`。新入口的 CPU 合成 fixture 保留前一枚举作为兼容状态码，另外明确记录 `synthetic=true`、`validation_stage=synthetic_fixture_verified` 和 `stage_semantics=legacy_reader_compatibility_only`；测试确认合成标识进入逐图与汇总，不据此宣称真实实验。
+- GPU 实测适配（2026-10-24，pilot 之前）：用户加载设备后实际报告 RTX 6000D、sm_120、85,651 MiB 显存、24 CPU / 120 GiB RAM，而不是预想的旧架构 48 GB 卡。原 torch 2.11.0+cu126 在最小张量上报 `no kernel image`，失败日志保留，未进入训练。建立独立 `p1-cu128` 环境，保持 torch 2.11.0 / torchvision 0.26.0 与训练配置，按官方 cu128 元数据安装对应 CUDA 库；原 cu126 环境保留。两个变体及后续续训须使用同一个经验证的 cu128 环境，不能混用。官方依据：https://pytorch.org/get-started/previous-versions/ 。
+
+
+## 22. 云端 pilot 后的预算与验证口径（2026-10-24）
+
+- F1 一小时预算 pilot 正常结束，实际 operator 59.07 分钟，按原先预留保存时间；不声称训练精确运行满 60 分钟。2,598 步 / 15,588 次处理的吞吐为 4.419793 样本/s。
+- 目标样本按现有整步逻辑明确为 16,666×6=99,996，不继续把名义 100,000 当作实际值。未来 F1 只计算剩余 14,068 步，避免重复计费。
+- F0 未单独测速，用 F1 的含周期保存累计吞吐做代理，单列假设。未来基础 11.598 GPU 小时 / 81.19 元，统一加一次 20% 规划预留为 13.918 小时 / 97.42 元；按用户给定 7 元/小时。未计入后续评测与其他开机时间，未把波动范围称为置信区间。
+- checkpoint 独立在训练端做 CPU mmap 内容验证、SHA、优化器、RNG 和恢复合同核验，通过；本地预算脚本只绑定该回执，不伪称再次加载或真实续训。大检查点留在远端。
+- PyTorch 分配峰值 33.01 GiB 与 NVML 采样最大占用 40.17 GiB 分开记录；RAM 采样 20.55 GiB 含文件缓存。实际卡可见约 83 GiB，不能将此冒认为 48 GB 卡实测。
+- 训练结束后无训练/GPU计算进程，实例未关闭；正式 F0/F1 未获预算确认，未启动。完整报告见 `docs/autodl_p1_pilot.md`，机器可读结果见 `results/autodl_p1_20261024/pilot/summary/pilot_summary.json`。

@@ -2,7 +2,7 @@
 
 独立的提示可信度深度补全实验项目。已完成 Mirror3D-NYU 的5帧真实训练集最小闭环，并扩展到 UniDepthV2-S、全局/局部鲁棒对齐。全部85项测试通过；局部对齐的真实失败已保留并报告。结果见 [smoke_results.md](docs/smoke_results.md)，正式实验尚未完成。
 
-当前 OMNI-DC P1 的 AutoDL 部署、无卡准备及 pilot 操作见 [autodl_p1.md](docs/autodl_p1.md)；本机冒烟结果见 [omnidc_p1_smoke.md](docs/omnidc_p1_smoke.md)。云端完整训练不能从本机冒烟通过推断为已完成。
+当前 OMNI-DC P1 的 AutoDL F1 pilot 已结束并通过回执与 CPU 检查点完整性核验：2,598 步、15,588 样本，一小时预算内 operator 实际墙钟 59.0705 分钟。完整 F0/F1 尚未启动。最终结果与后续预算见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)，部署过程见 [autodl_p1.md](docs/autodl_p1.md)；本机冒烟结果见 [omnidc_p1_smoke.md](docs/omnidc_p1_smoke.md)。
 
 ## 环境
 
@@ -107,7 +107,7 @@ python -m scripts.summarize_step1
 
 ## 文档和状态
 
-当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”）见 `docs/plan_omnidc.md`：P0 已完成（§16–17），P1 本机 GPU 冒烟测试 S1–S6 已通过（`docs/omnidc_p1_smoke.md`），AutoDL 无卡准备已完成、等待用户加载 GPU，云端 pilot 和正式 F0/F1 尚未开始。当前部署、固定环境与命令见 `docs/autodl_p1.md`；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
+当前方向见 `docs/plan_revision_v2.md` §3.7（R16，2026-10-16 按 T v2 结果调整）：方法 v1（对齐 → T v1 → conformal 阈值 → 屏蔽并用 D_g 填充 → PromptDA-L）只冻结结构和规则。“错误提示是单侧约束”降为分析内容（`docs/t_v2_results.md`）。论文主线是三部分：测量（IR / DOR 与协议）、检测（可插拔的 T）、保证（conformal）。对比方法与 Holm 检验见 `docs/baselines.md`，自采数据方案见 `docs/capture_plan.md`。主线方案（在 OMNI-DC 内部建模“提示有错”）见 `docs/plan_omnidc.md`：P0 已完成（§16–17），P1 本机 GPU 冒烟测试 S1–S6 已通过（`docs/omnidc_p1_smoke.md`），AutoDL 的 cu128 环境与 GPU 预检、F1 pilot 及 CPU 检查点完整性核验均已通过；正式 F0/F1 尚未启动。pilot 结果与预算见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)，当前部署、固定环境与命令见 `docs/autodl_p1.md`；不训练的 Marigold-DC 引导线见 `docs/marigold_guidance_plan.md`（运行：`scripts\windows\step12_marigold_guidance.ps1`）。相关工作审计见 `docs/related_work_audit.md`，数据清单见 `docs/data_inventory.md`。
 
 - `docs/implementation_plan.md`：原计划副本与来源说明。
 - `docs/progress.md`：实际完成、运行结果、阻塞与下一步。
@@ -120,9 +120,9 @@ python -m scripts.summarize_step1
 
 T v0 / v1 / v2 都已训练，但只有开发集诊断。目前没有正式实验，也没有论文主结果：测试集未读取，HAMMER 三传感器留一测试也还没做。
 
-AutoDL 无卡准备已完成：环境与权重验证、全部 30,886 个 Hypersim 文件哈希复核、62 项 CPU 测试和 3 帧输入检查通过。等待用户加载 GPU 后执行 1 小时 pilot；还没有云端训练结果。详见 `docs/autodl_p1.md` 和 `docs/autodl_p1_gpu_preflight.md`。
+AutoDL 准备已完成：环境与权重验证、全部 30,886 个 Hypersim 文件哈希复核、62 项 CPU 测试和 3 帧输入检查通过。RTX 6000D / sm_120 使用独立 cu128 环境；F1 pilot 于 2026-10-24 14:49:27–15:48:32 UTC 执行，吞吐 4.419793 样本/秒，PyTorch allocated 峰值 33.00579 GiB，NVML 采样峰值 40.165 GiB，OOM/oom_kill 增量均为 0。结束后未发现训练或 GPU 计算进程；实例未关闭。按 7 元/GPU 小时，F0 从零与 F1 剩余训练的基础估计含启动/保存为 11.598 小时、81.19 元，加 20% 预留为 13.9177 小时、97.42 元；这是待批准的估算，不是账单，也不含后续评测与实例空闲时间。详见 [autodl_p1_pilot.md](docs/autodl_p1_pilot.md)。
 
-F0/F1 微调检查点评测入口已通过 CPU 工程测试，真实检查点验证待 pilot。将训练目录中的 `receipt.json`、`config.json`、`training_frames.json` 和 `checkpoints/last.pt` 一起取回，保留远端记录的 SHA-256，然后以新的输出目录运行：
+F0/F1 微调检查点评测入口已通过 CPU 工程测试；本次真实 pilot 检查点已在训练端通过 CPU mmap 载入和完整性检查，836 个模型张量与 1,890 个优化器张量均有限，四类 RNG 状态和步数一致。尚未做该检查点的真实推理评测或续训复现。后续开发集评测需将训练目录中的 `receipt.json`、`config.json`、`training_frames.json` 和 `checkpoints/last.pt` 一起取回，保留远端独立计算的 SHA-256，再以新的输出目录运行：
 
 ```powershell
 .\.venvs\baselines\Scripts\python.exe -m scripts.cache_omnidc_finetuned --run-dir results/p1_f1_RUN --variant f1 --checkpoint last.pt --checkpoint-sha256 SHA256_FROM_TRAINING_HOST --dataset nyu --split val --limit 1 --output cache/f1_pilot_nyu_smoke --evaluate
