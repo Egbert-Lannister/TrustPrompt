@@ -16,7 +16,13 @@ function Test-Done([string]$Dir, [string[]]$OkStages) {
   Write-Host "$Dir has stage '$st'. Rename that folder (append _failed) and re-run."; exit 1
 }
 function Assert-FreeGB([string]$Drive, [double]$NeedGB) {
-  $freeGB = (Get-PSDrive $Drive).Free / 1GB
+  $freeBytes = (Get-PSDrive $Drive).Free
+  # Windows PowerShell 5 may expose a filesystem drive with null Free/Used
+  # inside the desktop sandbox. Query the volume rather than treating null as 0.
+  if ($null -eq $freeBytes) {
+    $freeBytes = ([System.IO.DriveInfo]::new("${Drive}:\")).AvailableFreeSpace
+  }
+  $freeGB = $freeBytes / 1GB
   if ($freeGB -lt $NeedGB) { Write-Host ("{0}: has {1:N1} GB free, needs about {2:N1} GB. Free space and re-run." -f $Drive, $freeGB, $NeedGB); exit 1 }
 }
 # Run CPU jobs @{ module; out; args } with python $Py, $Parallel at a time; skip jobs whose receipt is in $OkStages.

@@ -1,6 +1,6 @@
 # 进展记录
 
-最新状态（2026-10-24）：AutoDL F1 pilot 已结束，回执与 CPU 检查点完整性核验通过；一小时预算内 operator 实际墙钟 59.0705 分钟，完成 2,598 步 / 15,588 样本。完整 F0/F1 尚未启动，实例未关闭。最终证据和待批准预算见 [autodl_p1_pilot.md](autodl_p1_pilot.md)；下文按时间保留此前各阶段记录。
+最新状态（2026-10-25）：AutoDL F0/F1 均已完成到 16,666 步，F1 从原 pilot 第 2,598 步续训；两份训练端 CPU 检查点验证通过，本地 39 项产物哈希与 432 项一致性核对通过。尚未运行训练后精度评测。**自动关机失败（Exec format error），已提示用户在平台检查并手动关机；截至关机尝试本轮费用估算 82.81 元，最终费用与停止计费未确认。** 详见 [完整训练结果](autodl_p1_full_results.md)；下文按时间保留此前各阶段记录。
 
 日期：2026-10-09，America/New_York。此前工作因用户中断停在核查；本次重新检查空目录后开始实现。GLARE保持只读。
 
@@ -562,3 +562,33 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 新增 `scripts/p1_gate.py`、`configs/omnidc/p1_gate_v1.yaml`、`scripts/windows/step16_p1_eval.ps1`、`tests/test_p1_gate.py`（5 项通过）。评测沿用已有的 `scripts/cache_omnidc_finetuned.py`，训练代码和评测入口都没有改动。
 - 状态（本地镜像，04:20 UTC）：F0 已完成，`final.pt` SHA-256 为 `7fa22ec1…`，342 MB；F1 续训到第 15,280 / 16,666 步。
 - 待办：取回两个运行目录（不含 `last.pt`），运行 `step16_p1_eval.ps1`。
+
+## 2026-10-25 P1 F0/F1 完整训练与本地核验完成
+
+- 四阶段退出码均为 0：F0 0→16,666、F0 零步收尾、F1 2,598→16,666、F1 零步收尾；最终均 `training_complete`。operator 于 04:52:34 UTC 完成，总墙钟 11.580219 小时。
+- 本轮 F0 处理 99,996 样本，训练循环 21,786.970 秒、4.589716 样本/s；F1 新处理 84,408 样本，19,819.857 秒、4.258759 样本/s。两者 PyTorch allocated 峰值分别 33.005791/32.998264 GiB；全作业 NVML 采样峰值 40.719727 GiB。
+- 两份训练端 CPU 回执均 passed，确认各 836 个模型张量与 1,890 个优化器张量有限、四类 RNG 齐全、final/last 模型张量一致。两份日志各 834 条且数值有限。本地没有下载或重新反序列化大检查点。
+- 本地 39 项小产物 SHA/大小全部匹配，共 4,313,887 字节；`results/autodl_full_20261024/verify_local_results.py` 的 432 项检查通过，汇总保存为同目录 `full_results.json`。训练来源保持 8515378，4,418 帧/65 场景，未访问测试集。
+- 截至 04:53:00 UTC 关机尝试，本轮预算时间 11.829728 小时，按 7 元/小时估算 82.81 元；不含更早 pilot、准备和空闲。`operator_shutdown.json` 记录 `OSError(8, 'Exec format error')`，因此不能声称已关机、最终费用在预算内或平台已停止计费。已立即提示用户检查平台并手动关机，本地监测未发起 SSH 或修复远端。
+- 正式训练已完成，深度精度与 P1 判据评测尚未执行。下一步先确认实例停机，取回 final 权重并核验 SHA，再使用已有开发集评测流程。完整数字、命令和证据链接见 [autodl_p1_full_results.md](autodl_p1_full_results.md)。
+
+
+## 2026-10-25 final 权重取回与本地开发集评测启动
+
+- 用户以无卡模式开机后，取回两个完整运行目录，不含 last.pt；20 文件的大小和 SHA 与训练终态、清单及解包内容全部一致。两个 final.pt 各 341,916,195 字节，已通过生产加载器检查及真实单帧推理。传输回执见 results/autodl_full_20261024/final_transfer_verified.json。
+- 按用户最新“告诉我关机”的要求，确认保存完整后已通知可以关闭无卡实例，并退出 SSH；没有在服务器评测或上传开发数据，未将关机通知当成平台关机确认。
+- 判据合成测试 17 项、检查点保存/CPU 加载测试 8 项分别通过。实际生产加载入口为 FineTunedOmniDC；未添加重复的 load_finetuned 接口。
+- PowerShell 5 的 Get-PSDrive.Free 返回 null 导致磁盘预检误报；common.ps1 增加 .NET DriveInfo 回退，6 GiB 阈值不变。首次退出日志保留，随后串行开始四组完整评测。
+- 当前仅完成 F0 NYU 30 张，HAMMER 仍在运行；不能提前宣布 P1 通过或失败。所有评测在本机，范围为 NYU val19/train-holdout11、HAMMER 10 开发场景共1,143样本，test 不读。
+- 完整证据、命令、环境、源码哈希及测试记录见 docs/omnidc_p1_transfer.md 和 results/p1_local_eval_20261025/。
+
+
+## 2026-10-25 P1 本地开发集评测完成：停止 P2
+
+- 本机单入口执行 02:16:59，于 07:45:55 UTC 正常退出（exit 0）。四组完整缓存/八个分区指标均通过：每个模型 NYU val19 + train留出11、HAMMER 1,143样本/10开发场景，共2,346次预测，invalid=0；test未读。
+- 事先判据：G1通过（NYU镜面C AbsRel F0 0.7654769161 → F1 0.07114870175，−90.7053%）；G2通过（HAMMER对象C 0.20764686 → 0.15141286，−27.0816%）；G3未通过，NYU/HAMMER focus-clean相对R0分别增加222.0653%/78.2289%，两项差值CI下界都>0。因此P1未通过，不进入P2，不启动新云训练。
+- 独立审计全部通过：两模型和R0的样本键、sample SHA、各区域分母、协议与GT/相机资格一致。HAMMER R0的15,420个饱和像素与clean交集为0；NYU继续标记strict_rgb_z_qualified=false。结果仅是单训练种子的开发集诊断。
+- 本机RTX4070 Laptop；NYU/HAMMER的torch allocated峰值分别2.2431/3.8010 GiB，非设备总占用。完整计时分离模型调用、缓存生成墙钟和指标计算，不用本机吞吐估算云费用。
+- 17项gate测试和8项CPU保存/加载测试分别通过。相关实现、SHA、随机种子、命令、源码差异与机器可读结果均已保存。
+- 产物：docs/omnidc_p1_local_eval.md、docs/omnidc_p1_gate.md、results/p1_local_eval_20261025/summary.json、protocol_audit.json，以及results/p1_gate_20261025_034550/。
+- 下一步停止租卡推进，依据§7重新检查合成/微调设计。NYU F0的clean也退化，不能将全部问题直接归因于结构污染合成；本轮不调整判据、不以开发结果选择新checkpoint或运行P2。
