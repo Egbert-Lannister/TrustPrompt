@@ -387,3 +387,20 @@ D1、D1b、D2、D3 都已完成，P0 结束，按 §7 进入 P1。
 - 随机深度是 OMNI-DC 自己的训练设置，保持不变。
 
 **冒烟测试 v2 结果（2026-10-24，`omnidc_p1_smoke_20261024_051523`）：S1–S6 全部通过。** 续训第 11–15 步与不中断运行的最大相对差为 0.27%，第 11 步从 v1 的 1.3% 降到 5e-5；峰值显存 3.89 GB。训练脚本在本机 GPU 上完整跑通，可以租卡跑 P1 的 pilot。
+
+## 19. P1 判据的本机计算（2026-10-25，F1 训练进行中；代码已实现，单元测试通过，等训练完成）
+
+评测沿用已有的 `scripts/cache_omnidc_finetuned.py`（`final.pt`，float32，`--evaluate`）；本节只新增判据计算，不改评测入口和训练代码。
+
+- **运行**：`scripts\windows\step16_p1_eval.ps1`。
+  1. 从训练作业记录 `results/autodl_full_20261024/mirror/job/operator.json` 读取每个配置 `final.pt` 的 SHA-256，并与取回的文件核对；
+  2. 用 F0、F1 各跑 NYU（val 和 train 留出场景）和 HAMMER（全部 10 个开发场景）；
+  3. 运行 `scripts/p1_gate.py`，结果写到 `docs/omnidc_p1_gate.md`。
+- **判据**（`configs/omnidc/p1_gate_v1.yaml`；规则就是 §7 训练前写定的，这里在还没有任何微调预测时编码）：
+  - G1：NYU val 镜面范围的 C AbsRel，F1 相对 F0 下降 ≥ 30%。
+  - G2：HAMMER 全部 10 个开发场景物体范围的 C AbsRel，F1 的点估计低于 F0。
+  - G3（N1）：F1 的干净像素 AbsRel 相对 R0 不“明显变差”（CI 下界 > 0 且上升 > 20%，decisions §18），NYU 和 HAMMER 各查一次。
+  - 三条全部满足才进入 P2；否则按 §7 停止花钱，报告结果，重新考虑合成方法。
+  - 描述性报告（不参与判定）：F0/F1 对 R0、F1 对 R1，以及 NYU train 留出场景。
+- **缓存精度**：R0 的缓存是 uint16（0.2 mm，13.107 m 处饱和），F0/F1 是 float32。G3 一并报告 R0 缓存中被截断的像素数。
+- `tests/test_p1_gate.py` 5 项通过：判据在合成评测结果上判对；缺少运行时记为 NA，不判通过；截断计数正确。
