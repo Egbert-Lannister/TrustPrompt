@@ -606,3 +606,11 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - 正确读数上的平均置信度，F1 约 0.62，F0 为 0.96–0.99。
   - HAMMER 上 F1 也是全图变差。
   - 结论：G3 失败的主要原因是置信度对正确读数被整体压低。修订方案待用户选择（见 plan §20）。
+
+## 2026-10-25 P1 v2 本机预检（代码）
+
+- 新增：`confinput_soft` 和 `default_label`；`train_omnidc --config`，变体可指定 `inputs` 和 `label`，默认行为不变；`configs/omnidc/p1v2_precheck.yaml`、`scripts/p1_label_precheck.py`、`scripts/windows/step18_p1v2_precheck.ps1`、`tests/test_omnidc_labels.py`。
+- 测试：
+  - 我这边 49 项通过；
+  - CPU 上用随机权重跑通一个 soft 标签的训练步。在稀疏样本上 soft 与双向标签相等（每个网格最多一个读数），符合预期。
+- 判读规则 K1–K3 已在运行前写定（plan §21）。待用户在本机运行 step18。

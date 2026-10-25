@@ -1,6 +1,12 @@
 """Fine-tune OMNI-DC v1.1 for the mainline (P1: f0, f1; P2: f2 and ablations). GPU; meant for a rented 48 GB card.
 
   python -m scripts.train_omnidc --variant f1 [--pilot-minutes 60] [--resume results/p1_f1_<time>] [--smoke STEPS]
+      [--config configs/omnidc/p1.yaml]
+
+--config: another fixed configuration (e.g. configs/omnidc/p1v2_precheck.yaml). A variant entry may name its input
+recipe (`inputs`: f0 / f1, tp.omnidc.data) and its ConfInput target (`label`: original / two_sided / soft,
+tp.omnidc.losses); without them f0 = f0 inputs + original label, others = f1 inputs + two-sided label (P1 as run).
+Run folders are named <run_prefix>_<variant>_<time> (run_prefix default p1).
 
 Config: configs/omnidc/p1.yaml (fixed before training). Data: tp/omnidc/data.py on the downloaded Hypersim frames
 (only Hypersim's train scenes; no NYU / HAMMER image is used, so both stay zero-shot evaluations). Model:
@@ -178,7 +184,7 @@ def build(variant, cfg):
     v = cfg["variants"][variant]
     model = GatedOMNIDC(base.net, Gate() if v["gate"] else None, v.get("paths", ())).cuda()
     base.net.args.max_depth = cfg["train"]["max_depth"]
-    loss = FineTuneLoss(base.net.args, variant, cfg["loss"]["gate_weight"]).cuda()
+    loss = FineTuneLoss(base.net.args, variant, cfg["loss"]["gate_weight"], v.get("label")).cuda()
     return model, loss, base
 
 
@@ -221,7 +227,8 @@ def main():
     from torch.utils.data import DataLoader
     from tp.omnidc.data import HypersimTraining, training_frames
     ap = argparse.ArgumentParser()
-    ap.add_argument("--variant", required=True, choices=["f0", "f1", "f2"])
+    ap.add_argument("--variant", required=True)
+    ap.add_argument("--config", default=None)
     ap.add_argument("--pilot-minutes", type=float, default=None)
     ap.add_argument("--resume", default=None)
     ap.add_argument("--smoke", type=int, default=None, metavar="STEPS")
@@ -229,7 +236,10 @@ def main():
     clock = pilot_clock(a.pilot_minutes, invocation_t0)
     if a.smoke is not None and a.smoke <= 0:
         ap.error("smoke must be a positive step count")
-    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    config_path = (ROOT / a.config) if a.config else CONFIG
+    cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if "variants" in cfg and a.variant not in cfg["variants"]:
+        ap.error(f"variant must be one of {sorted(cfg['variants'])} in {config_path.name}")
     if a.smoke:
         cfg["train"].update(SMOKE_TRAIN); cfg["data"]["crop"] = SMOKE_CROP
     t = cfg["train"]
@@ -242,8 +252,10 @@ def main():
         receipt.setdefault("resume_history", []).append(dict(command=[sys.executable, *sys.argv],
                                                              prior_stage=receipt.get("stage")))
     else:
-        out = ROOT / "results" / f"p1{'smoke' if a.smoke else ''}_{a.variant}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        receipt = start_run(out, dict(variant=a.variant, config=cfg, config_sha256=sha256(CONFIG), pilot_minutes=a.pilot_minutes,
+        prefix = cfg.get("run_prefix", "p1")
+        out = ROOT / "results" / f"{prefix}{'smoke' if a.smoke else ''}_{a.variant}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        receipt = start_run(out, dict(variant=a.variant, config=cfg, config_sha256=sha256(config_path),
+                                      config_path=config_path.relative_to(ROOT).as_posix(), pilot_minutes=a.pilot_minutes,
                                       smoke=bool(a.smoke)),
                             [sys.executable, "-m", "scripts.train_omnidc", *sys.argv[1:]], int(cfg["seed"]))
         receipt["resume_contract"] = contract
@@ -275,7 +287,8 @@ def main():
         min_mirror = float(yaml.safe_load((ROOT / d["training"]).read_text(encoding="utf-8"))["min_mirror_share"])
         frames = training_frames(ROOT / d["root"], min_mirror, tuple(d["splits"]))
         receipt["training_data"] = record_training_frames(out, frames, d["splits"], min_mirror, cfg["seed"])
-        data = HypersimTraining(ROOT / d["root"], selection, frames, a.variant, cfg["seed"], d["p_sparse"],
+        inputs = cfg.get("variants", {}).get(a.variant, {}).get("inputs", "f0" if a.variant == "f0" else "f1")
+        data = HypersimTraining(ROOT / d["root"], selection, frames, inputs, cfg["seed"], d["p_sparse"],
                                 d.get("crop", (480, 640)))
         sampler = range(start * t["batch"], stop * t["batch"])
         loader = DataLoader(data, batch_size=t["batch"], sampler=sampler, num_workers=t["workers"],

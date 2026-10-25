@@ -1,0 +1,30 @@
+# P1 v2 laptop pre-check (docs/plan_omnidc.md sec. 21), written 2026-10-25 before any pre-check run. Free (laptop GPU,
+# 8 GB): does the soft ConfInput target keep the confidence on correct readings high while F1's two-sided cell label
+# lowers it? Same as configs/omnidc/p1.yaml except the training length and size (256 x 320 crops, batch 1, 1500 steps,
+# short warm-up) and the two variants below; nothing from these runs is a depth result.
+seed: 20261024
+run_prefix: p1v2pre
+data:
+  root: data/source_cache/hypersim_v1
+  selection: configs/hypersim/selection_v1.json
+  training: configs/hypersim/training_v1.yaml
+  splits: [train]
+  p_sparse: 0.3
+  crop: [256, 320]
+train:
+  samples: 1500
+  batch: 1
+  lr: 1.0e-4
+  weight_decay: 0.01
+  warmup_steps: 200
+  final_lr_ratio: 0.1
+  grad_clip: 1.0
+  workers: 2
+  log_every: 20
+  checkpoint_every: 500
+  max_depth: 10.0
+loss:
+  gate_weight: 1.0
+variants:
+  f1:  {gate: false, inputs: f1, label: two_sided}   # control: P1's F1 recipe
+  f1s: {gate: false, inputs: f1, label: soft}        # candidate: soft cell target
