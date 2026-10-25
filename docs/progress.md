@@ -592,3 +592,12 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 17项gate测试和8项CPU保存/加载测试分别通过。相关实现、SHA、随机种子、命令、源码差异与机器可读结果均已保存。
 - 产物：docs/omnidc_p1_local_eval.md、docs/omnidc_p1_gate.md、results/p1_local_eval_20261025/summary.json、protocol_audit.json，以及results/p1_gate_20261025_034550/。
 - 下一步停止租卡推进，依据§7重新检查合成/微调设计。NYU F0的clean也退化，不能将全部问题直接归因于结构污染合成；本轮不调整判据、不以开发结果选择新checkpoint或运行P2。
+
+## 2026-10-25 P1 诊断（NYU 部分）
+
+- 新增：`scripts/p1_diagnostics.py`（A/B/D）、`scripts/windows/step17_p1_diagnostics.ps1`。`scripts/omnidc_confidence.py` 增加 `--run-dir`，用来读 F0/F1 的权重。
+- NYU 结果（在我的工作区用取回的副本运行，`docs/omnidc_p1_diagnostics_nyu_partial.md`）：
+  - 镜面内正确读数的比例，真实与合成相当（2.6% / 2.8%），原先的推测不成立；
+  - F1 在整张图的正确读数上都变差（AbsRel 0.036–0.043，F0 为 0.0024–0.0029）；
+  - F1 的标签规则在训练中把约 20% 的网格标成有噪声，真实数据为 1.4%。
+- 待办：运行 step17（HAMMER 部分和 GPU 置信度），再决定修订方案。没有花钱，也没有重训。
