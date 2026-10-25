@@ -1,0 +1,27 @@
+# Mainline P1 gate (docs/plan_omnidc.md sec. 6-7, 19). The rule is the plan's (sec. 7, written before any training);
+# this file encodes it, written 2026-10-25 while F0 / F1 were training and before any fine-tuned prediction exists.
+#   G1  F1 vs F0, NYU val (mirror scope), C AbsRel: relative change <= -30 %
+#   G2  F1 vs F0, HAMMER all 10 dev scenes (object scope), C AbsRel: F1's point estimate lower
+#   G3  N1 for F1: clean-pixel AbsRel of F1 vs R0 not clearly worse (95 % CI lower bound > 0 and mean rise > 20 %,
+#       decisions sec. 18), on NYU val and on HAMMER all_dev
+#   P1 passed iff G1, G2 and G3 hold; otherwise stop spending on GPUs (sec. 7) and report.
+# Descriptive only (no decision): F1 / F0 vs R0 and F1 vs R1 on C, and the NYU train-holdout scenes.
+# Numbers: scene means of per-image AbsRel, paired scene bootstrap (tp.eval.family.compare). Test never read.
+family: p1_gate_v1
+n_resamples: 10000
+seed: 20261025
+block_length: 8
+g1_max_relative_change: -0.30
+runs:                         # name: results/<prefix>_<name>_<split>_v1; or {split: evaluation folder}
+  R0: {mirror3d_nyu: bl_omnidc_raw, hammer: bl_omnidc_raw_all}
+  R1: {mirror3d_nyu: bl_omnidc_tmask, hammer: bl_omnidc_tmask_cfall}
+  F0:                         # scripts/cache_omnidc_finetuned.py --checkpoint final.pt --evaluate (step16_p1_eval.ps1)
+    mirror3d_nyu: {val: cache/p1_f0_final_nyu_dev/evaluation_val, train: cache/p1_f0_final_nyu_dev/evaluation_train}
+    hammer: {val: cache/p1_f0_final_hammer_dev/evaluation_val, train: cache/p1_f0_final_hammer_dev/evaluation_train}
+  F1:
+    mirror3d_nyu: {val: cache/p1_f1_final_nyu_dev/evaluation_val, train: cache/p1_f1_final_nyu_dev/evaluation_train}
+    hammer: {val: cache/p1_f1_final_hammer_dev/evaluation_val, train: cache/p1_f1_final_hammer_dev/evaluation_train}
+r0_caches: {mirror3d_nyu: cache/bl_omnidc_raw_nyu_dev_v1, hammer: cache/bl_omnidc_raw_all_hammer_dev_v1}
+datasets:
+  mirror3d_nyu: {prefix: mirror3d_dev, scope: mirror_only, population: val}
+  hammer: {prefix: hammer_dev, scope: objects_only, population: all_dev}

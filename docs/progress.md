@@ -556,3 +556,9 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - cu128当前GPU算子、实际pip freeze、42文件训练部署与指定pilot SHA重新核验通过；只漏环境变量的首次预检失败保留，v2通过。独立operator预检passed；四阶段/预算拒启/关机命令的本地Mock工程检查通过，非实际实验结果。
 - 保持训练源码8515378；新控制器在results外层以现有计时退出保存，达到16666步后零更新收尾，再用CPU校验last/final参数相同、有限及optimizer/RNG。两模型共用17:03:13 UTC开始的14小时预算硬截止（98元加2元余量），完成/失败/到时保存后自动关机。
 - 本地单次认证同步器已工作；本聊天15分钟只读本地的heartbeat trustprompt-f0-f1已创建，正常静默，异常或完成时通知。完整产物/合同/命令在results/autodl_full_20261024/，执行说明见docs/autodl_p1_full_training.md。当前仅确认真实启动，不能声称完整训练或正式评测完成。
+
+## 2026-10-25 P1 判据脚本（F1 训练进行中）
+
+- 新增 `scripts/p1_gate.py`、`configs/omnidc/p1_gate_v1.yaml`、`scripts/windows/step16_p1_eval.ps1`、`tests/test_p1_gate.py`（5 项通过）。评测沿用已有的 `scripts/cache_omnidc_finetuned.py`，训练代码和评测入口都没有改动。
+- 状态（本地镜像，04:20 UTC）：F0 已完成，`final.pt` SHA-256 为 `7fa22ec1…`，342 MB；F1 续训到第 15,280 / 16,666 步。
+- 待办：取回两个运行目录（不含 `last.pt`），运行 `step16_p1_eval.ps1`。
