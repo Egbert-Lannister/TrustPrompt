@@ -615,3 +615,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - CPU 上用随机权重跑通一个 soft 标签的训练步。在稀疏样本上 soft 与双向标签相等（每个网格最多一个读数），符合预期。
 - 判读规则 K1–K3 已在运行前写定（plan §21）。待用户在本机运行 step18。
 - P1 v2 预检（step18，3 h 05 min）：按事先规则判为“结论待定”。K1 未满足（对照组还没有出现置信度下降），K2 满足，K3 未满足（0.765）。描述性地看，soft 在相同步数下置信度和 AUROC 都高于对照组。下一步待用户选择（plan §21）。
+- 用户选择方案 a（本机长预检）：已提交 `configs/omnidc/p1v2_precheck_long.yaml`、`train.snapshot_every`、`p1_label_precheck --prefix/--snapshots/--doc`、`step19_p1v2_precheck_long.ps1`、`tests/test_omnidc_snapshots.py`。我这边 28 项测试通过。待用户在本机运行（约 12 h）。

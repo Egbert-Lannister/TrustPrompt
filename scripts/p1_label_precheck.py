@@ -2,6 +2,12 @@
 data only, test never read; a mechanism check, not a depth result.
 
   python -m scripts.p1_label_precheck [--runs results/p1v2pre_f1_<time> results/p1v2pre_f1s_<time>]
+  python -m scripts.p1_label_precheck --prefix p1v2long --snapshots --doc omnidc_p1v2_precheck_long.md
+
+--prefix: which pre-check (p1v2pre: configs/omnidc/p1v2_precheck.yaml, 1500 steps; p1v2long:
+configs/omnidc/p1v2_precheck_long.yaml, 6000 steps, sec. 22). --snapshots: also evaluates the weights each run kept
+every 1500 steps (checkpoints/step_*.pt, SHA-256 against the run's receipt), NYU only, for the trend. The reading
+below is applied to the final weights; for p1v2long, a second "not K1" ends the laptop pre-checks.
 
 Models: OMNI-DC v1.1 (R0) and the two pre-check runs (configs/omnidc/p1v2_precheck.yaml: P1's F1 recipe with the
 two-sided cell label = control, and with the soft cell label = candidate; final.pt hash-checked against each run's
@@ -43,33 +49,39 @@ SETS = {"nyu": dict(processed="data/processed/mirror3d_dev_v1", scope="holdout",
 K = dict(K1_max_control_conf_correct=0.85, K2_min_soft_conf_correct=0.92, K3_min_soft_auroc_main=0.80)
 
 
-def newest(variant):
+def newest(variant, prefix="p1v2pre"):
     done = []
-    for d in sorted((ROOT / "results").glob(f"p1v2pre_{variant}_*")):
+    for d in sorted((ROOT / "results").glob(f"{prefix}_{variant}_*")):
         r = d / "receipt.json"
         if r.is_file() and json.loads(r.read_text(encoding="utf-8")).get("stage") == "training_complete":
             done.append(d)
     if not done:
-        raise FileNotFoundError(f"no finished results/p1v2pre_{variant}_* run")
+        raise FileNotFoundError(f"no finished results/{prefix}_{variant}_* run")
     return done[-1]
 
 
-def load_run(model, run):
+def load_run(model, run, snapshot=None):
+    """Final weights (default) or a kept snapshot (checkpoints/step_*.pt), each hash-checked against the receipt."""
     import torch
     receipt = json.loads((run / "receipt.json").read_text(encoding="utf-8"))
-    final = run / "checkpoints" / "final.pt"
-    if receipt.get("stage") != "training_complete" or sha256(final) != receipt.get("final_sha256"):
-        raise ValueError(f"{run}: not finished or final.pt differs from its receipt")
-    state = torch.load(final, map_location=model.device, weights_only=False)["model"]
+    if receipt.get("stage") != "training_complete":
+        raise ValueError(f"{run}: not finished")
+    path = run / "checkpoints" / (snapshot or "final.pt")
+    expected = receipt.get("snapshots", {}).get(snapshot) if snapshot else receipt.get("final_sha256")
+    if sha256(path) != expected:
+        raise ValueError(f"{path} differs from its receipt")
+    ck = torch.load(path, map_location=model.device, weights_only=False)
+    state, step = ck["model"], ck["step"]
     net_state = {k[len("net."):]: v for k, v in state.items() if k.startswith("net.")}
     if len(net_state) != len(state):
         raise KeyError(f"{run}: unexpected non-network keys (a gated run?)")
     missing, unexpected = model.net.load_state_dict(net_state, strict=False)
     if unexpected or any(not k.startswith("depth_module.") for k in missing):
         raise KeyError(f"{run}: checkpoint does not fit OMNI-DC: {unexpected[:3]} {missing[:3]}")
-    return dict(run=run.relative_to(ROOT).as_posix(), variant=receipt["config"]["variant"],
-                label=receipt["config"]["config"]["variants"][receipt["config"]["variant"]].get("label"),
-                final_sha256=receipt["final_sha256"], step=receipt.get("final_step"))
+    cfg = receipt["config"]
+    return dict(run=run.relative_to(ROOT).as_posix(), variant=cfg["variant"], config=cfg.get("config_path"),
+                label=cfg["config"]["variants"][cfg["variant"]].get("label"), weights=path.name,
+                sha256=expected, step=step)
 
 
 class Err:
@@ -85,9 +97,10 @@ class Err:
         return {k: self.s[k] / self.n[k] for k in self.s}
 
 
-def evaluate(model):
+def evaluate(model, datasets=tuple(SETS)):
     out = {}
-    for ds, d in SETS.items():
+    for ds in datasets:
+        d = SETS[ds]
         processed = ROOT / d["processed"]
         recs = per_group_subsample(select_records(json.loads((processed / "manifest.json").read_text(encoding="utf-8"))["records"],
                                                   {"train", "val"}, d["scope"]), d["per_group"])
@@ -121,10 +134,13 @@ def main():
     import torch
     from baselines.completion import build
     ap = argparse.ArgumentParser(); ap.add_argument("--runs", nargs=2, default=None, metavar=("CONTROL", "SOFT"))
+    ap.add_argument("--prefix", default="p1v2pre"); ap.add_argument("--snapshots", action="store_true")
+    ap.add_argument("--doc", default="omnidc_p1v2_precheck.md")
     a = ap.parse_args()
-    runs = [Path(x) if os.path.isabs(x) else ROOT / x for x in a.runs] if a.runs else [newest("f1"), newest("f1s")]
-    out = ROOT / "results" / f"p1v2_precheck_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    receipt = start_run(out, dict(tau=TAU, sets=SETS, reading=K, runs=[r.relative_to(ROOT).as_posix() for r in runs]),
+    runs = [Path(x) if os.path.isabs(x) else ROOT / x for x in a.runs] if a.runs else [newest("f1", a.prefix), newest("f1s", a.prefix)]
+    out = ROOT / "results" / f"{a.prefix}_precheck_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    receipt = start_run(out, dict(tau=TAU, sets=SETS, reading=K, prefix=a.prefix, snapshots=a.snapshots,
+                                  runs=[r.relative_to(ROOT).as_posix() for r in runs]),
                         [sys.executable, "-m", "scripts.p1_label_precheck", *sys.argv[1:]], 20261025)
     try:
         res, models = {}, {}
@@ -135,6 +151,17 @@ def main():
                 res[name] = evaluate(model)
             print(name, json.dumps(res[name]["nyu"]["full"]), flush=True)
             del model; torch.cuda.empty_cache()
+        trend = {}
+        if a.snapshots:
+            for name, run in (("control (two-sided)", runs[0]), ("soft", runs[1])):
+                for snap in sorted(json.loads((run / "receipt.json").read_text(encoding="utf-8")).get("snapshots", {})):
+                    model = build("omnidc", device="cuda")
+                    info = load_run(model, run, snap)
+                    with torch.no_grad():
+                        trend.setdefault(name, {})[info["step"]] = dict(info, **evaluate(model, ("nyu",))["nyu"])
+                    print(name, snap, json.dumps(trend[name][info["step"]]["full"]), flush=True)
+                    del model; torch.cuda.empty_cache()
+                trend[name][models[name]["step"]] = dict(models[name], **res[name]["nyu"])
         if models["control (two-sided)"]["label"] != "two_sided" or models["soft"]["label"] != "soft":
             raise ValueError(f"runs have labels {models}; expected two_sided then soft")
         c, s_ = res["control (two-sided)"]["nyu"], res["soft"]["nyu"]
@@ -142,14 +169,15 @@ def main():
                       K2=s_["full"]["mean_conf_correct"] >= K["K2_min_soft_conf_correct"],
                       K3=s_["main"]["auroc_omnidc"] >= K["K3_min_soft_auroc_main"])
         verdict = ("label is the mechanism: write P1 v2 with the soft label" if all(checks.values()) else
-                   "inconclusive: the control has not drifted at this length" if not checks["K1"] else
-                   "the soft label is not enough: rethink before paying")
-        write_json(out / "precheck.json", dict(models=models, results=res, checks=checks, verdict=verdict))
+                   ("inconclusive again: stop the laptop pre-checks; choose (b) or (c) of plan sec. 21"
+                    if a.prefix == "p1v2long" else "inconclusive: the control has not drifted at this length")
+                   if not checks["K1"] else "the soft label is not enough: rethink before paying")
+        write_json(out / "precheck.json", dict(models=models, results=res, trend=trend, checks=checks, verdict=verdict))
         fmt = lambda v, p=3: "NA" if v is None else f"{v:.{p}f}"
         lines = ["# P1 v2 laptop pre-check: soft vs two-sided ConfInput cell label", "",
                  f"Generated by `python -m scripts.p1_label_precheck` ({out.name}). Runs: "
                  + ", ".join(f"{k} = {v['run'] or v['label']}" for k, v in models.items())
-                 + ". 256 x 320 crops, batch 1, 1500 steps (configs/omnidc/p1v2_precheck.yaml); development data only, "
+                 + f". 256 x 320 crops, batch 1, {models['soft']['step']} steps ({models['soft']['config']}); development data only, "
                  "test never read; a mechanism check, not a depth result.", "",
                  "| model | dataset | images | AUROC main | AUROC full | conf correct main | conf correct full | conf C main | "
                  "AbsRel clean in scope | AbsRel clean outside | AbsRel C |",
@@ -161,11 +189,21 @@ def main():
                              f"{fmt(x['main']['mean_conf_correct'])} | {fmt(x['full']['mean_conf_correct'])} | "
                              f"{fmt(x['main']['mean_conf_C'])} | {fmt(ab.get('clean_in_scope'), 4)} | "
                              f"{fmt(ab.get('clean_outside_scope'), 4)} | {fmt(ab.get('C_in_scope'), 4)} |")
-        lines += ["", "Reading fixed before the run (NYU): "
+        if trend:
+            lines += ["", "Trend on NYU (weights kept during training; same metrics):", "",
+                      "| model | step | AUROC main | AUROC full | conf correct main | conf correct full | conf C main | AbsRel clean outside | AbsRel C |",
+                      "|---|---:|---:|---:|---:|---:|---:|---:|---:|"]
+            for name, by_step in trend.items():
+                for st in sorted(by_step):
+                    x = by_step[st]; ab = x["absrel"]
+                    lines.append(f"| {name} | {st} | {fmt(x['main']['auroc_omnidc'])} | {fmt(x['full']['auroc_omnidc'])} | "
+                                 f"{fmt(x['main']['mean_conf_correct'])} | {fmt(x['full']['mean_conf_correct'])} | "
+                                 f"{fmt(x['main']['mean_conf_C'])} | {fmt(ab.get('clean_outside_scope'), 4)} | {fmt(ab.get('C_in_scope'), 4)} |")
+        lines += ["", "Reading fixed before the run (NYU, final weights): "
                   f"K1 control conf on correct (full) <= {K['K1_max_control_conf_correct']}: {checks['K1']}; "
                   f"K2 soft conf on correct (full) >= {K['K2_min_soft_conf_correct']}: {checks['K2']}; "
                   f"K3 soft AUROC (main) >= {K['K3_min_soft_auroc_main']}: {checks['K3']}", "", f"**{verdict}**", ""]
-        (ROOT / "docs" / "omnidc_p1v2_precheck.md").write_text("\n".join(lines), encoding="utf-8")
+        (ROOT / "docs" / a.doc).write_text("\n".join(lines), encoding="utf-8")
         receipt.update(stage="descriptive_diagnostic_complete", checks=checks, verdict=verdict,
                        precheck_sha256=sha256(out / "precheck.json"))
         print("\n".join(lines))

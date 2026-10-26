@@ -6,7 +6,8 @@
 --config: another fixed configuration (e.g. configs/omnidc/p1v2_precheck.yaml). A variant entry may name its input
 recipe (`inputs`: f0 / f1, tp.omnidc.data) and its ConfInput target (`label`: original / two_sided / soft,
 tp.omnidc.losses); without them f0 = f0 inputs + original label, others = f1 inputs + two-sided label (P1 as run).
-Run folders are named <run_prefix>_<variant>_<time> (run_prefix default p1).
+Run folders are named <run_prefix>_<variant>_<time> (run_prefix default p1). train.snapshot_every N (optional) also
+keeps the weights every N steps as checkpoints/step_<N>.pt (SHA-256 in the receipt), for trend checks.
 
 Config: configs/omnidc/p1.yaml (fixed before training). Data: tp/omnidc/data.py on the downloaded Hypersim frames
 (only Hypersim's train scenes; no NYU / HAMMER image is used, so both stay zero-shot evaluations). Model:
@@ -332,6 +333,11 @@ def main():
                 log.write(json.dumps(rec) + "\n"); log.flush(); print(json.dumps(rec), flush=True)
             if step % t["checkpoint_every"] == 0 or step == stop:
                 save_checkpoint(last, model, opt, step, a.variant, contract); saved_step = step
+            if t.get("snapshot_every") and step % t["snapshot_every"] == 0 and step < stop:
+                snap = out / "checkpoints" / f"step_{step:06d}.pt"        # weights only, kept for trend checks
+                torch.save(dict(model=trainable_state(model), step=step, variant=a.variant), snap.with_suffix(".tmp"))
+                os.replace(snap.with_suffix(".tmp"), snap)
+                receipt.setdefault("snapshots", {})[snap.name] = sha256(snap)
         if clock:
             train_seconds = time.perf_counter() - t0
             save_t0 = time.perf_counter()
