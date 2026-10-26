@@ -1,0 +1,30 @@
+# P1 v2 laptop pre-check, long version (docs/plan_omnidc.md sec. 22), written 2026-10-25 after the 1500-step pre-check
+# was inconclusive (its control had not drifted) and before any run of this file. Identical to
+# configs/omnidc/p1v2_precheck.yaml except: 6000 steps (4x), weights kept every 1500 steps for the trend.
+seed: 20261024
+run_prefix: p1v2long
+data:
+  root: data/source_cache/hypersim_v1
+  selection: configs/hypersim/selection_v1.json
+  training: configs/hypersim/training_v1.yaml
+  splits: [train]
+  p_sparse: 0.3
+  crop: [256, 320]
+train:
+  samples: 6000
+  batch: 1
+  lr: 1.0e-4
+  weight_decay: 0.01
+  warmup_steps: 200
+  final_lr_ratio: 0.1
+  grad_clip: 1.0
+  workers: 2
+  log_every: 20
+  checkpoint_every: 500
+  snapshot_every: 1500
+  max_depth: 10.0
+loss:
+  gate_weight: 1.0
+variants:
+  f1:  {gate: false, inputs: f1, label: two_sided}   # control: P1's F1 recipe
+  f1s: {gate: false, inputs: f1, label: soft}        # candidate: soft cell target
