@@ -29,6 +29,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import time
 
 import numpy as np
 
@@ -108,6 +109,8 @@ def cache_f1plus(model, ds, records, lam_of, out_root, base_receipt):
     from tp.eval.run_eval import evaluate_manifest
     path, manifest = manifest_records(ds)
     output = out_root
+    if output.exists():
+        raise FileExistsError(f"{output} exists; rename it (append _failed) before running again")
     receipt = start_run(output, dict(base_receipt, dataset=ds, variant=VARIANT),
                         [sys.executable, "-m", "scripts.p1_trust_floor", *sys.argv[1:]], 20261029)
     try:
@@ -117,7 +120,9 @@ def cache_f1plus(model, ds, records, lam_of, out_root, base_receipt):
             spath = (path.parent / r["path"]).resolve()
             s = load(spath, r)
             lam = lam_of(r)
+            t0 = time.perf_counter()
             conf, pred, depth, pinfo = conf_and_pred(model, s, lam)
+            seconds = time.perf_counter() - t0
             curve, n_correct = false_distrust_curve(conf, s)
             fd.append(dict(scene=s.scene, lam=lam, false_distrust=float(np.interp(lam, GRID, curve)), correct_px=n_correct))
             name = output / "predictions" / f"{i:06d}.npz"
@@ -126,6 +131,7 @@ def cache_f1plus(model, ds, records, lam_of, out_root, base_receipt):
                              rgb_sha256=hashlib.sha256(s.rgb.tobytes()).hexdigest(),
                              prompt_in_sha256=hashlib.sha256(depth.tobytes()).hexdigest(),
                              prediction_path=str(name), prediction_sha256=sha256(name), trust_floor_lambda=lam,
+                             seconds=seconds, report=dict(status="ok", trust_floor_lambda=lam),
                              prompt=pinfo, storage="float32", clipped_pixels=0,
                              invalid_pixels=int((~(np.isfinite(pred) & (pred > 0))).sum())))
             selected.append(dict(r, path=str(spath), sensor=s.sensor))
@@ -204,7 +210,7 @@ def main():
         print(f"lambda NYU {lam_nyu} (bound {bound_nyu:.4f}); HAMMER {receipt['lambda_hammer']}", flush=True)
         # ---- F1+ caches on the gate populations, evaluated like F0 / F1
         base = dict(tau=TAU, alpha=ALPHA, f1=f1w, calibration_run=out.relative_to(ROOT).as_posix())
-        suffix = "_limit" if a.limit else ""
+        suffix = f"_limit_{datetime.now().strftime('%Y%m%d_%H%M%S')}" if a.limit else ""   # checks never collide
         fd_nyu = cache_f1plus(f1, "nyu", nyu_eval, lambda r: lam_nyu, ROOT / "cache" / f"p1_f1plus_nyu_dev{suffix}", base)
         fd_ham = cache_f1plus(f1, "hammer", ham_all, lambda r: lam_ham[r["scene"]][0], ROOT / "cache" / f"p1_f1plus_hammer_dev{suffix}", base)
         # ---- descriptive: alpha sweep on NYU (pixel-pooled AbsRel)

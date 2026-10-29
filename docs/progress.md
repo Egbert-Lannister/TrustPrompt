@@ -628,3 +628,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 
 - 新增 `scripts/p1_trust_floor.py`（conformal 信任下限：标定、缓存、评测）、`configs/omnidc/p1plus_gate_v1.yaml`（原样 G1–G3）、`tests/test_p1_trust_floor.py`、`scripts/windows/step21_f1plus.ps1`。`scripts/p1_gate.py` 的报告标题和文件名改为可由 spec 指定，P1 原报告不受影响。
 - 我这边 19 项测试通过。待用户在本机运行。
+- F1+ 工程检查发现两个问题，已修正：缓存行缺少评测器读取的 `seconds` 字段；工程检查改为每个 HAMMER 场景各取 3 帧，检查目录带时间戳，重跑不会冲突。修正后在我的工作区用替身模型和 NYU 数据跑通了完整流程：标定 → 缓存 → 评测 → per_image。之后改为直接给用户 python 命令，不再写 ps1。
