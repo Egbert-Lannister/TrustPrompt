@@ -623,3 +623,8 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 用户指出现在的方法实际上是“检测 + 补全”的组合；同意先免费分析耦合，再决定方法核心。
 - 新增 `scripts/p1_coupling.py`、`tests/test_p1_coupling.py`、`scripts/windows/step20_p1_coupling.ps1`。判读规则 R_a、R_b 已在运行前写定（plan §23）。待用户在本机运行。
 - 耦合分析（step20，37 min）：R_a 成立（正确格恢复信任可消除 NYU 镜面外干净区差距的 69%，HAMMER 约 89%），R_b 不成立（F0 拿到 F1 的置信度后 C 区不变）。结论：干净区损失主要来自对正确读数信任估计过低，而纠正依赖 F1 自己的深度通路；另有一部分损失在深度通路本身（满信任时 F1 为 0.0134，F0 为 0.0025）。
+
+## 2026-10-29 F1+ 预先写定（代码）
+
+- 新增 `scripts/p1_trust_floor.py`（conformal 信任下限：标定、缓存、评测）、`configs/omnidc/p1plus_gate_v1.yaml`（原样 G1–G3）、`tests/test_p1_trust_floor.py`、`scripts/windows/step21_f1plus.ps1`。`scripts/p1_gate.py` 的报告标题和文件名改为可由 spec 指定，P1 原报告不受影响。
+- 我这边 19 项测试通过。待用户在本机运行。
