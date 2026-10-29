@@ -2,6 +2,7 @@
 (GPU, Windows, .venvs/baselines; no training; development data only, test never read)
 
   python -m scripts.p1_trust_floor            # calibrate, cache F1+ on the gate's populations, evaluate
+  python -m scripts.p1_trust_floor --limit 3  # engineering check: 3 NYU images per set, 3 HAMMER frames per scene
   python -m scripts.p1_gate --spec configs/omnidc/p1plus_gate_v1.yaml        # then the unchanged G1-G3
 
 Rule. F1's input confidence c (OMNI-DC's 1/4-resolution cells, the weight of a reading in the depth integration) is
@@ -52,6 +53,8 @@ VARIANT = "f1plus"                       # cache model name OMNI-DC-v1.1-F1PLUS 
 
 def crc_max_lambda(losses, alpha, grid=GRID):
     """losses (n, len(grid)), non-decreasing in lambda. Largest lambda meeting the CRC bound (0.0 if none)."""
+    if losses.ndim != 2 or losses.shape[0] == 0:
+        raise ValueError("no calibration images")
     n = losses.shape[0]
     bound = n / (n + 1) * losses.mean(0) + 1.0 / (n + 1)
     ok = np.flatnonzero(bound <= alpha)
@@ -163,6 +166,12 @@ def main():
     try:
         f1 = FineTunedOmniDC(f1w["run"], "final.pt", f1w["sha256"], "f1", device="cuda").base
         lim = (lambda rs: rs[:a.limit]) if a.limit else (lambda rs: rs)
+
+        def lim_scenes(rs):                 # engineering check: a few frames of every scene, so leave-one-out works
+            if not a.limit:
+                return rs
+            seen = {}
+            return [r for r in rs if seen.setdefault(r["scene"], []).append(r) or len(seen[r["scene"]]) <= a.limit]
         # ---- calibration curves (no override)
         nyu_path, nyu_m = manifest_records("nyu")
         nyu_cal = lim([r for r in select_records(nyu_m["records"], {"train"}, "all") if not scene_inner_holdout("mirror3d_nyu", r["scene"])])
@@ -170,7 +179,7 @@ def main():
         if {r["scene"] for r in nyu_cal} & {r["scene"] for r in nyu_eval}:
             raise ValueError("NYU calibration and evaluation scenes overlap")
         ham_path, ham_m = manifest_records("hammer")
-        ham_all = lim(select_records(ham_m["records"], {"train", "val"}, "all"))
+        ham_all = lim_scenes(select_records(ham_m["records"], {"train", "val"}, "all"))
         curves = {"nyu": [], "hammer": {}}
         for r in nyu_cal:
             s = load((nyu_path.parent / r["path"]).resolve(), r)
