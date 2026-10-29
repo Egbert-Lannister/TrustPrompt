@@ -27,3 +27,8 @@ def test_false_distrust_curve_and_crc():
     lam, bound = crc_max_lambda(losses, 0.2)
     assert lam == pytest.approx(0.9) and bound <= 0.2            # 1/7 + slack fits below 0.9, not at it
     assert crc_max_lambda(np.ones((5, len(GRID))), 0.1)[0] == 0.0
+
+
+def test_crc_needs_calibration_images():
+    with pytest.raises(ValueError):
+        crc_max_lambda(np.zeros((0, len(GRID))), 0.1)
