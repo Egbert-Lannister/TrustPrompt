@@ -147,13 +147,13 @@ def main():
     receipt = start_run(out, dict(tau=TAU, cell=CELL, sets=SETS, reading=READING, weights=weights),
                         [sys.executable, "-m", "scripts.p1_coupling", *sys.argv[1:]], 20261029)
     try:
-        f1 = FineTunedOmniDC(*weights["f1"], "f1", device="cuda")
+        f1 = FineTunedOmniDC(weights["f1"][0], "final.pt", weights["f1"][1], "f1", device="cuda")
         r1, f1_maps = run_model(f1.base, {
             "as trained": lambda c: None,
             "c = 1": lambda c: (lambda x: torch.ones_like(x)),
             "oracle correct": lambda c: (lambda x: torch.where(c["correct"], torch.ones_like(x), x))})
         del f1; torch.cuda.empty_cache()
-        f0 = FineTunedOmniDC(*weights["f0"], "f0", device="cuda")
+        f0 = FineTunedOmniDC(weights["f0"][0], "final.pt", weights["f0"][1], "f0", device="cuda")
         r0, _ = run_model(f0.base, {
             "as trained": lambda c: None,
             "oracle wrong": lambda c: (lambda x: torch.where(c["wrong"] & c["has"], torch.zeros_like(x), x)),
