@@ -617,3 +617,8 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - P1 v2 预检（step18，3 h 05 min）：按事先规则判为“结论待定”。K1 未满足（对照组还没有出现置信度下降），K2 满足，K3 未满足（0.765）。描述性地看，soft 在相同步数下置信度和 AUROC 都高于对照组。下一步待用户选择（plan §21）。
 - 用户选择方案 a（本机长预检）：已提交 `configs/omnidc/p1v2_precheck_long.yaml`、`train.snapshot_every`、`p1_label_precheck --prefix/--snapshots/--doc`、`step19_p1v2_precheck_long.ps1`、`tests/test_omnidc_snapshots.py`。我这边 28 项测试通过。待用户在本机运行（约 12 h）。
 - P1 v2 长预检（6000 步，含趋势）：按规则再次判为“结论待定”（K1 全图未满足；K2、K3 满足），本机预检结束。描述性地看，置信度下降在镜面范围内出现，两组都有，soft 较轻；soft 在 NYU 上每项指标都更好，但 HAMMER 全图置信度低于对照组。下一步由用户在 (b)/(c) 中选择。
+
+## 2026-10-29 信任与纠正的耦合分析（代码）
+
+- 用户指出现在的方法实际上是“检测 + 补全”的组合；同意先免费分析耦合，再决定方法核心。
+- 新增 `scripts/p1_coupling.py`、`tests/test_p1_coupling.py`、`scripts/windows/step20_p1_coupling.ps1`。判读规则 R_a、R_b 已在运行前写定（plan §23）。待用户在本机运行。
