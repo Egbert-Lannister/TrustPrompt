@@ -56,3 +56,11 @@ What each outcome means for the direction:
 Mirrors: real mirror data with a virtual-image GT is not available here (NYU / Mirror3D give the mirror plane only;
 Hypersim mirror readings in this repo are synthesised by us, so they cannot test sensor behaviour). Part N of the
 script reports only on which side of the mirror plane NYU's wrong readings lie.
+
+## 3. Result of the layer-2 check (2026-10-30, results/layer2_check_20261030_035620, code 7a33ade)
+
+**Not supported** under the pre-registered rule. Pooled layer-2 share 0.439 (95 % CI 0.372-0.504), placebo 0.024;
+l515 0.547 (0.477-0.627), helios 0.505 (0.423-0.588), d435 0.242 (0.170-0.312, 0.672 between the layers). Interior
+rows are similar. The ToF sensors' t distribution peaks at t = 1 on top of a continuum over (0, 1); d435 peaks at
+t = 0.2-0.4. NYU mirrors (descriptive): 0.990 of wrong readings lie behind the mirror plane. Full tables:
+docs/layer2_check.md. Any follow-up (e.g. a two-layer mixture reading model) needs its own rule, written before it is run.
