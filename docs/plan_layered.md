@@ -1,6 +1,6 @@
 # Layered prompt reading: plan (opened 2026-10-29)
 
-Status: **direction under test**. Nothing below is an experimental result unless a result file is cited.
+Status: **abandoned 2026-10-30 (user decision after the check in sec. 3)**. Nothing below is an experimental result unless a result file is cited.
 
 ## 1. Idea and prior-work check
 
