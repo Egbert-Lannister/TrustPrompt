@@ -24,9 +24,11 @@ qkv, 100 steps, lr 3e-4, clip 1.0, seed 47) with one deviation fixed before any 
 reading points for CAPA's robust scale-shift alignment. CAPA's exact L1 alignment builds n x n tensors (about
 50 n^2 bytes: measured 0.8 GB at 4000, extrapolated ~11 GB at 15000), which cannot fit the 8 GB laptop GPU. VGGT is not used (separate licence
 terms); UniDepth is already part of this project. Source pinned at nv-dvl/capa 080739287e18509c3b046ac7e8b3e0593c2d4e7d;
-weights lpiccinelli/unidepth-v2-vitl14 at revision 1d0d3c52f60b5164629d279bb9a7546458e6dcc4 (public, ungated;
-CC BY-NC 4.0, research use). Weight hashes are recorded on first download and checked on every later run (the hub
-lists no SHA256 we could read beforehand; disclosed as trust on first use).
+weights lpiccinelli/unidepth-v2-vitl14 as CAPA loads them (the hub's `main`; public, ungated; CC BY-NC 4.0, research
+use). On first use `main` is resolved to its commit and the file hashes are recorded; every later run uses that commit
+and checks them (trust on first use). Correction 2026-10-30, before any result: the first version of this plan pinned
+revision 1d0d3c5, which is the June 2024 checkpoint in the old config format; CAPA's vendored UniDepth (8d8cfe4) cannot
+build it (KeyError layer_scale on the user's engineering check). No measurement had been produced.
 
 ## 2. Pre-check (pre-registered; script `scripts/tta_precheck.py`)
 
