@@ -48,7 +48,8 @@ DATASETS = {"nyu": dict(processed="data/processed/mirror3d_dev_v1", per_group=No
             "hammer": dict(processed="data/processed/hammer_dev_v1", per_group=1)}
 CAPA = dict(key="capa", label="CAPA (UniDepthV2-L + LoRA)", repo="https://github.com/nv-dvl/capa",
             commit="080739287e18509c3b046ac7e8b3e0593c2d4e7d", config="config/unidepth_lora.yaml",
-            hf_repo="lpiccinelli/unidepth-v2-vitl14", hf_revision="1d0d3c52f60b5164629d279bb9a7546458e6dcc4",
+            hf_repo="lpiccinelli/unidepth-v2-vitl14", hf_revision="main",   # what CAPA loads; resolved to a commit and locked
+
             files=("config.json", "model.safetensors"), code_license="CC BY-NC 4.0 (CAPA), UniDepth CC BY-NC 4.0",
             weights_license="CC BY-NC 4.0 (UniDepth v2)")
 FAITHFUL_MAX = 0.01
@@ -200,42 +201,56 @@ def _wandb_stub():
 
 
 def fetch_capa(hf_endpoint=None):
-    """Pinned source (scripts.setup_baselines.ensure_source) and weights with trust-on-first-use SHA256 receipt."""
+    """Pinned CAPA source (scripts.setup_baselines.ensure_source). Weights: CAPA loads the hub's `main` of
+    lpiccinelli/unidepth-v2-vitl14; on first use `main` is resolved to its commit, the files are downloaded at that
+    commit into checkpoints/baselines/<repo>/<commit[:12]>/ and their size + SHA256 are written to a receipt; every
+    later run uses that commit and checks the files (trust on first use, disclosed in docs/plan_tta.md)."""
     from scripts.setup_baselines import ensure_source
     from baselines.completion import source_dir, weight_dir
     commit = ensure_source(CAPA["key"], dict(repo=CAPA["repo"], commit=CAPA["commit"]))
     if hf_endpoint:
         os.environ["HF_ENDPOINT"] = hf_endpoint
-    d = weight_dir(CAPA["hf_repo"])
-    receipt_path = ROOT / "checkpoints" / "baselines" / "capa_weights_receipt.json"
+    receipt_path = ROOT / "checkpoints" / "baselines" / "capa_weights_receipt_v2.json"
     old = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
+    if old is None:
+        from huggingface_hub import HfApi
+        revision = HfApi().model_info(CAPA["hf_repo"], revision=CAPA["hf_revision"]).sha
+        print(f"{CAPA['hf_repo']}: '{CAPA['hf_revision']}' resolved to {revision}", flush=True)
+    else:
+        revision = old["revision"]
+    d = weight_dir(CAPA["hf_repo"]) / revision[:12]
     files = {}
     for name in CAPA["files"]:
         p = d / name
         if not p.is_file():
             from huggingface_hub import hf_hub_download
-            print(f"download {CAPA['hf_repo']}@{CAPA['hf_revision'][:8]} {name}", flush=True)
-            hf_hub_download(repo_id=CAPA["hf_repo"], filename=name, revision=CAPA["hf_revision"], local_dir=str(d))
+            print(f"download {CAPA['hf_repo']}@{revision[:8]} {name}", flush=True)
+            hf_hub_download(repo_id=CAPA["hf_repo"], filename=name, revision=revision, local_dir=str(d))
         files[name] = [p.stat().st_size, sha256(p)]
+    model_cfg = json.loads((d / "config.json").read_text(encoding="utf-8"))["model"]
+    if "layer_scale" not in model_cfg:
+        raise RuntimeError(f"{d / 'config.json'} is the old UniDepthV2 format (no model.layer_scale); "
+                           "CAPA's vendored UniDepth needs the current checkpoint")
     if old is not None:
-        if old["files"] != files or old["revision"] != CAPA["hf_revision"]:
+        if old["files"] != files:
             raise RuntimeError(f"UniDepthV2-L weights differ from the first-use receipt {receipt_path}")
     else:
-        write_json(receipt_path, dict(repo=CAPA["hf_repo"], revision=CAPA["hf_revision"], files=files,
-                                      note="trust on first use: the hub page lists no SHA256 we could read in advance",
+        write_json(receipt_path, dict(repo=CAPA["hf_repo"], requested=CAPA["hf_revision"], revision=revision, files=files,
+                                      note="trust on first use: hub 'main' resolved and locked at first download",
                                       recorded_at=datetime.now().isoformat()))
-    return dict(source=str(source_dir(CAPA["key"])), commit=commit, weights_dir=str(d), weights=files)
+    return dict(source=str(source_dir(CAPA["key"])), commit=commit, weights_dir=str(d), weights_revision=revision,
+                weights=files)
 
 
-def load_protocol(device, resolution_level=None):
+def load_protocol(device, weights_dir, resolution_level=None):
     import yaml
-    from baselines.completion import source_dir, weight_dir
+    from baselines.completion import source_dir
     src = source_dir(CAPA["key"])
     _wandb_stub()
     sys.path.insert(0, str(src))           # `import capa`; CAPA itself adds third_party/UniDepth_VPT
     from capa.protocol import CAPAProtocol
     cfg = yaml.safe_load((src / CAPA["config"]).read_text(encoding="utf-8"))
-    cfg["ckpt_path"] = str(weight_dir(CAPA["hf_repo"]))
+    cfg["ckpt_path"] = str(weights_dir)
     cfg["alignment"]["n_points"] = ALIGN_POINTS
     proto = CAPAProtocol(cfg, device)
     if resolution_level is not None:
@@ -432,9 +447,9 @@ def main():
         info = receipt.get("capa_setup") or {}
         info["capa"] = fetch_capa(a.hf_endpoint)
         receipt["capa_setup"] = info
-        receipt["model_version"] = f"CAPA {CAPA['commit']} + {CAPA['hf_repo']}@{CAPA['hf_revision']}"
+        receipt["model_version"] = f"CAPA {CAPA['commit']} + {CAPA['hf_repo']}@{info['capa']['weights_revision']}"
         device = torch.device(a.device)
-        proto, cfg = load_protocol(device, a.resolution_level)
+        proto, cfg = load_protocol(device, info["capa"]["weights_dir"], a.resolution_level)
         receipt["capa_config"] = cfg
         per = out / "per_image"
         per.mkdir(exist_ok=True)

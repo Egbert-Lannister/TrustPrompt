@@ -649,3 +649,80 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 用户选择候选 1。基线：CAPA（nv-dvl/capa 0807392，CC BY-NC 4.0），UniDepthV2-L + LoRA，配置原样，只把对齐点数从 15000 改为 4000。原因：CAPA 的精确 L1 对齐需要 n×n 张量，15000 点约 11 GB，8 GB 显卡放不下；这个偏差在任何运行之前写定。
 - 预检规则写在 `docs/plan_tta.md` §2 和 `scripts/tta_precheck.py` 中。(a) CAPA 是否继承错读数：IR 第 100 步对比第 0 步。(b) 自适应过程中的残差轨迹，是否比冻结先验更能区分错读数：AUROC(s_10) − AUROC(s_0)。
 - 我这边 5 项测试通过，其中包括复制的记录循环与 CAPA 原循环在替身模型上逐位一致。用替身模型在 2 张 NYU 图像上跑通了完整流程（工程检查，不是结果）。待用户在本机 GPU 上运行。
+
+## 2026-10-30 清理失败或被替代的运行（用户执行 scripts.cleanup_failed_runs）
+
+- 删除 49 项，共 1.06 GB（tier [1]）。tier 1 都已有成功的重跑结果，且没有被文档引用；tier 2 原先作为失败记录在本文件中提到，现已删除，相关描述保留；tier 3 只删 P1 v2 预检的 .pt 权重，receipt 与指标保留（receipt 中仍有权重的 SHA256）。
+  - tier 1: results/_test_temp
+  - tier 1: results/hammer_dev_promptda_vitl_detector_nogate_prior_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_promptda_vitl_detector_prior_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_holdout_sector_train_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_holdout_sector_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_k0_train_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_k0_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_nogate_k0_train_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_nogate_k0_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_nogate_v1_train_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_nogate_v1_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_v1_train_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_depthor_v1_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_oracle_c_gric_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_oracle_c_holdout_radial_val_v1_failed_disk_full
+  - tier 1: results/hammer_dev_trustfill_oracle_c_holdout_sector_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_paired_val_v1_superseded_empty_scene_rule
+  - tier 1: results/mirror3d_dev_promptda_vitl_detector_nogate_prior_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_promptda_vitl_detector_prior_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_robust_global_val_v1_abandoned_code_change
+  - tier 1: results/mirror3d_dev_trustfill_depthor_holdout_sector_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_holdout_sector_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_k0_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_k0_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_nogate_k0_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_nogate_k0_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_nogate_v1_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_nogate_v1_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_v1_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_depthor_v1_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_aic_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_aic_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_gric_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_gric_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_holdout_radial_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_holdout_radial_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_holdout_sector_train_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_holdout_sector_val_v1_failed_disk_full
+  - tier 1: results/mirror3d_dev_trustfill_oracle_c_k0_train_v1_abandoned_moved_to_windows
+  - tier 1: results/mirror3d_gate_global_smoke_v1
+  - tier 1: results/mirror3d_gate_local_v2_smoke_v1
+  - tier 1: results/mirror3d_robust_local_v2_smoke_v1
+  - tier 1: results/onesided_validity_20261018_134044_interrupted_old_script
+  - tier 1: results/onesided_validity_20261018_134407_interrupted_old_script
+  - tier 1: results/p1_coupling_20261029_043518
+  - tier 1: results/p1_trust_floor_20261029_055723
+  - tier 1: results/p1_trust_floor_20261029_060118
+  - tier 1: results/layer2_check_20261030_035421
+  - tier 1: results/layer2_check_20261030_035510
+
+## 2026-10-30 清理失败或被替代的运行（用户执行 scripts.cleanup_failed_runs）
+
+- 删除 18 项，共 9.99 GB（tier [2, 3]）。tier 1 都已有成功的重跑结果，且没有被文档引用；tier 2 原先作为失败记录在本文件中提到，现已删除，相关描述保留；tier 3 只删 P1 v2 预检的 .pt 权重，receipt 与指标保留（receipt 中仍有权重的 SHA256）。
+  - tier 2: results/hammer_dev_gate_local_v2_val_v1_failed_disk_full
+  - tier 2: results/_peek_20261017
+  - tier 2: results/nyu_rgbz_bound_dev_v1_killed_background
+  - tier 2: results/nyu_rgbz_bound_smoke_v1
+  - tier 3: results/p1v2pre_f1_20261025_085441/checkpoints/final.pt
+  - tier 3: results/p1v2pre_f1_20261025_085441/checkpoints/last.pt
+  - tier 3: results/p1v2pre_f1s_20261025_101533/checkpoints/final.pt
+  - tier 3: results/p1v2pre_f1s_20261025_101533/checkpoints/last.pt
+  - tier 3: results/p1v2long_f1_20261025_222326/checkpoints/final.pt
+  - tier 3: results/p1v2long_f1_20261025_222326/checkpoints/last.pt
+  - tier 3: results/p1v2long_f1_20261025_222326/checkpoints/step_001500.pt
+  - tier 3: results/p1v2long_f1_20261025_222326/checkpoints/step_003000.pt
+  - tier 3: results/p1v2long_f1_20261025_222326/checkpoints/step_004500.pt
+  - tier 3: results/p1v2long_f1s_20261027_050647/checkpoints/final.pt
+  - tier 3: results/p1v2long_f1s_20261027_050647/checkpoints/last.pt
+  - tier 3: results/p1v2long_f1s_20261027_050647/checkpoints/step_001500.pt
+  - tier 3: results/p1v2long_f1s_20261027_050647/checkpoints/step_003000.pt
+  - tier 3: results/p1v2long_f1s_20261027_050647/checkpoints/step_004500.pt
+
+- CAPA 工程检查第一次失败（用户本机，2026-10-30）：我把权重固定在 1d0d3c5，这是 2024 年 6 月的旧格式 checkpoint，CAPA 自带的 UniDepth 无法构建（KeyError layer_scale）。已改成 CAPA 实际加载的版本（hub 的 main）：首次运行时解析为具体 commit 并锁定，权重放在 `<repo>/<commit前12位>/`。没有产生任何测量，判读规则不变。旧的 1.45 GB 文件（`checkpoints/baselines/lpiccinelli__unidepth-v2-vitl14/` 下的 config.json、model.safetensors、.cache，以及 `capa_weights_receipt.json`）可以删除。
