@@ -92,8 +92,9 @@ def classify(P, pv, G, gv, B, scope, tau=TAU):
                correct=int((v & ~C).sum()), C=int(C.sum()), separable=int(sep.sum()),
                C_separable=int(c.sum()), C_inseparable=int((C & ~sep & ~inverted).sum()), C_inverted=int((C & inverted).sum()),
                readings_separable=int((v & sep).sum()), correct_separable=int((v & sep & ~C).sum()))
-    cls = dict(front=c & (P < G * (1 - tau)), between=c & (P > G * (1 + tau)) & (P < B * (1 - tau)),
-               layer2=c & (np.abs(P - B) <= tau * B), beyond=c & (P > B * (1 + tau)))
+    # classes built from the same rel / rel2 comparisons as C, so they partition C exactly (no float boundary leaks)
+    l2 = c & (np.abs(P - B) / np.where(B > 0, B, 1.0) <= tau)
+    cls = dict(front=c & (P < G), between=c & (P > G) & (P < B) & ~l2, layer2=l2, beyond=c & (P >= B) & ~l2)
     for k, m in cls.items():
         out[k] = int(m.sum())
     if sum(out[k] for k in CLASSES) != out["C_separable"]:
