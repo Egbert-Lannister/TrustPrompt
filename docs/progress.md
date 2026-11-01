@@ -726,3 +726,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
   - tier 3: results/p1v2long_f1s_20261027_050647/checkpoints/step_004500.pt
 
 - CAPA 工程检查第一次失败（用户本机，2026-10-30）：我把权重固定在 1d0d3c5，这是 2024 年 6 月的旧格式 checkpoint，CAPA 自带的 UniDepth 无法构建（KeyError layer_scale）。已改成 CAPA 实际加载的版本（hub 的 main）：首次运行时解析为具体 commit 并锁定，权重放在 `<repo>/<commit前12位>/`。没有产生任何测量，判读规则不变。旧的 1.45 GB 文件（`checkpoints/baselines/lpiccinelli__unidepth-v2-vitl14/` 下的 config.json、model.safetensors、.cache，以及 `capa_weights_receipt.json`）可以删除。
+
+## 2026-11-01 CAPA 预检结果（正式实验完成，开发集）
+
+- `results/tta_precheck_20261101_012932`，按事先写定的规则判为 **a_without_b**。
+- (a) 成立：CAPA 几乎照抄错读数。NYU 镜面 C 的 IR 从 0.068 升到 0.953，C 区 AbsRel 从 0.139 升到 0.919；HAMMER IR 从 0.319 升到 0.668。两个数据集的干净区都变好。
+- (b) 不成立：NYU 上 AUROC(s_10) − AUROC(s_0) = −0.381，HAMMER 为 +0.008（CI 跨 0）。镜面错读数在前几步就被拟合，没有"晚拟合"信号；冻结先验的不一致度 s_0 反而更好。
+- 记录：NYU 681 号图在第 100 步有 40702 个无效像素；HAMMER 每张图 594 s，显存峰值 7.39 GiB。之前中断在 99/125 的同配置运行（20261030_205705）未续跑、未使用，可以删除。
