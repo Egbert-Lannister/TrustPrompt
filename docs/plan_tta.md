@@ -64,3 +64,20 @@ Outcomes:
 
 Fallback fixed in advance: if UniDepthV2-L adaptation runs out of memory on the 8 GB laptop GPU, the whole run uses
 UniDepth's lowest resolution level (`resolution_level = 0`, 200k-240k input pixels) and the deviation is recorded.
+
+## 3. Result of the pre-check (2026-11-01, results/tta_precheck_20261101_012932, code a4c7c3f, weights 52b349b)
+
+Outcome under the pre-registered rule: **a_without_b**. Full tables: docs/tta_precheck.md.
+
+- (a) holds on both datasets. CAPA copies the wrong readings: main-scope IR rises from 0.068 (aligned prior) to 0.953 on
+  NYU (difference 0.886, CI 0.815-0.936) and from 0.319 to 0.668 on HAMMER (0.350, 0.265-0.421). AbsRel on NYU mirror C
+  goes from 0.139 to 0.919 while clean pixels improve (0.168 to 0.050); on HAMMER C 0.132 to 0.189, clean 0.034 to 0.019.
+- (b) fails on both. AUROC(s_10) - AUROC(s_0): NYU -0.381 (-0.500 to -0.260), HAMMER +0.008 (-0.077 to 0.078). On NYU
+  the wrong mirror readings are fitted within the first steps (IR 0.51 at step 5, 0.67 at step 10), so the trajectory
+  carries no "fitted late" signal; the frozen prior's disagreement s_0 is the better score (NYU 0.839 main / 0.952 full,
+  HAMMER 0.732 / 0.743).
+- Recorded, not interpreted: one NYU image (681) has 40702 invalid pixels at step 100; HAMMER took 594 s per image at a
+  7.39 GiB peak. An earlier identical run (tta_precheck_20261030_205705) was interrupted at 99/125 and not resumed; it
+  produced no summary and is not used.
+- Consequence as fixed in sec. 2: a module would reduce to prior-disagreement weighting inside TTA (close to T v1);
+  decision with the user.
