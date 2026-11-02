@@ -81,3 +81,28 @@ Outcome under the pre-registered rule: **a_without_b**. Full tables: docs/tta_pr
   produced no summary and is not used.
 - Consequence as fixed in sec. 2: a module would reduce to prior-disagreement weighting inside TTA (close to T v1);
   decision with the user.
+
+## 4. Direction 1: the prior's own uncertainty as a trust region (pre-registered 2026-11-01, before any run)
+
+Idea: test-time adaptation may move the prediction away from the frozen prior only as far as the prior itself is
+unsure. UniDepthV2 outputs Sigma (named "confidence" in the code), trained with an L1 loss on the log-space depth
+error (UniDepthV2 paper, Fig. 2), so u = predicted |log D - log GT| (larger = less certain). CAPA ignores it.
+No detector and no mask: one bound in the objective. Literature check (web search, 2026-11-01): no prompt- or
+test-time-adaptation depth completion work found that bounds the adaptation by the foundation prior's predicted
+uncertainty; closest are CAPA (unbounded L1), the CVPR 2024 depth-completion TTA and Bayesian prior/measurement
+fusion in general.
+
+Pre-check (script `scripts/tr_precheck.py`, same 125 development images as sec. 2, test never read): one frozen
+UniDepthV2-L forward per image for u; D_p and D_c are CAPA's recorded step-0 and step-100 predictions
+(results/tta_precheck_20261101_012932). Training-free emulation: D_tr(k) = D_p + clip(D_c - D_p, +/- k u D_p);
+control D_const(k) uses the image-median u (same average width, no per-pixel information). k = 2 primary.
+
+Rules (also in the script docstring):
+- R0 semantics gate: Spearman(u, |D_p - GT| / GT) > 0.1 on both datasets;
+- R1 trust region works, both datasets: C reduction 1 - AbsRel_C(D_tr2) / AbsRel_C(D_c) >= 0.30 with scene-bootstrap
+  CI low > 0, and clean retention (AbsRel_clean(D_p) - AbsRel_clean(D_tr2)) / (AbsRel_clean(D_p) - AbsRel_clean(D_c)) >= 0.50;
+- R2 per-pixel u matters, both datasets: 1 - AbsRel_C(D_tr2) / AbsRel_C(D_const2) has CI low > 0, and
+  AbsRel_clean(D_tr2) <= 1.10 AbsRel_clean(D_const2).
+- go = R0, R1, R2: write the trust-region adaptation objective and its own rule. R0 and R1 without R2: a fixed-width
+  region around the prior is enough (weak novelty; report and decide). Otherwise the direction fails.
+Engineering check: the recomputed aligned prior must match CAPA's recorded step 0 (median relative difference <= 1 %).
