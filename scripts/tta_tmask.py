@@ -4,7 +4,7 @@ T v1 trusts. GPU; development data only, test never read.
 
   python -m scripts.tta_tmask --limit 1                       # engineering check
   python -m scripts.tta_tmask --datasets nyu                  # NYU first (about 1.5 h)
-  python -m scripts.tta_tmask --resume results/tta_tmask_<time> [--max-minutes 120]
+  python -m scripts.tta_tmask --resume latest [--max-minutes 120]   # continue the newest run (all datasets)
 
 Images (T must be out of fit):
   NYU     val + train-holdout scenes (scripts.cache_completion.select_records, scope "holdout"): 30 images.
@@ -158,7 +158,14 @@ def main():
         out = ROOT / "results" / f"tta_tmask_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         receipt = start_run(out, config, command, SEED_BOOT)
     else:
-        out = a.resume if a.resume.is_absolute() else ROOT / a.resume
+        if str(a.resume) == "latest":
+            runs = sorted((ROOT / "results").glob("tta_tmask_*"))
+            if not runs:
+                raise SystemExit("no results/tta_tmask_* run to resume")
+            out = runs[-1]
+            print(f"resuming {out.relative_to(ROOT).as_posix()}", flush=True)
+        else:
+            out = a.resume if a.resume.is_absolute() else ROOT / a.resume
         receipt = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
         if receipt["config"] != json.loads(json.dumps(config)):
             raise ValueError("resume requires the identical configuration")
@@ -233,7 +240,8 @@ def main():
         receipt.update(stage="complete" if full else "partial_complete", verdict=ver,
                        result_sha256=sha256(out / "tta_tmask.json"), doc=doc.relative_to(ROOT).as_posix())
         print("\n".join(lines))
-        print("TTA TMASK DONE" if full else "TTA TMASK PARTIAL DONE", flush=True)
+        print("TTA TMASK DONE" if full else "TTA TMASK PARTIAL DONE; continue with: python -m scripts.tta_tmask --resume latest",
+              flush=True)
     except BaseException as e:
         if receipt.get("stage") in {"started", None}:
             receipt.update(stage="failed", error=repr(e))
