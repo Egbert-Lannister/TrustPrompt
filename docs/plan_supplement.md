@@ -35,3 +35,11 @@ otherwise "does_not_rescue". Descriptive: oracle rho, the clean-pixel cost, C Ab
 - S4 non-planar ground truth (answers the Mirror3D plane-fit limitation): TransCG or ClearPose (download and licence
   terms to be accepted by the user), or own capture (docs/capture_plan.md).
 - S5 official Mirror3D NYU split for comparison with published numbers (re-train T on that split).
+
+## S1 result (2026-11-02, results/local_consistency_20261102_145700, code aed13a4): **not supported** (L1 True, L2 False)
+
+NYU AUROC by window: w=15 0.426, 31 0.377, 63 0.364, 127 0.389, global 0.839; AUROC(global) - AUROC(31) = 0.462
+(CI 0.309-0.626). L1 holds; L2 fails because the local AUROC first falls (15 -> 63) and then rises, i.e. it reaches
+its minimum at an intermediate window and lies below 0.5. The monotonicity condition did not anticipate local
+AUROCs below chance; not changed afterwards. HAMMER: local and global about equal (0.70-0.73). Descriptive: CAPA IR
+at step 100 vs contaminated area, Spearman 0.546 (NYU, 78 images) and 0.419 (HAMMER, 30); at step 0 0.239 / 0.143.
