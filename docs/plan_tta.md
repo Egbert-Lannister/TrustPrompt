@@ -106,3 +106,12 @@ Rules (also in the script docstring):
 - go = R0, R1, R2: write the trust-region adaptation objective and its own rule. R0 and R1 without R2: a fixed-width
   region around the prior is enough (weak novelty; report and decide). Otherwise the direction fails.
 Engineering check: the recomputed aligned prior must match CAPA's recorded step 0 (median relative difference <= 1 %).
+
+### 4.1 Result (2026-11-01, results/tr_precheck_20261101_221645, code 4318633): **fails**
+
+R0 passes weakly (Spearman 0.175 NYU, 0.114 HAMMER); R1 and R2 fail on both datasets. With k = 2 the trust region
+removes 10 % of CAPA's C error on NYU (CI 0.053-0.156, rule 30 %) and nothing on HAMMER; per-pixel u is no better than
+a constant width (NYU +0.004, CI -0.004 to 0.011). Sigma is large everywhere (image-median u 0.53-0.70 on NYU,
+0.70-0.90 on HAMMER, i.e. it mostly carries global metric-scale uncertainty, which the alignment already removes) and
+hardly marks wrong readings (AUROC u 0.56 / 0.51; z = d / u 0.847 / 0.714 vs d 0.839 / 0.732). Not tuned afterwards
+(no rescaling of u, no other k): rescaling u per image is the constant-width control, which R2 already compares.
