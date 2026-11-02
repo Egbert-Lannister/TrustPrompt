@@ -28,3 +28,15 @@ Rule:
 - **diffuse** otherwise; diffuse ends direction 2. Localised leads to an intervention design at S, with its own rule.
 Descriptive: necessity of each site (all-but-one runs), IR, clean-pixel AbsRel.
 Bootstrap: 2000 draws over scenes, seed 20261102.
+
+## 3. Result (2026-11-02, results/patch_precheck_20261102_033859, code 66dae65): **void**
+
+The rule needs a total effect on both datasets. HAMMER has none for PromptDA-L: main-scope C AbsRel 0.0477 with the
+raw prompt vs 0.0519 with the oracle prompt (TE -0.004, CI -0.030 to 0.013; IR 0.132 vs 0.083), so there is nothing
+to localise there and the pre-check is void, neither localised nor diffuse. NYU has a large effect
+(0.813 vs 0.215, TE 0.599, CI 0.454-0.753).
+
+Descriptive only (NYU, not a test of the rule): the copying sits in the two finest fusion branches. F2+F1 restores
+0.902 (0.871-0.932) of the effect; single sites F2 0.490, F1 0.408, F3 0.269, N 0.226, F4 0.092. Necessity from
+all-but-one runs: F1 0.613, F2 0.314, F3 0.069, F4 0.020, N -0.006. Patched forwards matched model.predict exactly
+(max |diff| 0). Engineering run results/patch_precheck_20261102_033733 (--limit 2) kept as the check.

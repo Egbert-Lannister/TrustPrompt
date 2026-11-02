@@ -746,3 +746,5 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 
 - 用户选择方向 2。规则在运行前写定：`docs/plan_patching.md` 和 `scripts/patch_precheck.py`。在冻结的 PromptDA-L 上做激活修补，五个位点是 min/max 归一化和四个融合块的提示分支；每张图 22 次前向，只推理。
 - 我这边 4 项测试通过，其中包括在与 PromptDA 结构相同的小模型上验证修补前向。待用户在本机 GPU 上运行。
+
+- 方向 2 预检结果（正式实验完成，开发集）：按规则判为**无效**。PromptDA-L 在 HAMMER 上没有可定位的总效应：C 区 AbsRel 原始提示 0.0477，理想提示 0.0519。描述性地看（只有 NYU，不能算作对规则的检验），照抄集中在最细的两个融合分支，F2+F1 恢复 90%（CI 0.87–0.93），粗尺度和 min/max 归一化的作用很小。报告见 `docs/patch_precheck.md`。
