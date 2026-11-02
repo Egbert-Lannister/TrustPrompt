@@ -3,7 +3,7 @@ local? A direct test of the "local self-consistency" explanation in docs/analysi
 frozen, globally aligned UniDepthV2-L prior recorded by the CAPA pre-check (step 0 of
 results/tta_precheck_20261101_012932) on the same 125 development images; test never read.
 
-  python -m scripts.local_consistency
+  python -m scripts.local_consistency [--max-seconds 150]   # then --resume results/local_consistency_<time>
 
 For every pixel, the prior D is re-fitted to the readings P inside a w x w window by least squares
 (P ~ a D + b over the window's valid readings; box filters), and the local residual r_w = |a D + b - P| / P is used
@@ -119,20 +119,42 @@ def verdict(res):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--resume", type=Path, default=None)
+    ap.add_argument("--max-seconds", type=float, default=None)
     a = ap.parse_args()
+    import time
+    t0 = time.time()
     run = ROOT / CAPA_RUN
     rec = json.loads((run / "receipt.json").read_text(encoding="utf-8"))
     if rec.get("stage") != "complete" or sha256(run / "tta_precheck.json") != rec["result_sha256"]:
         raise SystemExit(f"{CAPA_RUN} is not a complete, untouched CAPA run")
     config = dict(tau=TAU, band=BAND, seed=SEED, draws=DRAWS, windows=list(WINDOWS), capa_run=CAPA_RUN,
                   capa_result_sha256=rec["result_sha256"], limit=a.limit, fit="least squares P ~ a D + b, box windows")
-    out = ROOT / "results" / f"local_consistency_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    receipt = start_run(out, config, [sys.executable, "-m", "scripts.local_consistency", *sys.argv[1:]], SEED)
+    command = [sys.executable, "-m", "scripts.local_consistency", *sys.argv[1:]]
+    if a.resume is None:
+        out = ROOT / "results" / f"local_consistency_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        receipt = start_run(out, config, command, SEED)
+    else:
+        out = a.resume if a.resume.is_absolute() else ROOT / a.resume
+        receipt = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+        if receipt["config"] != json.loads(json.dumps(config)):
+            raise ValueError("resume requires the identical configuration")
+        if sha256(ROOT / "scripts" / "local_consistency.py") != receipt["source_sha256"]["scripts/local_consistency.py"]:
+            raise ValueError("scripts/local_consistency.py changed since the run started; start a new run")
+        receipt.setdefault("resumed", []).append(command)
     try:
-        rows, capa_rows = [], []
+        per = out / "per_image"
+        per.mkdir(exist_ok=True)
         todo = [(ds, r) for ds in T.DATASETS for r in T.select(ds, T.DATASETS[ds]["per_group"], a.limit)]
         for i, (ds, r) in enumerate(todo):
             name = f"{ds}__{Path(r['path']).stem}"
+            if (per / f"{name}.json").is_file():
+                continue
+            if a.max_seconds is not None and time.time() - t0 > a.max_seconds:
+                receipt.update(stage="partial_time_budget")
+                print(f"time budget reached; resume with: python -m scripts.local_consistency --resume "
+                      f"{out.relative_to(ROOT).as_posix()}" + ("" if a.limit is None else f" --limit {a.limit}"), flush=True)
+                return
             path = ROOT / T.DATASETS[ds]["processed"] / r["path"]
             if sha256(path) != r["sha256"]:
                 raise ValueError(f"sample hash mismatch: {path}")
@@ -141,12 +163,17 @@ def main():
                 raise ValueError("test sample reached the experiment")
             D = np.load(run / "predictions" / f"{name}.npz")["step_0"].astype(np.float64)
             _, scope = focus_scope(s)
-            rows.append(dict(dataset=ds, scene=s.scene, sensor=s.sensor, name=name,
-                             stats=image_stats(D, s.prompt.astype(np.float64), s.prompt_valid, s.gt, s.gt_valid, scope)))
-            c = json.loads((run / "per_image" / f"{name}.json").read_text(encoding="utf-8"))
-            capa_rows.append(dict(dataset=ds, stats=c["stats"], pixels=int(s.gt.size)))
+            write_json(per / f"{name}.json", dict(dataset=ds, scene=s.scene, sensor=s.sensor, name=name, pixels=int(s.gt.size),
+                       stats=image_stats(D, s.prompt.astype(np.float64), s.prompt_valid, s.gt, s.gt_valid, scope)))
             if (i + 1) % 25 == 0:
                 print(f"[{i + 1}/{len(todo)}]", flush=True)
+        rows, capa_rows = [], []
+        for ds, r in todo:
+            name = f"{ds}__{Path(r['path']).stem}"
+            x = json.loads((per / f"{name}.json").read_text(encoding="utf-8"))
+            rows.append(x)
+            c = json.loads((run / "per_image" / f"{name}.json").read_text(encoding="utf-8"))
+            capa_rows.append(dict(dataset=ds, stats=c["stats"], pixels=x["pixels"]))
         res = summarise(rows, capa_rows, np.random.default_rng(SEED))
         ver = verdict(res) if a.limit is None else dict(outcome="engineering check (no verdict)")
         write_json(out / "local_consistency.json", dict(results=res, verdict=ver))
