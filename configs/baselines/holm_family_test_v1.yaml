@@ -1,0 +1,24 @@
+# Pre-registered test comparison family (written 2026-11-03, after the method v1 freeze in docs/freeze_method_v1.md
+# and before any test sample is read). Same question, models, metric and Holm rule as plugin_v1 (holm_family_v1.yaml):
+# does putting T v1 (conformal alpha 0.1, method v1, frozen) in front of a prompt-based depth model lower the
+# main-scope C AbsRel? reference = raw sensor prompt, candidate = + T v1 mask, same model. One Holm family over
+# models x datasets at alpha 0.05. Read once; nothing is re-tuned after the test is read.
+family: test_v1
+alpha: 0.05
+region: C
+metric: absrel
+n_resamples: 10000
+seed: 20261103
+block_length: 8               # HAMMER has 3 test scenes: circular blocks of 8 consecutive frames, as in plugin_v1
+models:
+  promptda_l: {label: PromptDA-L, reference: promptda_vitl_raw, candidate: promptda_vitl_trust_v1_crc10_prior}
+  priorda:    {label: PriorDA-B v1.1, reference: bl_priorda_raw, candidate: bl_priorda_tmask}
+  omnidc:     {label: OMNI-DC v1.1, reference: bl_omnidc_raw, candidate: bl_omnidc_tmask}
+  cdm:        {label: CDM, reference: bl_cdm_raw, candidate: bl_cdm_tmask}
+  lingbot:    {label: LingBot-Depth v0.5, reference: bl_lingbot_raw, candidate: bl_lingbot_tmask}
+  any2full:   {label: Any2Full-L, reference: bl_any2full_raw, candidate: bl_any2full_tmask}
+datasets:
+  mirror3d_nyu: {prefix: mirror3d_test, scope: mirror_only}
+  hammer: {prefix: hammer_test, scope: objects_only}
+families:
+  primary: {population: test}
