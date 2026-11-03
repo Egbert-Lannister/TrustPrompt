@@ -89,7 +89,11 @@ def circular_block_bootstrap(diff_by_frame, block_length=8, n_resamples=10_000, 
 
 
 def compare(ref_rows, cand_rows, *, dataset, region="C", metric="absrel", n_resamples=10_000, seed=0,
-            block_length=8):
+            block_length=8, unit=None):
+    """unit None: paired scene bootstrap with >= 2 scenes, else frame blocks; unit "frame_block" forces circular
+    frame blocks (per sequence) also with several scenes (inference about the frames of these scenes only)."""
+    if unit not in (None, "scene", "frame_block"):
+        raise ValueError(f"unknown bootstrap unit {unit}")
     ref = {k: v for k, v in per_image(ref_rows, region, metric).items() if k[0] == dataset}
     cand = {k: v for k, v in per_image(cand_rows, region, metric).items() if k[0] == dataset}
     if set(ref) != set(cand):
@@ -106,7 +110,7 @@ def compare(ref_rows, cand_rows, *, dataset, region="C", metric="absrel", n_resa
     scenes = sorted({k[2] for k in keys})
     smean = lambda vals: float(np.mean([np.mean([vals[k] for k in keys if k[2] == sc]) for sc in scenes]))
     base.update(reference_mean=smean(ref), candidate_mean=smean(cand), scene_count=len(scenes))
-    if len(scenes) >= 2:
+    if (len(scenes) >= 2 and unit != "frame_block") or unit == "scene":
         sr, sc = defaultdict(list), defaultdict(list)
         for k in keys:
             sr[k[2]].append(ref[k]); sc[k[2]].append(cand[k])

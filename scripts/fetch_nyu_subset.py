@@ -323,11 +323,23 @@ def main() -> None:
     parser.add_argument('--dev', action='store_true',
                         help='select all train+val annotations (test is never read); cap 900 MiB')
     parser.add_argument('--legacy-cache', type=Path, default=Path('E:/GLARE_Data/first_surface/mirror3d/nyu_depth_v2_labeled.selected.h5'))
+    parser.add_argument('--formal-test', action='store_true',
+                        help='the one formal test read (docs/plan_test.md): every test annotation; needs the method v1 freeze')
     args = parser.parse_args()
     ref = json.loads(args.split_reference.read_text(encoding='utf8'))
     mapping = {int(r['annotation_id']): r for r in ref['mapping']}
-    allowed_splits = {'train', 'val'} if args.dev else {'train'}
-    if args.dev:
+    formal = None
+    if args.formal_test:
+        if args.dev:
+            raise ValueError('--formal-test and --dev are exclusive')
+        from tp.formal import guard
+        formal = guard()
+    allowed_splits = {'test'} if formal else ({'train', 'val'} if args.dev else {'train'})
+    if formal:
+        args.ids = sorted(i for i, r in mapping.items() if r['split'] == 'test')
+        if not 1 <= args.max_download_mib <= 1500:
+            raise ValueError('Test acquisition is capped at 1500 MiB per run.')
+    elif args.dev:
         args.ids = sorted(i for i, r in mapping.items() if r['split'] in allowed_splits)
         if not 1 <= args.max_download_mib <= 1500:
             raise ValueError('Development acquisition is capped at 1500 MiB per run.')
@@ -339,7 +351,7 @@ def main() -> None:
         if len({mapping[i]['scene'] for i in args.ids if i in mapping}) != len(args.ids):
             raise ValueError('Select different scenes for this smoke acquisition.')
     if any(i not in mapping or mapping[i]['split'] not in allowed_splits for i in args.ids):
-        raise ValueError('Only approved non-test annotations may be read by this fetcher.')
+        raise ValueError('Only approved annotations may be read by this fetcher (test only with --formal-test).')
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prior = None
     if args.output.exists():
@@ -362,7 +374,7 @@ def main() -> None:
         'source_url': url, 'depth_unit': 'metres', 'depth_convention': 'axial_z',
         'split_reference_sha256': hashlib.sha256(args.split_reference.read_bytes()).hexdigest(),
         'script_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        'payloads': [], 'status': 'INCOMPLETE', 'test_depth_accessed': False,
+        'payloads': [], 'status': 'INCOMPLETE', 'test_depth_accessed': bool(formal), 'formal_test': formal,
         'max_download_bytes': args.max_download_mib * MIB,
         'resume_history': (prior or {}).get('resume_history', []),
     }
@@ -393,7 +405,7 @@ def main() -> None:
             # Smoke mode refuses such frames; dev mode skips only the predecessor slice and records it.
             skipped_previous = []
             for i in args.ids:
-                if ref['scene_splits'].get(scenes[i - 1]) == 'test':
+                if ref['scene_splits'].get(scenes[i - 1]) == 'test' and not formal:
                     if not args.dev:
                         raise ValueError('Regression predecessor belongs to a held-out scene.')
                     skipped_previous.append(i)

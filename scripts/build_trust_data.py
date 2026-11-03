@@ -30,15 +30,22 @@ from tp.eval.run_eval import focus_scope
 from tp.trust.data import labels_from, sim_labels, to_grid
 
 
-def run(eval_config, output, sim_variants=4, shard=0, shards=1, splits=("train", "val"), limit=None, version="v0"):
+def run(eval_config, output, sim_variants=4, shard=0, shards=1, splits=("train", "val"), limit=None, version="v0",
+        formal_test=False):
     cfg = yaml.safe_load(Path(eval_config).read_text(encoding="utf-8"))
-    if "test" in splits:
+    formal = None
+    if formal_test:                     # the one formal test evaluation (docs/plan_test.md): real test prompts only
+        from tp.formal import guard
+        formal = guard()
+        splits, sim_variants = ("test",), 0
+    elif "test" in splits:
         raise ValueError("test samples are locked until method freeze")
     out = Path(output); out = out if out.is_absolute() else ROOT / out
     run_dir = out / f"shard_{shard}of{shards}"
     config = dict(eval_config=str(eval_config), eval_config_content=cfg, sim_variants=sim_variants, shard=shard,
                   shards=shards, splits=list(splits), limit=limit, grid=[192, 256], version=version,
-                  label_rule="0 clean |P-GT|/GT<=tau, 1 contaminated, 255 invalid prompt or GT", tau=cfg["tau"])
+                  label_rule="0 clean |P-GT|/GT<=tau, 1 contaminated, 255 invalid prompt or GT", tau=cfg["tau"],
+                  **(dict(formal_test=formal) if formal else {}))
     receipt = start_run(run_dir, config, [sys.executable, "-m", "scripts.build_trust_data", *sys.argv[1:]], int(cfg["seed"]))
     log = (run_dir / "run.log").open("w", encoding="utf-8")
     try:
@@ -107,5 +114,6 @@ if __name__ == "__main__":
     ap.add_argument("--sim-variants", type=int, default=4)
     ap.add_argument("--shard", type=int, default=0); ap.add_argument("--shards", type=int, default=1)
     ap.add_argument("--limit", type=int); ap.add_argument("--version", choices=["v0", "v1"], default="v0")
+    ap.add_argument("--formal-test", action="store_true", help="test split, real prompts only (needs the method v1 freeze)")
     a = ap.parse_args()
-    run(a.eval_config, a.output, a.sim_variants, a.shard, a.shards, limit=a.limit, version=a.version)
+    run(a.eval_config, a.output, a.sim_variants, a.shard, a.shards, limit=a.limit, version=a.version, formal_test=a.formal_test)

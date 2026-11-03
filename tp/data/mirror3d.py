@@ -117,7 +117,7 @@ class Mirror3DNYU:
             names=self._strings(h,"names")
             if scenes[n]!=record["scene"]:
                 raise ValueError("corrected source scene disagrees with frozen split")
-            if regression and any(r["scene"]==scenes[n-1] and r["split"]=="test" for r in self.mapping.values()):
+            if regression and not self.allow_test and any(r["scene"]==scenes[n-1] and r["split"]=="test" for r in self.mapping.values()):
                 raise ValueError("regression predecessor belongs to a test scene")
             if subset:
                 g=h["frames"][sid]

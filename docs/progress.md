@@ -766,3 +766,10 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 
 - `results/tta_tmask_20261102_110950`，按规则判为**能救**：方法 v1 的 T 掩码接在 CAPA 前，C 区误差相对 CAPA 下降 NYU 87%（CI 0.74–0.94）、HAMMER 44%（0.36–0.53）。HAMMER 干净区没有代价，C 区也好于冻结先验。NYU 有两个代价：C 区 0.134 略差于直接用先验（0.094）；镜面内正确读数被删，干净区从 0.048 升到 0.367。已写入 `docs/analysis_paper.md` §6.3 和摘要。
 - 下一步：S3 test 正式评测的准备（数据处理和 test 比较族，读 test 前提交）。
+
+## 2026-11-03 S3 test 正式评测的流水线（代码，test 尚未读取）
+
+- `python -m scripts.run_test_eval` 一条命令跑完全部步骤，可断点续跑：取 NYU test 帧、处理成样本 → 取 HAMMER 场景 12–14、处理成样本 → UniDepth 先验 → T 数组与 T v1 可信度图 → PromptDA-L 和 5 个基线的原始 / T v1 / 真值掩码三种设置 → 评测 → Holm → 汇总表 → conformal 保证；`--with-capa` 再加 CAPA 对比。
+- 所有可能读取 test 的脚本都新增了 `--formal-test`，并先用 `tp.formal.guard()` 核对 `configs/freeze_method_v1.json`（37 个文件的 SHA256：冻结的权重、阈值和配置、方法库代码、test 计划与比较族）。不加这个开关时，test 照旧锁定。
+- NYU 的配准 Z 没有认证为严格的 RGB 轴向 Z，所以评测角色用 `formal_test_registered_z`；HAMMER 用 `formal_main_result`。HAMMER 只有 3 个 test 场景，比较族强制用帧块 bootstrap，与计划一致，否则代码会自动改用场景 bootstrap。这两处都在读取 test 之前补上并写明。
+- 我这边全部测试通过（354 项，其中新增 6 项）。

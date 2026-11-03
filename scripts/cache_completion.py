@@ -57,8 +57,8 @@ def holdout(dataset, scene):
     return scene_inner_holdout(dataset, scene)
 
 
-def select_records(records, splits, train_scope):
-    if "test" in splits:
+def select_records(records, splits, train_scope, allow_test=False):
+    if "test" in splits and not allow_test:
         raise ValueError("test samples are locked until method freeze")
     out = [r for r in records if r["split"] in splits]
     if train_scope == "holdout":
@@ -128,18 +128,26 @@ def store(path, depth, storage):
 
 
 def run(model_key, dataset, variant, limit=None, output=None, device="cuda", trust_cache=None, train_scope=None, tag="",
-        per_group=None):
+        per_group=None, formal_test=False, processed_override=None):
     cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    formal = None
+    if formal_test:                      # the one formal test evaluation (docs/plan_test.md)
+        from tp.formal import guard
+        formal = guard()
+        if not processed_override or not output or (variant in ("tmask", "tonesided", "tsoft") and not trust_cache):
+            raise ValueError("--formal-test needs --processed, --output and (for T variants) --trust-cache")
+        cfg["splits"] = ["test"]
     if variant not in VARIANTS:
         raise ValueError(f"variant must be one of {VARIANTS}")
     if variant in GUIDED and not MODELS[model_key].supports_guidance:
         raise ValueError(f"{model_key} has no guidance objective; {variant} needs one (baselines/guidance.py)")
     reg = registry()["models"][model_key]
     ds = cfg["datasets"][dataset]
-    processed = ROOT / ds["processed"]
+    processed = ROOT / (processed_override or ds["processed"])
     manifest = json.loads((processed / "manifest.json").read_text(encoding="utf8"))
     train_scope = train_scope or cfg["train_scope"]
-    records = per_group_subsample(select_records(manifest["records"], set(cfg["splits"]), train_scope), per_group)
+    records = per_group_subsample(select_records(manifest["records"], set(cfg["splits"]), train_scope,
+                                                 allow_test=bool(formal)), per_group)
     if model_key == "cdm":           # one camera model on the GPU at a time
         records = sorted(records, key=lambda r: r.get("sensor", ""))
     records = records[:limit] if limit else records
@@ -147,7 +155,8 @@ def run(model_key, dataset, variant, limit=None, output=None, device="cuda", tru
     output = output if output.is_absolute() else ROOT / output
     config = dict(cfg, model=model_key, dataset=dataset, variant=variant, limit=limit, device=device,
                   train_scope=train_scope, trust_cache_override=trust_cache, tag=tag, per_group=per_group,
-                  oracle=variant.startswith("oracle"), registry_entry=reg)
+                  oracle=variant.startswith("oracle"), registry_entry=reg,
+                  **(dict(formal_test=formal, processed_override=processed_override) if formal else {}))
     receipt = start_run(output, config, [sys.executable, "-m", "scripts.cache_completion", *sys.argv[1:]],
                         int(cfg["seed"]))
     log = (output / "run.log").open("w", encoding="utf8")
@@ -241,5 +250,8 @@ if __name__ == "__main__":
     ap.add_argument("--train-scope", choices=["holdout", "all"], default=None)
     ap.add_argument("--tag", default="", help="appended to the variant in the default output name")
     ap.add_argument("--per-group", type=int, default=None, help="N evenly spaced frames per (scene, sensor)")
+    ap.add_argument("--formal-test", action="store_true", help="test split of --processed (needs the method v1 freeze)")
+    ap.add_argument("--processed", default=None, help="processed data folder instead of configs/baselines/cache.yaml")
     a = ap.parse_args()
-    run(a.model, a.dataset, a.variant, a.limit, a.output, a.device, a.trust_cache, a.train_scope, a.tag, a.per_group)
+    run(a.model, a.dataset, a.variant, a.limit, a.output, a.device, a.trust_cache, a.train_scope, a.tag, a.per_group,
+        a.formal_test, a.processed)

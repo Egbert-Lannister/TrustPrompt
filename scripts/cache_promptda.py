@@ -43,7 +43,7 @@ def git_source(source, *args):
     return p.stdout.strip() if p.returncode == 0 else None
 
 
-def run(config_path, limit=None, output=None, overrides=()):
+def run(config_path, limit=None, output=None, overrides=(), formal_test=False):
     config = yaml.safe_load(Path(config_path).read_text(encoding="utf8"))
     for item in overrides:                      # --set KEY=VALUE (YAML value), recorded in config.json
         key, _, value = item.partition("=")
@@ -51,7 +51,12 @@ def run(config_path, limit=None, output=None, overrides=()):
     if config["variant"] not in VARIANTS:
         raise ValueError("unknown variant")
     allowed = set(config.get("splits", ["train", "val"]))
-    if "test" in allowed:
+    if formal_test:                      # the one formal test evaluation (docs/plan_test.md)
+        from tp.formal import guard
+        config["formal_test"] = guard()
+        if allowed != {"test"}:
+            raise ValueError("--formal-test needs splits: [test]")
+    elif "test" in allowed:
         raise ValueError("test samples are locked until method freeze")
     processed = Path(config["processed"]); processed = processed if processed.is_absolute() else ROOT / processed
     records = [r for r in json.loads((processed / "manifest.json").read_text(encoding="utf8"))["records"] if r["split"] in allowed]
@@ -182,4 +187,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); ap.add_argument("--config", required=True)
     ap.add_argument("--limit", type=int); ap.add_argument("--output")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE")
-    a = ap.parse_args(); run(a.config, a.limit, a.output, a.set)
+    ap.add_argument("--formal-test", action="store_true", help="test split (splits: [test]); needs the method v1 freeze")
+    a = ap.parse_args(); run(a.config, a.limit, a.output, a.set, a.formal_test)

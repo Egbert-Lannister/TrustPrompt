@@ -63,8 +63,11 @@ def _resume_receipt(output,config,command):
 
 
 def evaluate_manifest(config, output, command, resume=False, time_budget_s=None):
-    if config.get("split")=="test" and config.get("experiment_role")!="formal_main_result":
-        raise ValueError("test split is locked until method freeze (formal_main_result only)")
+    if config.get("split")=="test":
+        from tp.formal import FORMAL_ROLES,guard
+        if config.get("experiment_role") not in FORMAL_ROLES:
+            raise ValueError(f"test split is locked until method freeze (experiment_role must be one of {FORMAL_ROLES})")
+        config=dict(config,formal_test=guard())
     seed=int(config.get("seed",0));np.random.seed(seed)
     resuming=resume and (output/"receipt.json").is_file()
     receipt=_resume_receipt(output,config,command) if resuming else start_run(output,config,command,seed)
