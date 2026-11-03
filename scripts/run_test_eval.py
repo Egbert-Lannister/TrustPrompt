@@ -191,11 +191,17 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--with-capa", action="store_true")
     ap.add_argument("--parallel", type=int, default=4, help="evaluations at a time (CPU)")
+    ap.add_argument("--min-free-gib", type=float, default=30)
     a = ap.parse_args()
     for interp in (PY, BPY):
         if not interp.is_file():
             raise SystemExit(f"interpreter missing: {interp}")
+    import shutil
+    free = shutil.disk_usage(ROOT).free / 2 ** 30
+    print(f"free disk space at {ROOT}: {free:.0f} GiB (the test caches need about 30 GiB)", flush=True)
     if not a.dry_run:
+        if free < a.min_free_gib:
+            raise SystemExit(f"only {free:.0f} GiB free; free space or pass --min-free-gib")
         from tp.formal import guard
         print("method v1 freeze verified:", guard(), flush=True)
     started = time.time()

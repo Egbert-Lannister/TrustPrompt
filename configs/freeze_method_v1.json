@@ -1,7 +1,7 @@
 {
   "schema": "trustprompt.freeze.v1",
-  "note": "method v1 freeze (docs/freeze_method_v1.md); tp.formal.guard refuses the test split if any file changes",
-  "frozen_at_commit": "d1b156069df2a757eda2916b6d2dc768c40cac9e",
+  "note": "method v1 freeze (docs/freeze_method_v1.md); tp.formal.guard refuses the test split if any file changes; files as of commit dbadee4",
+  "frozen_at_commit": "dbadee4",
   "files": {
     "results/trust_t_v1_real_sim_nofeat/best.pt": "9696f70e50228ae398c748608bcf4d102a8b150be45d33d3fc0cdf4f5033284c",
     "results/trust_t_v1_real_sim_nofeat/config.json": "e93b3b31e5e481f2c3eedb1137f8521c240f9eaa8dec054f5ad66a0dbf810587",
