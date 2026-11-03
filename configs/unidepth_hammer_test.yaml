@@ -1,0 +1,17 @@
+# Formal test (docs/plan_test.md): UniDepthV2-S on HAMMER test scenes 12-14, same settings as configs/unidepth_hammer_dev.yaml.
+seed: 20261007
+source: D:/Python_Script/GLARE/.external/stage24/repos/unidepth_v2_vits14
+weights: D:/Python_Script/GLARE/models/stage24/unidepth_v2_vits14
+processed: data/processed/hammer_test_v1
+output: cache/unidepth_hammer_test_v1
+frames: manifest
+max_samples: 4000
+device: cuda
+resolution_level: 0
+torch_threads: 4
+split: test
+camera_input: none
+input: rgb_only
+scale_alignment: none
+stage: formal_test
+store_points: false

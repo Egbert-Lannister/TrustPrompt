@@ -51,10 +51,16 @@ def git_source(source, *args):
 def run(config_path, limit=None, output=None):
     config = yaml.safe_load(config_path.read_text(encoding="utf8"))
     # Plan revision v2: split "dev" = train+val development set; test is never admitted.
-    if config.get("split") not in {"train", "dev"} or config.get("input") != "rgb_only" or config.get("camera_input") != "none":
-        raise ValueError("Expected train/dev RGB-only no-camera configuration")
-    dev = config["split"] == "dev"
-    allowed_splits = frozenset({"train", "val"} if dev else {"train"})
+    formal = None
+    if config.get("split") == "test":
+        from tp.formal import guard     # the one formal test evaluation (docs/plan_test.md)
+        formal = guard()
+    elif config.get("split") not in {"train", "dev"}:
+        raise ValueError("Expected a train/dev configuration (test only after the method v1 freeze)")
+    if config.get("input") != "rgb_only" or config.get("camera_input") != "none":
+        raise ValueError("Expected an RGB-only no-camera configuration")
+    dev = config["split"] in {"dev", "test"}
+    allowed_splits = frozenset({"test"} if formal else ({"train", "val"} if dev else {"train"}))
     frames = config["frames"]
     if frames == "manifest":
         records = json.loads((ROOT / config["processed"] / "manifest.json").read_text(encoding="utf8"))["records"]
@@ -73,7 +79,7 @@ def run(config_path, limit=None, output=None):
     if not output.is_relative_to((ROOT / "cache").resolve()):
         raise ValueError("Cache output must be inside TrustPrompt/cache")
     source, weights = Path(config["source"]).resolve(), Path(config["weights"]).resolve()
-    actual_config = {**config, "frames": frames, "output": str(output), "config_file": str(config_path)}
+    actual_config = {**config, "frames": frames, "output": str(output), "config_file": str(config_path), "formal_test": formal}
     receipt = start_run(output, actual_config, [sys.executable, *sys.argv], config["seed"])
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"

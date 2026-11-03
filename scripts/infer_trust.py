@@ -29,14 +29,20 @@ def run(a):
     if mrec.get("stage") != "trust_model_trained":
         raise ValueError(f"model stage {mrec.get('stage')}")
     out = Path(a.output); out = out if out.is_absolute() else ROOT / out
-    receipt = start_run(out, dict(vars(a), purpose="T v0 inference cache"), [sys.executable, "-m", "scripts.infer_trust", *sys.argv[1:]], 0)
+    formal = None
+    if a.formal_test:                   # the one formal test evaluation (docs/plan_test.md)
+        from tp.formal import guard
+        formal = guard()
+    splits = ("test",) if formal else ("train", "val")
+    receipt = start_run(out, dict(vars(a), purpose="T v0 inference cache", **(dict(formal_test=formal) if formal else {})),
+                        [sys.executable, "-m", "scripts.infer_trust", *sys.argv[1:]], 0)
     try:
         if sha256(model_dir / "best.pt") != mrec["checkpoint_sha256"]:
             raise ValueError("checkpoint hash mismatch")
         use_features = not mrec["config"]["no_features"]
-        items, data_receipts = load_items(a.data)
+        items, data_receipts = load_items(a.data, allow_test=bool(formal))
         feats, feat_receipts = load_features(a.features) if use_features else ({}, {})
-        items = [e for e in items if e["variant"] == "real" and e["split"] in ("train", "val")]
+        items = [e for e in items if e["variant"] == "real" and e["split"] in splits]
         classes = int(mrec["config"].get("classes") or 2)
         model = TrustNetV0(use_features=use_features, feat_dropout=float(mrec["config"].get("feat_dropout") or 0.0),
                            out_ch=1 if classes == 2 else 3)
@@ -61,7 +67,7 @@ def run(a):
                               sensor=e["sensor"], sample_sha256=e["sample_sha256"], path=f"predictions/{f.name}", sha256=sha256(f)))
         write_json(out / "index.json", index)
         lowres = {}
-        for split in ("train", "val"):
+        for split in splits:
             sel = [(p, e) for p, e in zip(preds, items) if e["split"] == split]
             if sel:
                 m = selection_metrics([p for p, _ in sel], [e for _, e in sel])
@@ -85,4 +91,5 @@ if __name__ == "__main__":
     ap.add_argument("--model", required=True); ap.add_argument("--data", nargs="+", required=True)
     ap.add_argument("--features", nargs="+", default=[]); ap.add_argument("--output", required=True)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--formal-test", action="store_true", help="test split only (needs the method v1 freeze)")
     run(ap.parse_args())

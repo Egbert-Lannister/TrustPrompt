@@ -1,0 +1,32 @@
+# HAMMER test subset (docs/plan_test.md): scenes 12-14 only, same members as configs/hammer_subset_v1.yaml, every 5th
+# frame (the stride used for the validation scene). Downloaded only after the method v1 freeze.
+include:
+  - "scene12_*/polarization/rgb/*"
+  - "scene12_*/polarization/depth_d435/*"
+  - "scene12_*/polarization/depth_l515/*"
+  - "scene12_*/polarization/depth_tof/*"
+  - "scene12_*/polarization/_gt/*"
+  - "scene12_*/polarization/_instance/*"
+  - "scene12_*/polarization/_pose/*"
+  - "scene12_*/polarization/intrinsics.txt"
+  - "scene13_*/polarization/rgb/*"
+  - "scene13_*/polarization/depth_d435/*"
+  - "scene13_*/polarization/depth_l515/*"
+  - "scene13_*/polarization/depth_tof/*"
+  - "scene13_*/polarization/_gt/*"
+  - "scene13_*/polarization/_instance/*"
+  - "scene13_*/polarization/_pose/*"
+  - "scene13_*/polarization/intrinsics.txt"
+  - "scene14_*/polarization/rgb/*"
+  - "scene14_*/polarization/depth_d435/*"
+  - "scene14_*/polarization/depth_l515/*"
+  - "scene14_*/polarization/depth_tof/*"
+  - "scene14_*/polarization/_gt/*"
+  - "scene14_*/polarization/_instance/*"
+  - "scene14_*/polarization/_pose/*"
+  - "scene14_*/polarization/intrinsics.txt"
+exclude:
+  - "*naked*/polarization/rgb/*"
+  - "*naked*/polarization/depth_*/*"
+  - "*naked*/polarization/_instance/*"
+frame_stride: 5

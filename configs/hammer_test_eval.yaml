@@ -1,0 +1,21 @@
+# Formal test (docs/plan_test.md): HAMMER test scenes 12-14, read once after the method v1 freeze. Same settings as
+# configs/hammer_dev_eval.yaml.
+dataset: hammer
+method: raw_prompt
+seed: 20261010
+manifest: data/processed/hammer_test_v1/manifest.json
+prior_cache: cache/unidepth_hammer_test_v1
+split: test
+tau: 0.05
+tau_gate: 0.05
+band: 5
+alignment: none
+visualizations: 6
+gt_scope: rendered_first_surface_full_image
+experiment_role: formal_main_result
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096
+save_predictions: 20
+save_alignment_maps: 6

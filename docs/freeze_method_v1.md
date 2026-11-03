@@ -32,3 +32,13 @@ Repository state at the freeze: commit 71b4e35 (master).
   HAMMER-like domain, not a check of the mirror ground truth.
 - S5 (official Mirror3D split): not pursued. The report does not compare with published numbers; the scene-isolated
   split is kept and stated as a limitation.
+
+## Machine-readable freeze (added 2026-11-03, before any test sample is read)
+
+`configs/freeze_method_v1.json` lists the SHA256 of the frozen artefacts above, the method library code
+(tp/align, tp/trust, tp/eval regions / metrics / aggregate / family / bootstrap, tp/geom/camera, baselines), the test
+configurations, `docs/plan_test.md`, the test comparison family and this file. Every script that may read a test
+sample takes `--formal-test` and calls `tp.formal.guard()`, which refuses the test split if any listed file changed.
+Since the first version of this record, two things were added before any test read: the test-only switches in the
+data, cache and evaluation scripts, and a `unit` option in `tp.eval.family.compare` (default behaviour unchanged) so
+that the HAMMER test family uses frame blocks as `docs/plan_test.md` states.

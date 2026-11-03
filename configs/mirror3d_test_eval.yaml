@@ -1,0 +1,20 @@
+# Formal test (docs/plan_test.md): NYU Mirror3D test scenes, read once after the method v1 freeze. Same settings as
+# configs/mirror3d_dev_eval.yaml. NYU registered Z is not certified as strict RGB-axis Z (docs/intrinsics_audit.md),
+# so the role is formal_test_registered_z, not formal_main_result.
+dataset: mirror3d_nyu
+method: raw_prompt
+seed: 20261009
+manifest: data/processed/mirror3d_test_v1/manifest.json
+prior_cache: cache/unidepth_nyu_test_v1
+split: test
+tau: 0.05
+tau_gate: 0.05
+band: 5
+alignment: none
+visualizations: 5
+gt_scope: mirror_refined_background_inpainted
+experiment_role: formal_test_registered_z
+robust:
+  ransac_iterations: 1000
+  min_support: 50
+  max_fit_points: 4096

@@ -20,7 +20,8 @@ from tp.provenance import ROOT, sha256, start_run, write_json
 
 # all_dev = every development scene (train + val splits); used with cross-fitted T, where each scene's trust map
 # comes from a fold that never saw that scene.
-POP_SPLIT = {"val": ["val"], "train_holdout": ["train"], "all_dev": ["train", "val"]}
+POP_SPLIT = {"val": ["val"], "train_holdout": ["train"], "all_dev": ["train", "val"],
+             "test": ["test"]}   # formal test family only (configs/baselines/holm_family_test_v1.yaml)
 
 
 def load_rows(prefix, run, splits, scope, dataset, population):
@@ -42,6 +43,10 @@ def load_rows(prefix, run, splits, scope, dataset, population):
     return dict(rows=rows, sha256=hashes if len(hashes) > 1 else hashes[0], run="+".join(names)), "+".join(names)
 
 
+def pop_is_test(spec):
+    return any(f["population"] == "test" for f in spec["families"].values())
+
+
 def fmt(v, d=4):
     return "NA" if v is None else f"{v:.{d}f}"
 
@@ -61,8 +66,8 @@ def main():
                  f"`{a.spec}`. Difference = candidate - reference of the main-scope {spec['region']} {spec['metric']} "
                  "(negative = candidate better). Unit `scene` = paired scene bootstrap; `frame_block` = circular "
                  f"block bootstrap of frames (L = {spec['block_length']}) inside a single scene, i.e. inference about "
-                 "frames of that scene only. NA comparisons stay in the family with p = 1. Development diagnostics; "
-                 "test never read.", ""]
+                 "frames of that scene only (or, where the spec sets unit: frame_block, of those scenes). NA comparisons stay "
+                 f"in the family with p = 1. {'Formal test family.' if pop_is_test(spec) else 'Development diagnostics; test never read.'}", ""]
         for fam, fdef in spec["families"].items():
             pop = fdef["population"]; split = POP_SPLIT[pop]
             results = {}
@@ -77,12 +82,14 @@ def main():
                         continue
                     try:
                         r = compare(ref["rows"], cand["rows"], dataset=ds, region=spec["region"], metric=spec["metric"],
-                                    n_resamples=int(spec["n_resamples"]), seed=int(spec["seed"]), block_length=int(spec["block_length"]))
+                                    n_resamples=int(spec["n_resamples"]), seed=int(spec["seed"]), block_length=int(spec["block_length"]),
+                                    unit=spec.get("unit", {}).get(ds))
                     except ValueError as e:
                         r = dict(status=f"NA_error: {e}", p_value=None)
                     try:      # over-masking check (decisions sec. 18): clean region, descriptive, not in the family
                         cl = compare(ref["rows"], cand["rows"], dataset=ds, region="clean", metric=spec["metric"],
-                                     n_resamples=int(spec["n_resamples"]), seed=int(spec["seed"]), block_length=int(spec["block_length"]))
+                                     n_resamples=int(spec["n_resamples"]), seed=int(spec["seed"]), block_length=int(spec["block_length"]),
+                                    unit=spec.get("unit", {}).get(ds))
                         rel = (cl["mean_difference"] / cl["reference_mean"]) if cl.get("mean_difference") is not None and cl.get("reference_mean") else None
                         r["clean_check"] = dict(reference_mean=cl.get("reference_mean"), candidate_mean=cl.get("candidate_mean"),
                                                 mean_difference=cl.get("mean_difference"), ci_low=cl.get("ci_low"), ci_high=cl.get("ci_high"),

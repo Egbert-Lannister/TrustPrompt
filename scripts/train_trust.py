@@ -30,7 +30,7 @@ from tp.trust.data import scene_inner_holdout
 GOOD_DATA = "trust_data_verified"; GOOD_FEAT = "features_verified"
 
 
-def load_items(data_dirs):
+def load_items(data_dirs, allow_test=False):
     items, receipts = [], {}
     for d in data_dirs:
         d = Path(d); d = d if d.is_absolute() else ROOT / d
@@ -43,7 +43,7 @@ def load_items(data_dirs):
                 raise ValueError(f"{s} has stage {rec.get('stage')}")
             receipts[str(s)] = sha256(s / "receipt.json")
             for e in json.loads((s / "index.json").read_text(encoding="utf-8")):
-                if e["split"] not in ("train", "val"):
+                if e["split"] not in (("train", "val", "test") if allow_test else ("train", "val")):
                     raise ValueError("unexpected split in trust data")
                 items.append(dict(e, file=str(s / e["path"])))
     return items, receipts

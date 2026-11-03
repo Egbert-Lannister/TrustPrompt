@@ -10,6 +10,8 @@ metric: absrel
 n_resamples: 10000
 seed: 20261103
 block_length: 8               # HAMMER has 3 test scenes: circular blocks of 8 consecutive frames, as in plugin_v1
+unit: {hammer: frame_block}   # forced for HAMMER (3 scenes; a 3-scene bootstrap could never reach the Holm level);
+                              # inference is about the frames of these scenes. NYU (23 scenes): paired scene bootstrap.
 models:
   promptda_l: {label: PromptDA-L, reference: promptda_vitl_raw, candidate: promptda_vitl_trust_v1_crc10_prior}
   priorda:    {label: PriorDA-B v1.1, reference: bl_priorda_raw, candidate: bl_priorda_tmask}
