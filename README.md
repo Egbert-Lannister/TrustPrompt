@@ -24,7 +24,8 @@
    | 先验自带的不确定度 Σ | 不成立 | [tr_precheck](docs/tr_precheck.md) |
    | 模型内部定位（PromptDA 激活修补） | 无效：HAMMER 上没有效应；NYU 上照抄集中在最细的两个融合分支 | [patch_precheck](docs/patch_precheck.md) |
 
-4. **解释：局部自洽。** 镜子里的 RGB 和传感器读数描述的是同一个虚像，局部找不到矛盾；只有全局先验能识别。详见报告第 6 节。
+4. **把方法 v1 的掩码接到 CAPA 前**（补充实验 S2）：CAPA 的错误区误差在 NYU 下降 87%，在 HAMMER 下降 44%；HAMMER 上没有代价，NYU 上会删掉镜面里约 3% 的正确读数（[tta_tmask](docs/tta_tmask.md)）。
+5. **解释：局部自洽。** 镜子里的 RGB 和传感器读数描述的是同一个虚像，局部找不到矛盾；只有全局先验能识别。详见报告第 6 节。
 
 ## 目录
 
@@ -113,6 +114,4 @@ GLARE 只作为参考：本项目不 import、不修改 GLARE 的任何代码或
 
 ## 下一步（待定）
 
-- 把方法 v1 的掩码接到 CAPA 上（GPU 约 2 小时）。
-- 冻结方法 v1，在 test 上跑一次正式评测（需要用户批准冻结）。
-- 补充非平面真值的数据（自采，或 TransCG / ClearPose），用来回应 Mirror3D 平面真值的局限。
+- 方法 v1 已冻结（[`docs/freeze_method_v1.md`](docs/freeze_method_v1.md)）；准备 test 数据和 test 比较族，然后在 test 上跑一次正式评测。
