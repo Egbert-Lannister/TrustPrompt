@@ -43,3 +43,11 @@ NYU AUROC by window: w=15 0.426, 31 0.377, 63 0.364, 127 0.389, global 0.839; AU
 its minimum at an intermediate window and lies below 0.5. The monotonicity condition did not anticipate local
 AUROCs below chance; not changed afterwards. HAMMER: local and global about equal (0.70-0.73). Descriptive: CAPA IR
 at step 100 vs contaminated area, Spearman 0.546 (NYU, 78 images) and 0.419 (HAMMER, 30); at step 0 0.239 / 0.143.
+
+## S2 result (2026-11-03, results/tta_tmask_20261102_110950, code ebe7609): **rescues**
+
+C AbsRel reduction vs CAPA raw: NYU 0.870 (CI 0.744-0.942; 30 images / 25 scenes), HAMMER 0.440 (0.356-0.531;
+30 / 10). NYU: prior 0.094, CAPA 1.024, CAPA + T 0.134, CAPA + GT mask 0.066; in-mirror clean pixels 0.316 / 0.048 /
+0.367 / 0.016 (the cost of deleting the ~3 % correct mirror readings). HAMMER: prior 0.132, CAPA 0.189, CAPA + T
+0.106; clean 0.034 / 0.019 / 0.019. T removes 17.8 % (NYU) and 25.0 % (HAMMER) of the readings per image. One invalid
+pixel (NYU oracle). Engineering run results/tta_tmask_20261102_100109 (--limit 1) kept as the check.
