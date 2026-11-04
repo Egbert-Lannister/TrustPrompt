@@ -8,6 +8,7 @@ Re-running continues: a step whose output already has its success stage is skipp
 another stage is moved aside to <name>_failed_<time> and redone. Every step that reads a test sample first checks the
 method v1 freeze (tp.formal.guard: configs/freeze_method_v1.json). Order:
   1  NYU test frames: byte ranges of the official NYU Depth v2 MAT -> data/source_cache/nyu_test_v1.h5
+  2a Mirror3D NYU annotations nyu.zip / nyu.csv (official release, SHA256 must equal the dev copy) -> data/source_cache/mirror3d
   2  NYU test samples -> data/processed/mirror3d_test_v1
   3  HAMMER scenes 12-14, every 5th frame, from the official archive (MIT) -> data/source_cache/hammer_test_v1
   4  HAMMER test samples -> data/processed/hammer_test_v1
@@ -70,6 +71,7 @@ def steps(with_capa):
     nyu_json = ROOT / "data/source_cache/nyu_test_v1.json"
     S.append(("1 NYU test frames", PY, ["-m", "scripts.fetch_nyu_subset", "--formal-test", "--output",
                                         "data/source_cache/nyu_test_v1.h5", "--max-download-mib", "1500"], "nyu_fetch", None))
+    S.append(("2a Mirror3D NYU annotations (hash = dev copy)", PY, ["-m", "scripts.fetch_mirror3d_meta"], "mirror3d_meta", None))
     S.append(("2 NYU test samples", PY, ["-m", "scripts.prepare_mirror3d", "--formal-test", "--paths", "configs/paths.dev.yaml",
                                          "--source", "data/source_cache/nyu_test_v1.h5", "--output", DATASETS["nyu"]["processed"]],
               DATASETS["nyu"]["processed"], ("complete_real_data_preparation",)))
@@ -133,6 +135,9 @@ def is_done(out, ok):
     if out == "nyu_fetch":
         j = ROOT / "data/source_cache/nyu_test_v1.json"
         return j.is_file() and json.loads(j.read_text(encoding="utf-8")).get("status") == "COMPLETE_REAL_DATA_SUBSET"
+    if out == "mirror3d_meta":
+        from scripts.fetch_mirror3d_meta import ok as m3d_ok
+        return m3d_ok()
     if out == "hammer_fetch":
         return stage(DATASETS["hammer"]["processed"]) == "complete_real_data_preparation"
     return stage(out) in ok
@@ -149,7 +154,7 @@ def run_step(name, interp, args, out, ok, dry):
         j = ROOT / "data/source_cache/nyu_test_v1.json"
         if j.is_file() and json.loads(j.read_text(encoding="utf-8")).get("status") == "INCOMPLETE":
             args = [*args, "--resume"]
-    elif out not in ("hammer_fetch",) and (ROOT / out).exists():
+    elif out not in ("hammer_fetch", "mirror3d_meta") and (ROOT / out).exists():
         move_aside(out)
     print(f"=== {name}  ({datetime.now():%H:%M:%S})", flush=True)
     t = time.time()
