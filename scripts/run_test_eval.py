@@ -131,6 +131,26 @@ def move_aside(path):
     print(f"moved {path} aside -> {dst.name}", flush=True)
 
 
+def hammer_fetch_done():
+    """Step 3 is done when the fetch receipt's last run had no error and every selected member is on disk at its size."""
+    import yaml
+    from scripts.hammer_remote import select_members
+    dest = ROOT / "data/source_cache/hammer_test_v1"
+    rp = dest / "hammer_fetch_receipt.json"
+    if not rp.is_file():
+        return False
+    r = json.loads(rp.read_text(encoding="utf-8"))
+    if not r.get("runs") or r["runs"][-1].get("error") is not None:
+        return False
+    index = json.loads((ROOT / "data/source_cache/hammer_index_v1.json").read_text(encoding="utf-8"))
+    rule = yaml.safe_load((ROOT / "configs/hammer_test_v1.yaml").read_text(encoding="utf-8"))
+    for m in select_members(index["members"], rule):
+        e, f = r["members"].get(m["name"]), dest / m["name"]
+        if e is None or not f.is_file() or f.stat().st_size != e["size"]:
+            return False
+    return True
+
+
 def is_done(out, ok):
     if out == "nyu_fetch":
         j = ROOT / "data/source_cache/nyu_test_v1.json"
@@ -139,7 +159,7 @@ def is_done(out, ok):
         from scripts.fetch_mirror3d_meta import ok as m3d_ok
         return m3d_ok()
     if out == "hammer_fetch":
-        return stage(DATASETS["hammer"]["processed"]) == "complete_real_data_preparation"
+        return hammer_fetch_done()
     return stage(out) in ok
 
 
