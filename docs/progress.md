@@ -773,3 +773,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 所有可能读取 test 的脚本都新增了 `--formal-test`，并先用 `tp.formal.guard()` 核对 `configs/freeze_method_v1.json`（37 个文件的 SHA256：冻结的权重、阈值和配置、方法库代码、test 计划与比较族）。不加这个开关时，test 照旧锁定。
 - NYU 的配准 Z 没有认证为严格的 RGB 轴向 Z，所以评测角色用 `formal_test_registered_z`；HAMMER 用 `formal_main_result`。HAMMER 只有 3 个 test 场景，比较族强制用帧块 bootstrap，与计划一致，否则代码会自动改用场景 bootstrap。这两处都在读取 test 之前补上并写明。
 - 我这边全部测试通过（354 项，其中新增 6 项）。
+- 2026-11-03：第 1 步完成后，第 2 步失败，原因是缺 Mirror3D NYU 标注（dev 用的是 E: 盘的 `nyu.zip` / `nyu.csv`，这台机器上访问不到）。新增 `scripts/fetch_mirror3d_meta.py`，作为驱动的第 2a 步：从官方发布地址取这两个文件（csv 固定在官方仓库 commit 1ce8e33），SHA256 必须与 dev 用的副本一致，否则停下、不保留文件。这样 test 和 dev 用的是同一版标注。`nyu.csv` 已从官方仓库取得并核对一致；`nyu.zip` 的主机从云端访问不到，由本机下载。两个脚本都不在冻结清单中，冻结不受影响；test 尚未读取。
