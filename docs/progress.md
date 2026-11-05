@@ -775,3 +775,14 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - 我这边全部测试通过（354 项，其中新增 6 项）。
 - 2026-11-03：第 1 步完成后，第 2 步失败，原因是缺 Mirror3D NYU 标注（dev 用的是 E: 盘的 `nyu.zip` / `nyu.csv`，这台机器上访问不到）。新增 `scripts/fetch_mirror3d_meta.py`，作为驱动的第 2a 步：从官方发布地址取这两个文件（csv 固定在官方仓库 commit 1ce8e33），SHA256 必须与 dev 用的副本一致，否则停下、不保留文件。这样 test 和 dev 用的是同一版标注。`nyu.csv` 已从官方仓库取得并核对一致；`nyu.zip` 的主机从云端访问不到，由本机下载。两个脚本都不在冻结清单中，冻结不受影响；test 尚未读取。
 - 2026-11-03：第 2a、2 步通过（NYU test 30 张 / 23 场景，与预注册一致）。第 3 步的 HAMMER 下载本身完整（4848 个文件，533/533 批，无错误），但驱动误用第 4 步的产物判断第 3 步是否完成，所以报失败。已改为检查下载凭据：最后一次运行无错误，且选中的每个文件都在、大小正确。不需要重新下载。
+
+## 2026-11-04：S3 正式 test 评测完成（方法 v1，test 只读一次）
+
+- `python -m scripts.run_test_eval` 全部完成（13 步，CAPA 的第 14 步没有运行）。结果：`docs/holm_test_v1.md`、`docs/test_results.md`、`docs/conformal_test.md`；结果目录 `results/holm_test_v1_20261104_124143`、`results/conformal_test_20261104_124207`、`results/{mirror3d,hammer}_test_*_test_v1`；运行代码提交 b7311a7，冻结核对通过。
+- **主比较（Holm，α = 0.05）：12 个中 10 个显著。** NYU（30 张 / 23 场景）：PromptDA-L、PriorDA-B、OMNI-DC、LingBot-Depth、Any2Full-L 的 C 区 AbsRel 下降 0.32–0.63。HAMMER（858 个样本 / 3 场景，8 帧块）：PriorDA-B、OMNI-DC、CDM、LingBot-Depth、Any2Full-L 下降 0.012–0.065。
+- **例外 1：CDM NYU 记为 NA。** bathroom_0046 第 730 帧在 C 区有 126 个无效像素（T v1 掩码），真值掩码下有 423 个。按协议不剔除，p = 1。事后描述（不属于比较族）：去掉这张图后，29 张图上从 0.532 降到 0.211。
+- **例外 2：PromptDA-L HAMMER 没有改善**（0.0431 → 0.0438，CI −0.0022 到 0.0046）。真值掩码也只能降到 0.0385，L515 上真值掩码甚至比原始提示差。开发集上同一比较为 −0.0095（显著），test 上没有重现。
+- **干净区代价：** PromptDA-L 两个数据集都明显变差（NYU +178%，HAMMER +51%）；其余模型都没有明显变差。
+- **conformal：** NYU 成立（平均损失 0.027）；HAMMER 不成立（0.129 > 0.1，30% 的图像超过 α）。HAMMER 的 λ 只用场景 10 标定，开发集 val 上已紧贴 α（0.096）。
+- **运行事件：** CDM tmask HAMMER 第一次运行在处理第一个样本前发生 Windows 进程崩溃（0xC0000005），没有产生预测；设置不变重跑后完成，失败目录 `cache/bl_cdm_tmask_hammer_test_v1_failed_20261104_103328` 保留。磁盘剩余 14 GiB，用 `--min-free-gib 10` 跑完。
+- 已把结果写入 `docs/analysis_paper.md` 第 7 节、摘要、局限和结论，并更新 README。

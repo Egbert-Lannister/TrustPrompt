@@ -321,3 +321,5 @@
 - **S3–S5 由 Claude 代为决定（2026-11-02，用户授权"你替我决定"）：** 方法 v1 现在冻结（`docs/freeze_method_v1.md`，记录了权重、阈值、配置的 SHA256），S2 跑完后做 test 正式评测；test 数据的准备和 test 比较族在读取任何 test 样本之前写定并提交。S4 不做：这条局限只影响平面类填充，方法 v1 用先验 D_g 填充，不受影响；透明物体数据集也检验不了镜面真值。S5 不做：报告不与已发表数字比较，保留按场景隔离的划分，作为局限写明。
 
 - **S3 流水线的两处补充（2026-11-03，读取任何 test 样本之前）：** (1) NYU test 的评测角色是 `formal_test_registered_z`，因为 NYU 数据不满足 `formal_main_result` 要求的严格 RGB 轴向 Z 认证，报告中照此标注；(2) HAMMER test 比较族加上 `unit: {hammer: frame_block}`，与 `docs/plan_test.md` 写的"8 帧循环块"一致。冻结记录扩展为机器可读的 `configs/freeze_method_v1.json`。
+
+- **S3 test 结果的判读（2026-11-04，读取 test 之后）：** 结论照预注册的比较族写，不改阈值、权重、填充方式或规则。CDM NYU 因无效预测保持 NA（p = 1），29 张图的数字只作事后描述，并标明不属于比较族。HAMMER 上 conformal 保证不成立，照实报告为局限，不重新标定。这次 test 已用过，今后任何方法修改都不能再用它做选择；如需正式结论，要换新的 test 数据。CAPA 的 test 对比（次要、描述性）暂不运行，由用户决定。
