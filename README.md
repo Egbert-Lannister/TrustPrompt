@@ -29,7 +29,7 @@
    | 先验自带的不确定度 Σ | 不成立 | [tr_precheck](docs/tr_precheck.md) |
    | 模型内部定位（PromptDA 激活修补） | 无效：HAMMER 上没有效应；NYU 上照抄集中在最细的两个融合分支 | [patch_precheck](docs/patch_precheck.md) |
 
-4. **把方法 v1 的掩码接到 CAPA 前**（补充实验 S2）：CAPA 的错误区误差在 NYU 下降 87%，在 HAMMER 下降 44%；HAMMER 上没有代价，NYU 上会删掉镜面里约 3% 的正确读数（[tta_tmask](docs/tta_tmask.md)）。
+4. **把方法 v1 的掩码接到 CAPA 前**（补充实验 S2）：CAPA 的错误区误差在 NYU 下降 87%，在 HAMMER 下降 44%；HAMMER 上没有代价，NYU 上会删掉镜面里约 3% 的正确读数（[tta_tmask](docs/tta_tmask.md)）。test 上重现：NYU 下降 73%（CI 0.52–0.96），HAMMER 下降 60%（9 张图），两个数据集的干净区都几乎没有代价（[tta_test](docs/tta_test.md)）。
 5. **解释：局部自洽。** 镜子里的 RGB 和传感器读数描述的是同一个虚像，局部找不到矛盾；只有全局先验能识别。详见报告第 6 节。
 
 ## 目录
@@ -113,7 +113,7 @@ GLARE 只作为参考：本项目不 import、不修改 GLARE 的任何代码或
 - [`docs/progress.md`](docs/progress.md)：实际完成的工作、运行结果、阻塞与下一步。
 - [`docs/decisions.md`](docs/decisions.md)：口径决定、预注册规则、计划修订。
 - 计划：[`plan_revision_v2.md`](docs/plan_revision_v2.md)（方法 v1）、[`plan_omnidc.md`](docs/plan_omnidc.md)（OMNI-DC 内化）、[`plan_layered.md`](docs/plan_layered.md)（分层，已放弃）、[`plan_tta.md`](docs/plan_tta.md)（CAPA 与信赖域）、[`plan_patching.md`](docs/plan_patching.md)（激活修补）。
-- 正式 test：[`plan_test.md`](docs/plan_test.md)（预注册）、[`freeze_method_v1.md`](docs/freeze_method_v1.md)、[`holm_test_v1.md`](docs/holm_test_v1.md)、[`test_results.md`](docs/test_results.md)、[`conformal_test.md`](docs/conformal_test.md)。
+- 正式 test：[`plan_test.md`](docs/plan_test.md)（预注册）、[`freeze_method_v1.md`](docs/freeze_method_v1.md)、[`holm_test_v1.md`](docs/holm_test_v1.md)、[`test_results.md`](docs/test_results.md)、[`conformal_test.md`](docs/conformal_test.md)、[`tta_test.md`](docs/tta_test.md)。
 - 方法 v1 与基线：[`baseline_results.md`](docs/baseline_results.md)、[`holm_plugin_v1.md`](docs/holm_plugin_v1.md)、[`holm_plugin_cf_v1.md`](docs/holm_plugin_cf_v1.md)、[`conformal_results_d20.md`](docs/conformal_results_d20.md)、[`c1_analysis.md`](docs/c1_analysis.md)。
 - 相关工作与数据：[`related_work_audit.md`](docs/related_work_audit.md)、[`data_inventory.md`](docs/data_inventory.md)、[`capture_plan.md`](docs/capture_plan.md)。
 - AutoDL 训练记录（历史）：[`autodl_p1_full_results.md`](docs/autodl_p1_full_results.md)、[`omnidc_p1_transfer.md`](docs/omnidc_p1_transfer.md)。
@@ -129,5 +129,5 @@ GLARE 只作为参考：本项目不 import、不修改 GLARE 的任何代码或
 
 ## 下一步（待定）
 
-- test 已读取，方法 v1 不再修改。可选：CAPA 的 test 对比（`run_test_eval --with-capa`，约 6 小时 GPU，只作描述）。
+- test 已读取，方法 v1 不再修改；CAPA 的 test 对比也已完成。
 - 新的方法改进只能在开发集上进行，而且需要新的 test 数据，这次的 test 不能再用于选择方法。
