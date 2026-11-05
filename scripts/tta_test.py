@@ -4,7 +4,8 @@ trusts, as in S2 (scripts.tta_tmask), on the test split. GPU.
   python -m scripts.tta_test [--max-minutes 120]          # then: python -m scripts.tta_test --resume latest
 
 Images: NYU every test image; HAMMER 1 frame per scene x sensor (9 images, about 12 min per image per variant).
-Same CAPA code, weights, config and per-image seed as the CAPA pre-check; T maps from the test trust caches with the
+An image on which CAPA returns NaN after its own retries is recorded as failed and left out of all variants (listed in
+the report), instead of stopping the run. Same CAPA code, weights, config and per-image seed as the CAPA pre-check; T maps from the test trust caches with the
 frozen conformal lambda (alpha 0.1). The prior is CAPA's own step 0. No rule: reported descriptively.
 """
 from __future__ import annotations
@@ -89,17 +90,28 @@ def main():
             rgb, cond, mask = T.tensors(s)
             trust = tcache[ds].trust(s, h, s.prompt.shape)
             keep = mask & torch.from_numpy(~(s.prompt_valid & (trust < lam[ds])))[None]
-            preds, secs = {}, {}
+            preds, secs, failed = {}, {}, None
             for v, m in (("capa_raw", mask), ("tmask", keep)):
                 torch.manual_seed(T.SEED)
                 if device.type == "cuda":
                     torch.cuda.manual_seed_all(T.SEED)
                 t1 = time.time()
-                pred, rec, _ = T.run_with_retries(proto, rgb, cond, m)
+                try:
+                    pred, rec, _ = T.run_with_retries(proto, rgb, cond, m)
+                except RuntimeError as e:      # CAPA returned NaN after its own retries: record, do not drop silently
+                    if "NaN" not in str(e):
+                        raise
+                    failed = v
+                    break
                 secs[v] = time.time() - t1
                 preds[v] = pred[0].float().cpu().numpy()
                 if v == "capa_raw":
                     preds["prior"] = rec[0]
+            if failed is not None:
+                write_json(per / f"{name}.json", dict(dataset=ds, scene=s.scene, sensor=s.sensor, seconds=secs,
+                                                      failed=failed, metrics=None))
+                print(f"[{i + 1}/{len(todo)}] {name}: CAPA NaN after retries in variant {failed}; recorded as failed", flush=True)
+                continue
             _, scope = focus_scope(s)
             metrics = {k: image_metrics(D, s.prompt, s.prompt_valid, s.gt, s.gt_valid, scope) for k, D in preds.items()}
             write_json(per / f"{name}.json", dict(dataset=ds, scene=s.scene, sensor=s.sensor, seconds=secs, metrics=metrics))
@@ -113,14 +125,21 @@ def main():
              "|---|---:|---|---:|---:|---:|"]
         res = {}
         for ds in DATA:
-            xs = [x for x in rows if x["dataset"] == ds]
+            allx = [x for x in rows if x["dataset"] == ds]
+            xs = [x for x in allx if x.get("metrics") is not None]
+            failed = [f"{x['scene']}/{x['sensor']} ({x['failed']})" for x in allx if x.get("metrics") is None]
             sc = T._by_scene(xs)
             red = T.scene_bootstrap(sc, lambda g: reduction(g, "tmask"), rng)
-            res[ds] = dict(images=len(xs), scenes=len(sc), absrel_C={k: pooled(xs, k) for k in ("prior", "capa_raw", "tmask")},
+            res[ds] = dict(images=len(xs), scenes=len(sc), failed_images=failed, absrel_C={k: pooled(xs, k) for k in ("prior", "capa_raw", "tmask")},
                            absrel_clean={k: pooled(xs, k, "clean") for k in ("prior", "capa_raw", "tmask")}, reduction=red)
             for k in ("prior", "capa_raw", "tmask"):
                 r_ = f"{f(red[0], 3)} ({f(red[1], 3)} to {f(red[2], 3)})" if k == "tmask" else "-"
                 L.append(f"| {ds} | {len(xs)} / {len(sc)} | {k} | {f(res[ds]['absrel_C'][k])} | {f(res[ds]['absrel_clean'][k])} | {r_} |")
+        L.append("")
+        for ds in DATA:
+            if res[ds]["failed_images"]:
+                L.append(f"{ds}: CAPA returned NaN after its retries on {len(res[ds]['failed_images'])} image(s), "
+                         "left out of every variant above (same images for all variants): " + ", ".join(res[ds]["failed_images"]))
         L.append("")
         write_json(out / "tta_test.json", res)
         (ROOT / "docs" / "tta_test.md").write_text("\n".join(L), encoding="utf-8")
