@@ -787,3 +787,4 @@ Claude 在用户电脑上的 shell 是挂载项目目录的 Linux 工作区：2 
 - **运行事件：** CDM tmask HAMMER 第一次运行在处理第一个样本前发生 Windows 进程崩溃（0xC0000005），没有产生预测；设置不变重跑后完成，失败目录 `cache/bl_cdm_tmask_hammer_test_v1_failed_20261104_103328` 保留。磁盘剩余 14 GiB，用 `--min-free-gib 10` 跑完。
 - 已把结果写入 `docs/analysis_paper.md` 第 7 节、摘要、局限和结论，并更新 README。
 - 2026-11-04 晚：CAPA 的 test 对比（`scripts.tta_test`，次要、描述性）跑完 NYU 30 张后，在第 2 张 HAMMER 图上停止：CAPA 自身重试后输出仍有 NaN。NYU 部分（30 张 / 23 场景）：冻结先验 C 区 AbsRel 0.069，CAPA 1.074（IR 0.971），CAPA + T 掩码 0.286（IR 0.265），相对 CAPA 下降 0.734（场景 bootstrap CI 约 0.51–0.95）；干净区 0.032 对 0.035。脚本已改为：CAPA 返回 NaN 的图像记为失败，所有变体都排除，并在报告中列出，不再中止整个运行；用 `--resume latest` 接着跑。
+- 2026-11-05：CAPA 的 test 对比续跑完成（`results/tta_test_20261104_202618`，stage complete，没有失败图像；上次出 NaN 的 HAMMER 图续跑时正常完成）。NYU 30 张：CAPA 1.074 → CAPA + T 掩码 0.286，降幅 0.734（CI 0.522–0.958），干净区 0.032 → 0.035。HAMMER 9 张 / 3 场景：0.146 → 0.058，降幅 0.604（CI 0.464–0.646），IR 0.621 → 0.267，干净区 0.018 → 0.018。已写入报告 7.4 节和 README。至此 S3 全部完成。
