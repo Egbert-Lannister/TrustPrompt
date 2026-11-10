@@ -1,0 +1,67 @@
+{
+  "zip": "D:\\Python_Script\\TrustPrompt\\exports\\TrustPrompt-mysite-html-v1.zip",
+  "zip_bytes": 361410,
+  "sha256": "8cf53e5aec2e8843509b6a06ebe468b6552738e40e15ac998ee35d799d159e19",
+  "title": "TrustPrompt：让深度补全先判断该信任哪些读数",
+  "description": "研究镜面与透明物体上的错误深度提示如何被模型继承，以冻结单目先验检查读数可信度。方法冻结后的正式测试中，12 项比较有 10 项显著改善，同时揭示干净区代价与跨场景风险控制的边界。",
+  "members": [
+    {
+      "path": "index.html",
+      "bytes": 12411,
+      "sha256": "2bdaeb468528f2a4e679d7235cac19740a68c9b41c7e678bfa0c3bbbf74d0762"
+    },
+    {
+      "path": "assets/trustprompt-method.png",
+      "bytes": 122379,
+      "sha256": "07864543cc32815179c7f1f3fe2b8ab053ca9a2c5914d63827648248e4ae938a"
+    },
+    {
+      "path": "assets/formal-test-results.png",
+      "bytes": 153564,
+      "sha256": "b8a3b64f05420051be7342d5a923485a19c3d838dbb495225123ca31afb77568"
+    },
+    {
+      "path": "assets/capa-test-results.png",
+      "bytes": 117481,
+      "sha256": "424fba57dd13af8d28bf9721aa18406e15c59bc354e0f41b4ad63cd7716485db"
+    }
+  ],
+  "media": [
+    {
+      "title": "TrustPrompt：可信度检查与三种接入方式",
+      "section": "framework",
+      "group_name": "方法 v1"
+    },
+    {
+      "title": "六个补全模型的污染区误差",
+      "section": "results",
+      "group_name": "正式 test · 主比较"
+    },
+    {
+      "title": "CAPA 接入可信度掩码前后",
+      "section": "comparison",
+      "group_name": "正式 test · CAPA 描述性对比"
+    }
+  ],
+  "warnings": [],
+  "checks": {
+    "zip_crc": true,
+    "four_sections": true,
+    "allowed_files_only": true,
+    "all_media_referenced": true,
+    "real_mysite_importer": true,
+    "sanitization_idempotent": true,
+    "media_url_rewriting": true,
+    "real_project_template_rendered": true,
+    "database_queries": 0
+  },
+  "template_reference": "D:\\Python_Script\\mysite\\static\\examples\\project-page-template.html",
+  "content_sources": [
+    "docs/analysis_paper.md",
+    "docs/freeze_method_v1.md",
+    "docs/test_results.json",
+    "docs/holm_test_v1.md",
+    "docs/conformal_test.md",
+    "docs/tta_test.md"
+  ]
+}

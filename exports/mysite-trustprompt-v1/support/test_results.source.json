@@ -1,0 +1,426 @@
+{
+  "mirror3d_nyu": {
+    "promptda_l": {
+      "raw": {
+        "run": "mirror3d_test_promptda_vitl_raw_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.609989447451336,
+        "c_full": 0.5311968660520329,
+        "clean": 0.02880218699787474,
+        "ir": 0.6546963913417729,
+        "dor": 0.6859356098465886,
+        "images_with_invalid": 0
+      },
+      "T v1 mask, D_g fill": {
+        "run": "mirror3d_test_promptda_vitl_trust_v1_crc10_prior_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.1843147651775755,
+        "c_full": 0.19062940597274783,
+        "clean": 0.0800950777694415,
+        "ir": 0.10252442207952672,
+        "dor": 0.21742934292985866,
+        "images_with_invalid": 0
+      },
+      "GT mask, D_g fill [oracle]": {
+        "run": "mirror3d_test_promptda_vitl_oracle_prior_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.18188108883554827,
+        "c_full": 0.188685663234573,
+        "clean": 0.049658285100700944,
+        "ir": 0.08805616946162591,
+        "dor": 0.22356156008239572,
+        "images_with_invalid": 0
+      }
+    },
+    "priorda": {
+      "raw": {
+        "run": "mirror3d_test_bl_priorda_raw_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.47770515515201256,
+        "c_full": 0.419916432003864,
+        "clean": 0.08995035919765851,
+        "ir": 0.1380056989219219,
+        "dor": 0.655039293674119,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "mirror3d_test_bl_priorda_tmask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.15363095556045517,
+        "c_full": 0.15746328367744686,
+        "clean": 0.07863489961025659,
+        "ir": 0.08639712033694764,
+        "dor": 0.1503998208482992,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "mirror3d_test_bl_priorda_oracle_mask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.1303892940282191,
+        "c_full": 0.13408187811571248,
+        "clean": 0.05411577407901668,
+        "ir": 0.06739243270380982,
+        "dor": 0.2364503927835483,
+        "images_with_invalid": 0
+      }
+    },
+    "omnidc": {
+      "raw": {
+        "run": "mirror3d_test_bl_omnidc_raw_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.793899047919205,
+        "c_full": 0.6583076408854507,
+        "clean": 0.018135346616074806,
+        "ir": 0.9716029815112505,
+        "dor": 0.7970688959729578,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "mirror3d_test_bl_omnidc_tmask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.16690284599980906,
+        "c_full": 0.16455438923492144,
+        "clean": 0.03934747013517222,
+        "ir": 0.16978334693297925,
+        "dor": 0.20126096073820648,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "mirror3d_test_bl_omnidc_oracle_mask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.18265161271114144,
+        "c_full": 0.16772300468668458,
+        "clean": 0.013699200188558861,
+        "ir": 0.12366090085734466,
+        "dor": 0.30463928708327825,
+        "images_with_invalid": 0
+      }
+    },
+    "cdm": {
+      "raw": {
+        "run": "mirror3d_test_bl_cdm_raw_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.5771571031300442,
+        "c_full": 0.5245484528134211,
+        "clean": 0.12574008256456481,
+        "ir": 0.43142938714447154,
+        "dor": 0.6485815429183954,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "mirror3d_test_bl_cdm_tmask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": null,
+        "c_full": null,
+        "clean": 0.052161614041640283,
+        "ir": null,
+        "dor": null,
+        "images_with_invalid": 1
+      },
+      "GT mask [oracle]": {
+        "run": "mirror3d_test_bl_cdm_oracle_mask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": null,
+        "c_full": null,
+        "clean": 0.03684959531424078,
+        "ir": null,
+        "dor": null,
+        "images_with_invalid": 1
+      }
+    },
+    "lingbot": {
+      "raw": {
+        "run": "mirror3d_test_bl_lingbot_raw_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.8009221922728235,
+        "c_full": 0.6700433306848192,
+        "clean": 0.01598221762796666,
+        "ir": 0.9523823777847186,
+        "dor": 0.7504439532174524,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "mirror3d_test_bl_lingbot_tmask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.2080583345888357,
+        "c_full": 0.20281019778489837,
+        "clean": 0.031248283772836158,
+        "ir": 0.21323201272797712,
+        "dor": 0.2599764573498722,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "mirror3d_test_bl_lingbot_oracle_mask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.2901134270564818,
+        "c_full": 0.2652845570995902,
+        "clean": 0.0143536212575213,
+        "ir": 0.2173611915208226,
+        "dor": 0.3068614809782771,
+        "images_with_invalid": 0
+      }
+    },
+    "any2full": {
+      "raw": {
+        "run": "mirror3d_test_bl_any2full_raw_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.7444623775828593,
+        "c_full": 0.6317984995395906,
+        "clean": 0.028633464113989735,
+        "ir": 0.7879566658842198,
+        "dor": 0.739373139729355,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "mirror3d_test_bl_any2full_tmask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.13363545140770905,
+        "c_full": 0.14890219654578504,
+        "clean": 0.047617920381747274,
+        "ir": 0.10105647566448317,
+        "dor": 0.13759662472057824,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "mirror3d_test_bl_any2full_oracle_mask_test_v1",
+        "images": 30,
+        "scenes": 23,
+        "c": 0.07696636972484631,
+        "c_full": 0.09226589816816573,
+        "clean": 0.01309567856682738,
+        "ir": 0.031655332232286816,
+        "dor": 0.14016264736823691,
+        "images_with_invalid": 0
+      }
+    }
+  },
+  "hammer": {
+    "promptda_l": {
+      "raw": {
+        "run": "hammer_test_promptda_vitl_raw_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.04308845672389076,
+        "c_full": 0.07287460208845369,
+        "clean": 0.013026997758777617,
+        "ir": 0.10852829334441509,
+        "dor": 0.03531140206693795,
+        "images_with_invalid": 0
+      },
+      "T v1 mask, D_g fill": {
+        "run": "hammer_test_promptda_vitl_trust_v1_crc10_prior_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.04375915352180845,
+        "c_full": 0.05121651257341609,
+        "clean": 0.019689313330894787,
+        "ir": 0.08303314813555909,
+        "dor": 0.022269305565887205,
+        "images_with_invalid": 0
+      },
+      "GT mask, D_g fill [oracle]": {
+        "run": "hammer_test_promptda_vitl_oracle_prior_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.03847569361375597,
+        "c_full": 0.043897425642519805,
+        "clean": 0.013008090005615536,
+        "ir": 0.07920046966261345,
+        "dor": 0.0390690964439186,
+        "images_with_invalid": 0
+      }
+    },
+    "priorda": {
+      "raw": {
+        "run": "hammer_test_bl_priorda_raw_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.1628146718672905,
+        "c_full": 0.14019170125098687,
+        "clean": 0.051675151534243007,
+        "ir": 0.4338131272233829,
+        "dor": 0.47577451828478834,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "hammer_test_bl_priorda_tmask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.12217569959451362,
+        "c_full": 0.09283382886430842,
+        "clean": 0.04572437030762868,
+        "ir": 0.4431345072298271,
+        "dor": 0.33229860479643974,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "hammer_test_bl_priorda_oracle_mask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.11047794900406431,
+        "c_full": 0.07119475336194984,
+        "clean": 0.04202501903613229,
+        "ir": 0.4294174161637585,
+        "dor": 0.2741538456376395,
+        "images_with_invalid": 0
+      }
+    },
+    "omnidc": {
+      "raw": {
+        "run": "hammer_test_bl_omnidc_raw_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.1666323598501852,
+        "c_full": 0.1550786791726415,
+        "clean": 0.026646599671153334,
+        "ir": 0.8735887642340918,
+        "dor": 0.3634591905331554,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "hammer_test_bl_omnidc_tmask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.12855861496493176,
+        "c_full": 0.10854318683555648,
+        "clean": 0.023865280827948827,
+        "ir": 0.638418671203281,
+        "dor": 0.2769245163064911,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "hammer_test_bl_omnidc_oracle_mask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.11607268187151609,
+        "c_full": 0.08141411650586043,
+        "clean": 0.017539662244082956,
+        "ir": 0.4494402387880457,
+        "dor": 0.22686872602902444,
+        "images_with_invalid": 0
+      }
+    },
+    "cdm": {
+      "raw": {
+        "run": "hammer_test_bl_cdm_raw_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.07590449619236671,
+        "c_full": 0.054167128578916646,
+        "clean": 0.022801502565402598,
+        "ir": 0.18123281138009995,
+        "dor": 0.16736478314967632,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "hammer_test_bl_cdm_tmask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.06405492223059264,
+        "c_full": 0.04914669909072187,
+        "clean": 0.022322341377589306,
+        "ir": 0.14231993102143797,
+        "dor": 0.13293378453699853,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "hammer_test_bl_cdm_oracle_mask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.05548235618979466,
+        "c_full": 0.040329913914482554,
+        "clean": 0.019037158222219613,
+        "ir": 0.10178823891603779,
+        "dor": 0.11207651769389482,
+        "images_with_invalid": 0
+      }
+    },
+    "lingbot": {
+      "raw": {
+        "run": "hammer_test_bl_lingbot_raw_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.09932432369155063,
+        "c_full": 0.0745070301173663,
+        "clean": 0.013795623087542924,
+        "ir": 0.4010520200345811,
+        "dor": 0.20004098172252535,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "hammer_test_bl_lingbot_tmask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.052283097448510785,
+        "c_full": 0.0458541259653327,
+        "clean": 0.014677335101050806,
+        "ir": 0.21600867371835672,
+        "dor": 0.08937844469667135,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "hammer_test_bl_lingbot_oracle_mask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.03510125109997437,
+        "c_full": 0.03035738872018347,
+        "clean": 0.013270920365817862,
+        "ir": 0.08304194843186397,
+        "dor": 0.046223932342819275,
+        "images_with_invalid": 0
+      }
+    },
+    "any2full": {
+      "raw": {
+        "run": "hammer_test_bl_any2full_raw_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.1630487823068915,
+        "c_full": 0.14950283477377405,
+        "clean": 0.014232215248289793,
+        "ir": 0.8578862099194637,
+        "dor": 0.31631383272973806,
+        "images_with_invalid": 0
+      },
+      "T v1 mask": {
+        "run": "hammer_test_bl_any2full_tmask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.09789228000559701,
+        "c_full": 0.07912117745976582,
+        "clean": 0.015256736186164873,
+        "ir": 0.47960802191091617,
+        "dor": 0.18666538306489455,
+        "images_with_invalid": 0
+      },
+      "GT mask [oracle]": {
+        "run": "hammer_test_bl_any2full_oracle_mask_test_v1",
+        "images": 858,
+        "scenes": 3,
+        "c": 0.06814041150406255,
+        "c_full": 0.047844219447751024,
+        "clean": 0.013781542011753946,
+        "ir": 0.1813262086798697,
+        "dor": 0.09988502031477371,
+        "images_with_invalid": 0
+      }
+    }
+  }
+}

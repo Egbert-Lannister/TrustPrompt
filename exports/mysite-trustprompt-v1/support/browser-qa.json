@@ -1,0 +1,11 @@
+{
+  "preview": "Real mysite project_detail.html, read-only localhost server",
+  "desktop": {"viewport_width": 1280, "document_scroll_width": 1265, "horizontal_overflow": false},
+  "mobile": {"viewport_width": 390, "document_scroll_width": 375, "horizontal_overflow": false},
+  "sections": 4,
+  "images_loaded": 3,
+  "date_shown": "2026年11月5日",
+  "visual_checks": ["Desktop hero and overview", "Mobile hero", "Mobile results figure and numeric table", "All three standalone PNGs"],
+  "publication_performed": false,
+  "database_writes": false
+}

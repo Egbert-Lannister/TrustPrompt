@@ -1,0 +1,20 @@
+{
+  "style_reference": "oral-figure/references/bar-charts.md; script/bar_spice.py",
+  "sources": [
+    {
+      "copy": "test_results.source.json",
+      "original": "docs/test_results.json",
+      "sha256": "6c18a9b521341f981737ba28a964fc57db4860ec8befb4424adf91e7b5c20eaa"
+    },
+    {
+      "copy": "tta_test.source.json",
+      "original": "results/tta_test_20261104_202618/tta_test.json",
+      "sha256": "f912daf60065e0580194c7ac8709fd087173d564340879edde5334f7b0bc5fa1"
+    }
+  ],
+  "charts": [
+    "formal-test-results",
+    "capa-test-results"
+  ],
+  "uncertainty": "Point estimates only; no error bars invented."
+}

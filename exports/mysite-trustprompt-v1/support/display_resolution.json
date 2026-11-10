@@ -1,0 +1,24 @@
+{
+  "figures": [
+    {
+      "id": "formal-test-results",
+      "form": "figure",
+      "chart_type": "bar",
+      "semantic_encoding": "Two horizontal grouped-bar panels, one per dataset; six model rows in the original report order; raw prompts gray, T v1 masks red with white diagonal hatch. Numeric endpoint annotations. CDM NYU candidate remains NA. Independent axes explicitly labeled; no confidence intervals represented.",
+      "rationale": "Readers need to compare the magnitude and direction of raw-to-mask change across models; paired bars expose the large NYU changes and the near-zero HAMMER PromptDA-L change.",
+      "rejected_alternative": "An exact-value table is better for audit lookup, which the surrounding page can supply, but slower for recognizing the paired-change pattern. A heatmap weakens the near-equal PromptDA-L contrast.",
+      "png": "../assets/formal-test-results.png",
+      "pdf": "formal-test-results.pdf"
+    },
+    {
+      "id": "capa-test-results",
+      "form": "figure",
+      "chart_type": "bar",
+      "semantic_encoding": "Two vertical-bar panels with three categorical variants: frozen prior, CAPA, CAPA + T v1. Frozen prior and CAPA gray; CAPA + T v1 red with white diagonal hatch. Independent axes explicitly labeled. Point estimates only; sample sizes and descriptive status printed.",
+      "rationale": "A small categorical comparison makes CAPA error amplification and partial recovery immediately visible while preserving the lower frozen-prior NYU error.",
+      "rejected_alternative": "A line chart would falsely suggest a temporal trajectory; an exact-value table would preserve values but make relative magnitudes slower to compare.",
+      "png": "../assets/capa-test-results.png",
+      "pdf": "capa-test-results.pdf"
+    }
+  ]
+}

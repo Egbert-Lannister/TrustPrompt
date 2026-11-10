@@ -1,0 +1,47 @@
+TrustPrompt / mysite HTML 项目上传包
+
+上传文件：../TrustPrompt-mysite-html-v1.zip
+
+操作：
+1. 在 mysite 后台进入“上传项目”。
+2. 导入模式选择“HTML ZIP”，上传 TrustPrompt-mysite-html-v1.zip。
+3. 预览页将自动读取项目标题、摘要、HTML 正文和 3 个媒体条目。
+4. 核对下列字段后，可先保存草稿，再使用后台预览/发布功能。
+
+建议字段：
+标题：TrustPrompt：让深度补全先判断该信任哪些读数
+slug：trustprompt
+状态：进行中（active；方法 v1 已完成，但整个研究仍保留后续方向）
+日期：按实际发布日填写；研究数据截至 2026-11-04。
+标签：深度补全, RGB-D, 可信度估计, 镜面与透明物体
+技术栈：Python, PyTorch, RGB-D, Depth Completion, Conformal Risk Control
+GitHub：本地 remote 是 https://github.com/Egbert-Lannister/TrustPrompt ，本次未确认仓库是否公开；确认后再填写。
+Paper / Demo：暂留空，没有编造论文或演示链接。
+封面：可选择或另行上传 assets/trustprompt-method.png。
+
+ZIP 内容（4 个文件）：
+index.html
+assets/trustprompt-method.png
+assets/formal-test-results.png
+assets/capa-test-results.png
+
+不要把此说明、support 目录、PDF、脚本或 JSON 一起压入上传包。
+项目正文使用站点允许的语义 HTML 与 5 个布局类，无内联样式、外部媒体或脚本。
+标题/摘要可自动导入；slug、状态、标签、技术栈和资源链接需要在预览页填写。
+
+内容覆盖：
+Overview / Method / Experiments / Conclusion 四部分；方法示意、正式 test 图、CAPA 描述性对比图。
+正式结果和开发集探索已区分；保留 CDM 的 NA、PromptDA-L 的无收益与干净区代价、HAMMER conformal 失效等边界。
+
+校验：
+已通过当前本地 mysite 的 parse_html_project_upload 真正解析；3 个媒体条目、零警告。
+校验清洗幂等、媒体 URL 重写、ZIP CRC 与完整性，并通过真实 project_detail.html 渲染（零数据库查询）。
+证据和哈希见 support/validation-report.json；图表来源见 support/figure_sources.json。
+实际浏览器预览已检查桌面和 390px 手机宽度：无页面横向溢出，3 张图片正常加载，正文和表格可读。
+本次没有上传或发布到网站，没有改动 mysite 代码或数据库，也没有重新运行科研评测。
+
+维护与复现：
+修改 index.html 或图片后，用 D:\Anaconda\python.exe 运行 support/package_and_validate.py 重新打包并校验。
+方法图脚本为 support/build_method.py，定量图脚本见 support/build_result_figures.py。
+support/preview.html 是调用真实 mysite 模板生成的预览，依赖本机静态资源。
+可运行 support/preview_server.py，再打开 http://127.0.0.1:8766/ 查看；这不是上传文件。
